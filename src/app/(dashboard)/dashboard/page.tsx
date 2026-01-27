@@ -1,0 +1,145 @@
+"use client"
+
+import { KPICard } from "@/components/dashboard/kpi-card"
+import { ActivityFeed } from "@/components/dashboard/activity-feed"
+import { Users, Megaphone, Target, DollarSign, Loader2, MapPin, TrendingUp, Sparkles } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { mockDb } from "@/lib/mock-db"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+
+export default function AgencyDashboardHome() {
+    const { data: stats, isLoading } = useQuery({
+        queryKey: ['agency-stats'],
+        queryFn: async () => {
+            const totalInfluencers = await mockDb.influencer.count()
+            const activeCampaigns = await mockDb.campaign.count({ where: { status: "ACTIVE" } })
+
+            return {
+                totalInfluencers,
+                activeCampaigns,
+                totalRevenue: "R$ 142.500",
+                avgEngagement: "4.8%",
+                regionalDensity: [
+                    { state: "Bahia", count: 42, percentage: 85 },
+                    { state: "Pernambuco", count: 28, percentage: 60 },
+                    { state: "Ceará", count: 24, percentage: 55 },
+                    { state: "Rio Grande do Norte", count: 18, percentage: 40 },
+                ]
+            }
+        }
+    })
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[calc(100vh-100px)] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex flex-1 flex-col gap-8 p-6 lg:p-10 pt-4 bg-gradient-to-br from-background via-background to-primary/5">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                <div>
+                    <Badge className="bg-gradient-to-r from-secondary/20 to-accent/20 text-secondary border-secondary/30 backdrop-blur-sm mb-2">
+                        ✨ AGENCY PANEL v1.0
+                    </Badge>
+                    <h1 className="text-4xl lg:text-5xl font-bold">
+                        <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">Visão Geral</span>
+                    </h1>
+                </div>
+                <div className="flex gap-4">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-card/80 backdrop-blur-sm border border-white/10 shadow-xl shadow-primary/5 rounded-2xl">
+                        <MapPin className="h-4 w-4 text-secondary" />
+                        <span className="text-xs font-bold tracking-wider uppercase">Foco: Norte / Nordeste</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <KPICard
+                    title="Total Influencers"
+                    value={stats?.totalInfluencers?.toString() || "0"}
+                    description="da base regional"
+                    icon={<Users className="h-5 w-5" />}
+                    trend="up"
+                />
+                <KPICard
+                    title="Campanhas Ativas"
+                    value={stats?.activeCampaigns?.toString() || "0"}
+                    description="+3 novas esta semana"
+                    icon={<Megaphone className="h-5 w-5" />}
+                    trend="up"
+                />
+                <KPICard
+                    title="Receita Sob Gestão"
+                    value={stats?.totalRevenue || "R$ 0"}
+                    icon={<DollarSign className="h-5 w-5" />}
+                    trend="up"
+                />
+                <KPICard
+                    title="Efetividade Média"
+                    value={stats?.avgEngagement || "0%"}
+                    description="Cliques/Alcance"
+                    icon={<Target className="h-5 w-5" />}
+                    trend="neutral"
+                />
+            </div>
+
+            <div className="grid gap-8 lg:grid-cols-12">
+                {/* Regional Performance */}
+                <Card className="lg:col-span-8 border-none shadow-2xl shadow-primary/5 bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
+                    <CardHeader className="bg-gradient-to-r from-secondary/10 to-transparent border-b border-border/50 relative z-10">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <CardTitle className="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">DENSIDADE REGIONAL</CardTitle>
+                                <CardDescription>Distribuição de talentos por estado do Nordeste</CardDescription>
+                            </div>
+                            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center">
+                                <Sparkles className="h-5 w-5 text-accent" />
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-8 space-y-8 relative z-10">
+                        <div className="grid md:grid-cols-2 gap-12">
+                            <div className="space-y-6">
+                                {stats?.regionalDensity.map((item) => (
+                                    <div key={item.state} className="space-y-2 group">
+                                        <div className="flex justify-between text-sm font-bold uppercase tracking-tight">
+                                            <span className="group-hover:text-primary transition-colors">{item.state}</span>
+                                            <span className="text-primary">{item.count} creators</span>
+                                        </div>
+                                        <div className="relative h-3 bg-muted/30 rounded-full overflow-hidden">
+                                            <div
+                                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-1000 group-hover:shadow-lg group-hover:shadow-primary/30"
+                                                style={{ width: `${item.percentage}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex items-center justify-center p-8 bg-gradient-to-br from-muted/30 to-transparent rounded-3xl border border-dashed border-border/50 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <MapPin className="h-48 w-48 text-primary/5 absolute -bottom-12 -right-12 group-hover:scale-110 transition-transform" />
+                                <div className="text-center relative z-10">
+                                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                        <TrendingUp className="h-8 w-8 text-secondary" />
+                                    </div>
+                                    <h4 className="font-bold text-xl mb-1 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">TOP ESTADO: BAHIA</h4>
+                                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Maior crescimento em 2024</p>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <div className="lg:col-span-4 flex flex-col gap-8">
+                    <ActivityFeed />
+                </div>
+            </div>
+        </div>
+    )
+}
