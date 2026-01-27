@@ -10,14 +10,10 @@ export const influencerSchema = z.object({
     instagram: z.string().optional(),
     tiktok: z.string().optional(),
     youtube: z.string().optional(),
-    niche: z.array(z.string()).default([]),
+    niche: z.array(z.string()),
     state: z.string().optional(),
     city: z.string().optional(),
-    cacheValue: z.string().transform((val) => {
-        if (val === "") return undefined;
-        const num = parseFloat(val);
-        return isNaN(num) ? undefined : num;
-    }).optional(),
+    cacheValue: z.string().optional(),
 })
 
 export type InfluencerFormValues = z.infer<typeof influencerSchema>
