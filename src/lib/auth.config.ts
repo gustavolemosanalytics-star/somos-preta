@@ -1,6 +1,8 @@
 import type { NextAuthConfig } from "next-auth"
 
 export const authConfig = {
+    // Secret for NextAuth (required in production). using a fallback for demo purposes if env var is missing
+    secret: process.env.AUTH_SECRET || "complex-secret-key-that-is-at-least-32-characters-long-for-demo",
     pages: {
         signIn: "/login",
     },
