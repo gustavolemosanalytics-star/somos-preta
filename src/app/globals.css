@@ -213,3 +213,212 @@
     background-position: 200% 0;
   }
 }
+
+/* ===== RESPONSIVE & UX IMPROVEMENTS ===== */
+
+/* Safe Area Support for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better touch targets - minimum 44x44px for accessibility */
+@layer base {
+  button,
+  [role="button"],
+  a,
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exception for inline links */
+  p a, li a, span a {
+    min-height: auto;
+    min-width: auto;
+  }
+}
+
+/* Improved focus states for accessibility */
+@layer base {
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* Prevent text selection on interactive elements for better mobile UX */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition-property: background-color, border-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Disable transitions for motion-reduced users */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Mobile-first typography scaling */
+@layer base {
+  html {
+    font-size: 14px;
+  }
+
+  @media (min-width: 640px) {
+    html {
+      font-size: 15px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Pull-to-refresh style indicator */
+.pull-indicator {
+  @apply fixed top-0 left-1/2 -translate-x-1/2 z-50 opacity-0 transition-opacity;
+}
+
+/* Card hover lift effect */
+.card-hover {
+  @apply transition-all duration-300 ease-out;
+}
+
+.card-hover:hover {
+  @apply -translate-y-1 shadow-xl;
+}
+
+/* Responsive container with max-width */
+.container-responsive {
+  @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
+  max-width: min(100%, 1400px);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile menu animation */
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.slide-in-left {
+  animation: slideInFromLeft 0.3s ease-out;
+}
+
+.slide-in-bottom {
+  animation: slideInFromBottom 0.3s ease-out;
+}
+
+/* Responsive grid utilities */
+.grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 1rem;
+}
+
+.grid-auto-fill {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 1rem;
+}
+
+/* Text truncation utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Loading skeleton pulse */
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.skeleton-pulse {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive spacing scale */
+.section-spacing {
+  @apply py-6 sm:py-8 lg:py-12;
+}
+
+.content-spacing {
+  @apply space-y-4 sm:space-y-6 lg:space-y-8;
+}

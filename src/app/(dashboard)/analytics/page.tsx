@@ -14,7 +14,7 @@ import {
     Cell,
 } from "recharts"
 import { Button } from "@/components/ui/button"
-import { Calendar, Download, TrendingUp, Target, Zap, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { Calendar, Download, TrendingUp, Zap, ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const performanceData = [
@@ -36,16 +36,17 @@ const influencerReach = [
 
 export default function AnalyticsPage() {
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Analytics & Insights</h2>
-                    <p className="text-muted-foreground">Monitore o desempenho das suas campanhas e o ROI real.</p>
+        <div className="flex flex-col gap-4 sm:gap-6">
+            {/* Header Section */}
+            <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Analytics & Insights</h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Monitore o desempenho das suas campanhas e o ROI real.</p>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="flex flex-row gap-2 w-full sm:w-auto">
                     <Select defaultValue="6m">
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                            <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px] h-9 sm:h-10 text-xs sm:text-sm rounded-xl">
+                            <Calendar className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
                             <SelectValue placeholder="Período" />
                         </SelectTrigger>
                         <SelectContent>
@@ -56,68 +57,80 @@ export default function AnalyticsPage() {
                             <SelectItem value="1y">Este Ano</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button variant="outline" className="w-full sm:w-auto">
-                        <Download className="mr-2 h-4 w-4" /> Exportar
+                    <Button variant="outline" className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm rounded-xl">
+                        <Download className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <span className="hidden xs:inline">Exportar</span>
                     </Button>
                 </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-2">
-                        <CardDescription>ROI Consolidado</CardDescription>
-                        <CardTitle className="text-3xl font-bold">3.2x</CardTitle>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow rounded-xl sm:rounded-2xl">
+                    <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4 lg:p-6">
+                        <CardDescription className="text-[10px] sm:text-xs">ROI Consolidado</CardDescription>
+                        <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold">3.2x</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-1 text-emerald-500 text-sm font-medium">
-                            <TrendingUp className="h-4 w-4" /> +12.5% <span className="text-muted-foreground font-normal ml-1">vs meses ant.</span>
+                    <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+                        <div className="flex items-center gap-1 text-emerald-500 text-[10px] sm:text-xs lg:text-sm font-medium flex-wrap">
+                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                            <span>+12.5%</span>
+                            <span className="text-muted-foreground font-normal hidden sm:inline">vs meses ant.</span>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-2">
-                        <CardDescription>Alcance Total</CardDescription>
-                        <CardTitle className="text-3xl font-bold">842k</CardTitle>
+                <Card className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow rounded-xl sm:rounded-2xl">
+                    <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4 lg:p-6">
+                        <CardDescription className="text-[10px] sm:text-xs">Alcance Total</CardDescription>
+                        <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold">842k</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-1 text-emerald-500 text-sm font-medium">
-                            <ArrowUpRight className="h-4 w-4" /> +5.2% <span className="text-muted-foreground font-normal ml-1">impressões únicas</span>
+                    <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+                        <div className="flex items-center gap-1 text-emerald-500 text-[10px] sm:text-xs lg:text-sm font-medium flex-wrap">
+                            <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                            <span>+5.2%</span>
+                            <span className="text-muted-foreground font-normal hidden sm:inline">impressões</span>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-orange-500 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-2">
-                        <CardDescription>CPE Médio</CardDescription>
-                        <CardTitle className="text-3xl font-bold">R$ 0,12</CardTitle>
+                <Card className="border-l-4 border-l-orange-500 shadow-sm hover:shadow-md transition-shadow rounded-xl sm:rounded-2xl">
+                    <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4 lg:p-6">
+                        <CardDescription className="text-[10px] sm:text-xs">CPE Médio</CardDescription>
+                        <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold">R$ 0,12</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-1 text-emerald-500 text-sm font-medium">
-                            <ArrowDownRight className="h-4 w-4 text-emerald-500" /> -8.1% <span className="text-muted-foreground font-normal ml-1">custo por engajamento</span>
+                    <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+                        <div className="flex items-center gap-1 text-emerald-500 text-[10px] sm:text-xs lg:text-sm font-medium flex-wrap">
+                            <ArrowDownRight className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500 shrink-0" />
+                            <span>-8.1%</span>
+                            <span className="text-muted-foreground font-normal hidden sm:inline">custo/eng.</span>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-2">
-                        <CardDescription>Taxa de Conversão</CardDescription>
-                        <CardTitle className="text-3xl font-bold">4.8%</CardTitle>
+                <Card className="border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition-shadow rounded-xl sm:rounded-2xl">
+                    <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4 lg:p-6">
+                        <CardDescription className="text-[10px] sm:text-xs">Taxa de Conversão</CardDescription>
+                        <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold">4.8%</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-1 text-emerald-500 text-sm font-medium">
-                            <Zap className="h-4 w-4" /> +1.2% <span className="text-muted-foreground font-normal ml-1">através de links</span>
+                    <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+                        <div className="flex items-center gap-1 text-emerald-500 text-[10px] sm:text-xs lg:text-sm font-medium flex-wrap">
+                            <Zap className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                            <span>+1.2%</span>
+                            <span className="text-muted-foreground font-normal hidden sm:inline">via links</span>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="md:col-span-4 shadow-sm">
-                    <CardHeader>
-                        <CardTitle>Evolução de Performance</CardTitle>
-                        <CardDescription>Investimento vs Receita Gerada (Marketing de Influência)</CardDescription>
+            {/* Charts Section */}
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-7">
+                {/* Performance Chart */}
+                <Card className="lg:col-span-4 shadow-sm rounded-xl sm:rounded-2xl">
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-sm sm:text-base lg:text-lg">Evolução de Performance</CardTitle>
+                        <CardDescription className="text-[10px] sm:text-xs lg:text-sm">Investimento vs Receita Gerada</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[350px] pl-0">
+                    <CardContent className="h-[250px] sm:h-[300px] lg:h-[350px] p-2 sm:p-4 lg:p-6 pt-0">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={performanceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                            <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
@@ -129,22 +142,26 @@ export default function AnalyticsPage() {
                                     dataKey="name"
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                                     dy={10}
+                                    interval="preserveStartEnd"
                                 />
                                 <YAxis
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-                                    tickFormatter={(value) => `k${value / 1000}`}
+                                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                                    tickFormatter={(value) => `${value / 1000}k`}
+                                    width={40}
                                 />
                                 <Tooltip
                                     contentStyle={{
-                                        borderRadius: 'var(--radius)',
+                                        borderRadius: '12px',
                                         border: '1px solid hsl(var(--border))',
                                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                                         backgroundColor: 'hsl(var(--popover))',
-                                        color: 'hsl(var(--popover-foreground))'
+                                        color: 'hsl(var(--popover-foreground))',
+                                        fontSize: '12px',
+                                        padding: '8px 12px'
                                     }}
                                 />
                                 <Area
@@ -154,8 +171,8 @@ export default function AnalyticsPage() {
                                     stroke="hsl(var(--primary))"
                                     fillOpacity={1}
                                     fill="url(#colorRevenue)"
-                                    strokeWidth={3}
-                                    activeDot={{ r: 8 }}
+                                    strokeWidth={2}
+                                    activeDot={{ r: 6 }}
                                 />
                                 <Area
                                     type="monotone"
@@ -171,33 +188,37 @@ export default function AnalyticsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="md:col-span-3 shadow-sm">
-                    <CardHeader>
-                        <CardTitle>Top Influencers</CardTitle>
-                        <CardDescription>Ranking de criadores por engajamento</CardDescription>
+                {/* Top Influencers Chart */}
+                <Card className="lg:col-span-3 shadow-sm rounded-xl sm:rounded-2xl">
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-sm sm:text-base lg:text-lg">Top Influencers</CardTitle>
+                        <CardDescription className="text-[10px] sm:text-xs lg:text-sm">Ranking por engajamento</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[350px]">
+                    <CardContent className="h-[250px] sm:h-[300px] lg:h-[350px] p-2 sm:p-4 lg:p-6 pt-0">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={influencerReach} layout="vertical" margin={{ top: 0, right: 0, left: 40, bottom: 0 }}>
+                            <BarChart data={influencerReach} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                                 <XAxis type="number" hide />
                                 <YAxis
                                     dataKey="name"
                                     type="category"
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-                                    width={100}
+                                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                                    width={70}
+                                    tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
                                 />
                                 <Tooltip
                                     cursor={{ fill: 'hsl(var(--muted)/0.2)' }}
                                     contentStyle={{
-                                        borderRadius: 'var(--radius)',
+                                        borderRadius: '12px',
                                         border: '1px solid hsl(var(--border))',
-                                        backgroundColor: 'hsl(var(--popover))'
+                                        backgroundColor: 'hsl(var(--popover))',
+                                        fontSize: '12px',
+                                        padding: '8px 12px'
                                     }}
                                 />
-                                <Bar dataKey="engagement" radius={[0, 4, 4, 0]} barSize={24}>
-                                    {influencerReach.map((entry, index) => (
+                                <Bar dataKey="engagement" radius={[0, 4, 4, 0]} barSize={20}>
+                                    {influencerReach.map((_, index) => (
                                         <Cell key={`cell-${index}`} fill={index === 0 ? "hsl(var(--primary))" : "hsl(var(--muted))"} />
                                     ))}
                                 </Bar>
