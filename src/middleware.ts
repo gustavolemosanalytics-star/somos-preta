@@ -14,9 +14,17 @@ export default auth((req) => {
         nextUrl.pathname === "/construcao_midia_kit" ||
         nextUrl.pathname.startsWith("/api/auth")
 
-    // Redirect root to login
+    // Redirect root to dashboard (if logged in) or login (if not)
     if (nextUrl.pathname === "/") {
+        if (isLoggedIn) {
+            return Response.redirect(new URL("/dashboard", nextUrl))
+        }
         return Response.redirect(new URL("/login", nextUrl))
+    }
+
+    // Redirect logged-in users away from login page
+    if (isLoggedIn && nextUrl.pathname === "/login") {
+        return Response.redirect(new URL("/dashboard", nextUrl))
     }
 
     // Protect all other paths
