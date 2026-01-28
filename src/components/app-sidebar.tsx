@@ -42,6 +42,11 @@ const navItems = [
         icon: Users,
     },
     {
+        title: "Creators",
+        url: "/creators",
+        icon: Users, // Using Users icon as placeholder, similar to TopNavbar's Search icon or similar
+    },
+    {
         title: "Campanhas",
         url: "/campaigns",
         icon: Megaphone,

@@ -23,20 +23,20 @@ export default function InfluencersPage() {
     })
 
     return (
-        <div className="flex flex-1 flex-col gap-8 p-6 lg:p-10">
-            <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                    <h1 className="text-4xl md:text-5xl font-bold">
+        <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight">
                         <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
                             Influenciadores
                         </span>
                     </h1>
-                    <p className="text-muted-foreground text-lg">
+                    <p className="text-muted-foreground text-sm md:text-base">
                         Gerencie sua base de criadores de conteúdo do Norte e Nordeste.
                     </p>
                 </div>
                 <Link href="/influencers/new">
-                    <Button className="bg-gradient-to-r from-primary to-secondary rounded-xl h-10 px-6">
+                    <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary rounded-xl h-10 px-6">
                         <Plus className="mr-2 h-4 w-4" /> Novo Influenciador
                     </Button>
                 </Link>
