@@ -8,21 +8,18 @@ export default auth((req) => {
     const isLoggedIn = !!req.auth
 
     // Public paths that don't require auth
-    const isPublicPath = nextUrl.pathname === "/login" ||
+    const isPublicPath = nextUrl.pathname === "/" ||
+        nextUrl.pathname.startsWith("/login") ||
         nextUrl.pathname === "/lp" ||
         nextUrl.pathname.startsWith("/kit/") ||
         nextUrl.pathname === "/construcao_midia_kit" ||
+        nextUrl.pathname.startsWith("/busca") ||
+        nextUrl.pathname.startsWith("/comunidade") ||
+        nextUrl.pathname.startsWith("/cursos") ||
+        nextUrl.pathname.startsWith("/midia-kit") ||
         nextUrl.pathname.startsWith("/api/auth")
 
-    // Redirect root to dashboard (if logged in) or login (if not)
-    if (nextUrl.pathname === "/") {
-        if (isLoggedIn) {
-            return Response.redirect(new URL("/dashboard", nextUrl))
-        }
-        return Response.redirect(new URL("/login", nextUrl))
-    }
-
-    // Redirect logged-in users away from login page
+    // Redirect logged-in users away from main login page to dashboard
     if (isLoggedIn && nextUrl.pathname === "/login") {
         return Response.redirect(new URL("/dashboard", nextUrl))
     }

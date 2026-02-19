@@ -9,8 +9,6 @@ import {
     Megaphone,
     FileText,
     MessageSquare,
-    GraduationCap,
-    Users2,
     BarChart3,
     Settings,
     Sparkles,
@@ -64,16 +62,6 @@ const navItems = [
         title: "Mensagens",
         url: "/messages",
         icon: MessageSquare,
-    },
-    {
-        title: "Cursos",
-        url: "/courses",
-        icon: GraduationCap,
-    },
-    {
-        title: "Comunidade",
-        url: "/community",
-        icon: Users2,
     },
     {
         title: "Analytics",
