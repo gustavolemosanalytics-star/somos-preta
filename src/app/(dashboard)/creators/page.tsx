@@ -2,8 +2,10 @@
 
 import { useState, useMemo } from "react"
 import dynamic from "next/dynamic"
+import Image from "next/image"
 import { mockDb, type Influencer } from "@/lib/mock-db"
 import { useQuery } from "@tanstack/react-query"
+import { useInstagramSearch } from "@/hooks/use-instagram"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -16,7 +18,13 @@ import {
     Loader2,
     Star,
     ExternalLink,
-    TrendingUp
+    TrendingUp,
+    Instagram,
+    CheckCircle,
+    Lock,
+    Heart,
+    Zap,
+    UserPlus
 } from "lucide-react"
 
 // Dynamically import Leaflet components to avoid SSR issues
@@ -54,10 +62,17 @@ const stateCoordinates: Record<string, { lat: number; lng: number; name: string 
 
 const states = ["BA", "PE", "CE", "RN", "PB", "MA", "PI", "SE", "AL", "AM", "PA"]
 
+function formatNumber(n: number): string {
+    return new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(n)
+}
+
 export default function CreatorsSearchPage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedState, setSelectedState] = useState<string | null>(null)
     const [isMapLoaded, setIsMapLoaded] = useState(false)
+
+    const isInstagramQuery = searchTerm.startsWith("@") && searchTerm.length >= 3
+    const { data: igProfile, isLoading: igLoading, error: igError } = useInstagramSearch(searchTerm)
 
     const { data: influencers, isLoading } = useQuery({
         queryKey: ['influencers-search', searchTerm, selectedState],
@@ -66,7 +81,8 @@ export default function CreatorsSearchPage() {
                 OR: [{ name: { contains: searchTerm } }],
                 ...(selectedState ? { state: selectedState } : {})
             }
-        })
+        }),
+        enabled: !isInstagramQuery,
     })
 
     // Calculate creators per state for the map
@@ -80,7 +96,7 @@ export default function CreatorsSearchPage() {
     }, [influencers])
 
     // Total creators for all visible states
-    const totalCreators = influencers?.length || 0
+    const totalCreators = isInstagramQuery && igProfile ? 1 : (influencers?.length || 0)
 
     return (
         <div className="flex flex-col gap-8 p-6 lg:p-10">
@@ -93,7 +109,7 @@ export default function CreatorsSearchPage() {
                         </span>
                     </h1>
                     <p className="text-muted-foreground text-lg">
-                        Encontre os talentos mais quentes do Norte e Nordeste através de métricas auditadas.
+                        Encontre os talentos mais quentes do Norte e Nordeste ou busque qualquer perfil com <strong>@usuario</strong>.
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -229,78 +245,205 @@ export default function CreatorsSearchPage() {
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                     <Input
-                        placeholder="Buscar por nome, nicho ou @instagram..."
+                        placeholder="Buscar por nome, nicho ou @instagram de qualquer pessoa..."
                         className="pl-10 h-12 border-none bg-muted/50 rounded-xl"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                    {isInstagramQuery && (
+                        <div className="absolute right-3 top-3">
+                            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-pink-500 to-purple-500 text-white border-none">
+                                <Instagram className="h-3 w-3 mr-1" />
+                                Instagram
+                            </Badge>
+                        </div>
+                    )}
                 </div>
                 <Button className="h-12 px-8 bg-gradient-to-r from-primary to-secondary rounded-xl">
                     <Filter className="mr-2 h-4 w-4" /> Filtros Avançados
                 </Button>
             </div>
 
-            {/* Results Grid */}
-            {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-24">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-                    <span className="font-bold tracking-widest text-muted-foreground">MAPEANDO TALENTOS...</span>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {influencers?.map((influencer) => (
-                        <Card key={influencer.id} className="overflow-hidden border-none shadow-lg hover:shadow-2xl transition-all bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-2xl group">
-                            <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button className="w-full bg-white text-primary font-bold rounded-xl hover:bg-white/90">
-                                        VER MÍDIA KIT <ExternalLink className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <div className="w-full h-full flex items-center justify-center text-8xl font-bold opacity-10 text-primary">
-                                    {influencer.name.charAt(0)}
-                                </div>
-                                <Badge className="absolute top-4 left-4 bg-secondary text-white">{influencer.state}</Badge>
-                            </div>
-                            <CardContent className="pt-6 space-y-4">
-                                <div>
-                                    <h3 className="text-xl font-bold leading-tight">{influencer.name}</h3>
-                                    <p className="text-sm text-secondary font-bold">{influencer.instagram}</p>
-                                </div>
-                                <div className="flex flex-wrap gap-1">
-                                    {influencer.niche.map(n => (
-                                        <Badge key={n} variant="outline" className="text-[10px] uppercase">{n}</Badge>
-                                    ))}
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
-                                    <div>
-                                        <span className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                                            <Users className="h-3 w-3" /> Seguidores
-                                        </span>
-                                        <div className="font-bold text-lg">
-                                            {new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(influencer.followers)}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <span className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                                            <TrendingUp className="h-3 w-3" /> Engaj.
-                                        </span>
-                                        <div className="font-bold text-lg text-secondary">
-                                            {influencer.engagement}%
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
+            {/* Instagram Profile Result */}
+            {isInstagramQuery && (
+                <>
+                    {igLoading && (
+                        <div className="flex flex-col items-center justify-center py-24">
+                            <Loader2 className="h-12 w-12 animate-spin text-pink-500 mb-4" />
+                            <span className="font-bold tracking-widest text-muted-foreground">BUSCANDO PERFIL DO INSTAGRAM...</span>
+                        </div>
+                    )}
+
+                    {igError && (
+                        <Card className="text-center py-12 border-none bg-card/50 rounded-3xl">
+                            <Instagram className="h-12 w-12 text-muted mx-auto mb-4" />
+                            <h3 className="text-2xl font-bold">Perfil não encontrado</h3>
+                            <p className="text-muted-foreground mt-2">
+                                Não foi possível encontrar o perfil <strong>{searchTerm}</strong> no Instagram.
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">Verifique se o username está correto.</p>
                         </Card>
-                    ))}
-                </div>
+                    )}
+
+                    {igProfile && (
+                        <Card className="overflow-hidden border-none shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl">
+                            <div className="grid md:grid-cols-[300px_1fr] gap-0">
+                                {/* Profile Picture */}
+                                <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-orange-500/20 flex items-center justify-center">
+                                    {igProfile.profile_pic_url ? (
+                                        <Image
+                                            src={igProfile.profile_pic_url}
+                                            alt={igProfile.full_name || igProfile.username}
+                                            fill
+                                            className="object-cover"
+                                            unoptimized
+                                        />
+                                    ) : (
+                                        <div className="text-9xl font-bold opacity-10 text-pink-500">
+                                            {(igProfile.full_name || igProfile.username).charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    {igProfile.is_private && (
+                                        <Badge className="absolute top-4 right-4 bg-yellow-500/90 text-black">
+                                            <Lock className="h-3 w-3 mr-1" /> Privado
+                                        </Badge>
+                                    )}
+                                </div>
+
+                                {/* Profile Info */}
+                                <CardContent className="p-8 flex flex-col justify-center gap-6">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-3">
+                                            <h2 className="text-3xl font-bold">{igProfile.full_name || igProfile.username}</h2>
+                                            {igProfile.is_verified && (
+                                                <CheckCircle className="h-6 w-6 text-blue-500 fill-blue-500" />
+                                            )}
+                                        </div>
+                                        <p className="text-lg text-pink-500 font-bold flex items-center gap-2">
+                                            <Instagram className="h-5 w-5" />
+                                            @{igProfile.username}
+                                        </p>
+                                        {igProfile.biography && (
+                                            <p className="text-muted-foreground leading-relaxed whitespace-pre-line max-w-xl">
+                                                {igProfile.biography}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Tags / Nicho */}
+                                    {igProfile.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {igProfile.tags.map(tag => (
+                                                <Badge key={tag} variant="outline" className="text-xs uppercase">
+                                                    {tag}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Stats */}
+                                    <div className="grid grid-cols-3 gap-6">
+                                        <div className="text-center p-4 bg-muted/30 rounded-2xl">
+                                            <Users className="h-5 w-5 mx-auto mb-2 text-pink-500" />
+                                            <div className="text-2xl font-bold">{formatNumber(igProfile.follower_count)}</div>
+                                            <div className="text-xs text-muted-foreground uppercase font-bold">Seguidores</div>
+                                        </div>
+                                        <div className="text-center p-4 bg-muted/30 rounded-2xl">
+                                            <Heart className="h-5 w-5 mx-auto mb-2 text-purple-500" />
+                                            <div className="text-2xl font-bold">{igProfile.avg_engagement_rate}%</div>
+                                            <div className="text-xs text-muted-foreground uppercase font-bold">Engajamento</div>
+                                        </div>
+                                        <div className="text-center p-4 bg-muted/30 rounded-2xl">
+                                            <Zap className="h-5 w-5 mx-auto mb-2 text-orange-500" />
+                                            <div className="text-2xl font-bold">{formatNumber(igProfile.avg_interactions)}</div>
+                                            <div className="text-xs text-muted-foreground uppercase font-bold">Interações/Post</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex gap-3">
+                                        <Button
+                                            className="bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl"
+                                            onClick={() => window.open(`https://instagram.com/${igProfile.username}`, "_blank")}
+                                        >
+                                            <Instagram className="mr-2 h-4 w-4" /> Ver no Instagram
+                                        </Button>
+                                        <Button variant="outline" className="rounded-xl">
+                                            <UserPlus className="mr-2 h-4 w-4" /> Adicionar à Plataforma
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </div>
+                        </Card>
+                    )}
+                </>
             )}
 
-            {influencers?.length === 0 && !isLoading && (
-                <Card className="text-center py-24 border-none bg-card/50 rounded-3xl">
-                    <Star className="h-12 w-12 text-muted mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold">Nenhum talento encontrado</h3>
-                    <p className="text-muted-foreground">Tente ajustar seus filtros ou buscar por outra região.</p>
-                </Card>
+            {/* Regular Results Grid */}
+            {!isInstagramQuery && (
+                <>
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-24">
+                            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                            <span className="font-bold tracking-widest text-muted-foreground">MAPEANDO TALENTOS...</span>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {influencers?.map((influencer) => (
+                                <Card key={influencer.id} className="overflow-hidden border-none shadow-lg hover:shadow-2xl transition-all bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-2xl group">
+                                    <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button className="w-full bg-white text-primary font-bold rounded-xl hover:bg-white/90">
+                                                VER MÍDIA KIT <ExternalLink className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="w-full h-full flex items-center justify-center text-8xl font-bold opacity-10 text-primary">
+                                            {influencer.name.charAt(0)}
+                                        </div>
+                                        <Badge className="absolute top-4 left-4 bg-secondary text-white">{influencer.state}</Badge>
+                                    </div>
+                                    <CardContent className="pt-6 space-y-4">
+                                        <div>
+                                            <h3 className="text-xl font-bold leading-tight">{influencer.name}</h3>
+                                            <p className="text-sm text-secondary font-bold">{influencer.instagram}</p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {influencer.niche.map(n => (
+                                                <Badge key={n} variant="outline" className="text-[10px] uppercase">{n}</Badge>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
+                                            <div>
+                                                <span className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                                    <Users className="h-3 w-3" /> Seguidores
+                                                </span>
+                                                <div className="font-bold text-lg">
+                                                    {formatNumber(influencer.followers)}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                                    <TrendingUp className="h-3 w-3" /> Engaj.
+                                                </span>
+                                                <div className="font-bold text-lg text-secondary">
+                                                    {influencer.engagement}%
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+
+                    {influencers?.length === 0 && !isLoading && (
+                        <Card className="text-center py-24 border-none bg-card/50 rounded-3xl">
+                            <Star className="h-12 w-12 text-muted mx-auto mb-4" />
+                            <h3 className="text-2xl font-bold">Nenhum talento encontrado</h3>
+                            <p className="text-muted-foreground">Tente ajustar seus filtros ou buscar por outra região.</p>
+                        </Card>
+                    )}
+                </>
             )}
         </div>
     )
