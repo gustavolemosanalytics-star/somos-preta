@@ -17,10 +17,9 @@ import {
     Loader2,
     Instagram,
     CheckCircle,
-    Heart,
-    Zap,
     UserPlus,
     Lock,
+    ImageIcon,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useQuery } from "@tanstack/react-query"
@@ -289,17 +288,6 @@ export default function BuscaPage() {
                                                             )}
                                                         </div>
 
-                                                        {/* Tags */}
-                                                        {igProfile.tags.length > 0 && (
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {igProfile.tags.map(tag => (
-                                                                    <Badge key={tag} variant="outline" className="text-xs uppercase">
-                                                                        {tag}
-                                                                    </Badge>
-                                                                ))}
-                                                            </div>
-                                                        )}
-
                                                         {/* Stats */}
                                                         <div className="grid grid-cols-3 gap-4">
                                                             <div className="text-center p-3 bg-muted/30 rounded-2xl">
@@ -308,14 +296,14 @@ export default function BuscaPage() {
                                                                 <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div>
                                                             </div>
                                                             <div className="text-center p-3 bg-muted/30 rounded-2xl">
-                                                                <Heart className="h-4 w-4 mx-auto mb-1 text-purple-500" />
-                                                                <div className="text-xl font-bold">{igProfile.avg_engagement_rate}%</div>
-                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Engajamento</div>
+                                                                <UserPlus className="h-4 w-4 mx-auto mb-1 text-purple-500" />
+                                                                <div className="text-xl font-bold">{formatFollowers(igProfile.following_count)}</div>
+                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div>
                                                             </div>
                                                             <div className="text-center p-3 bg-muted/30 rounded-2xl">
-                                                                <Zap className="h-4 w-4 mx-auto mb-1 text-orange-500" />
-                                                                <div className="text-xl font-bold">{formatFollowers(igProfile.avg_interactions)}</div>
-                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Interações/Post</div>
+                                                                <ImageIcon className="h-4 w-4 mx-auto mb-1 text-orange-500" />
+                                                                <div className="text-xl font-bold">{formatFollowers(igProfile.posts_count)}</div>
+                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Publicações</div>
                                                             </div>
                                                         </div>
 
