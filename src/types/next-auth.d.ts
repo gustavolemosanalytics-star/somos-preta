@@ -9,5 +9,14 @@ declare module "next-auth" {
         user: User & {
             workspaceId?: string
         }
+        accessToken?: string
+        provider?: string
+    }
+}
+
+declare module "next-auth/jwt" {
+    interface JWT {
+        accessToken?: string
+        provider?: string
     }
 }

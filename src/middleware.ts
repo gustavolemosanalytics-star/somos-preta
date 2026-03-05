@@ -17,6 +17,8 @@ export default auth((req) => {
         nextUrl.pathname.startsWith("/comunidade") ||
         nextUrl.pathname.startsWith("/cursos") ||
         nextUrl.pathname.startsWith("/midia-kit") ||
+        nextUrl.pathname.startsWith("/cadastro") ||
+        nextUrl.pathname.startsWith("/client-portal") ||
         nextUrl.pathname.startsWith("/api/auth")
 
     // Redirect logged-in users away from main login page to dashboard

@@ -8,15 +8,25 @@ export const authConfig = {
     },
     callbacks: {
         // authorized callback removed to avoid conflict with middleware.ts
-        async session({ session, user, token }) {
+        async session({ session, token }) {
             if (token?.sub && session.user) {
                 session.user.id = token.sub;
             }
+            if (token?.accessToken) {
+                (session as any).accessToken = token.accessToken;
+            }
+            if (token?.provider) {
+                (session as any).provider = token.provider;
+            }
             return session;
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, account }) {
             if (user) {
                 token.sub = user.id;
+            }
+            if (account) {
+                token.accessToken = account.access_token;
+                token.provider = account.provider;
             }
             return token;
         }

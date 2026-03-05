@@ -27,6 +27,19 @@ export type Influencer = {
     growthRate?: number
 }
 
+export type CampaignInfluencer = {
+    name: string
+    instagram: string
+    followers: number
+    niche: string
+    geoPercent: number
+    topCities: string
+    engagementRate: number
+    avgLikes: number
+    avgComments: number
+    statusBia: "Aprovado" | "Pendente" | "Recusado" | "-"
+}
+
 export type Campaign = {
     id: string
     name: string
@@ -36,6 +49,10 @@ export type Campaign = {
     influencersCount: number
     startDate: string
     endDate: string
+    description?: string
+    objective?: string
+    shareToken?: string
+    influencers?: CampaignInfluencer[]
 }
 
 export type Contract = {
@@ -45,6 +62,8 @@ export type Contract = {
     status: "PENDING" | "SIGNED" | "EXPIRED" | "CANCELLED"
     createdAt: string
     expiresAt: string
+    pdfUrl?: string
+    pdfName?: string
 }
 
 export type Message = {
@@ -90,6 +109,21 @@ export type MidiaKitUser = {
     createdAt: string
 }
 
+export type Creator = {
+    id: string
+    name: string
+    email: string
+    facebookId: string
+    instagramUsername: string
+    instagramId: string
+    instagramFollowers: number
+    instagramProfilePic: string
+    instagramBio: string
+    instagramMediaCount: number
+    accessToken: string
+    createdAt: string
+}
+
 const globalForMock = global as unknown as {
     mockInfluencers: Influencer[],
     mockCampaigns: Campaign[],
@@ -97,7 +131,8 @@ const globalForMock = global as unknown as {
     mockMessages: Message[],
     mockCourses: Course[],
     mockPosts: Post[],
-    mockMidiaKitUsers: MidiaKitUser[]
+    mockMidiaKitUsers: MidiaKitUser[],
+    mockCreators: Creator[]
 }
 
 const INITIAL_INFLUENCERS: Influencer[] = [
@@ -124,11 +159,16 @@ const INITIAL_INFLUENCERS: Influencer[] = [
 ]
 
 const INITIAL_CAMPAIGNS: Campaign[] = [
-    { id: "1", name: "Lançamento Verão 2025", client: "Cervejaria Bahia", status: "ACTIVE", budget: "R$ 25.000,00", influencersCount: 12, startDate: "2024-12-01", endDate: "2025-02-28" },
-    { id: "2", name: "Promoção Dia das Mães", client: "Shopping Recife", status: "DRAFT", budget: "R$ 15.000,00", influencersCount: 5, startDate: "2025-04-15", endDate: "2025-05-12" },
-    { id: "3", name: "Black Friday Tech", client: "Hitech Store CE", status: "COMPLETED", budget: "R$ 50.000,00", influencersCount: 20, startDate: "2024-11-01", endDate: "2024-11-30" },
-    { id: "4", name: "Carnaval da Gente", client: "Gov Bahia", status: "ACTIVE", budget: "R$ 120.000,00", influencersCount: 45, startDate: "2025-01-10", endDate: "2025-03-05" },
-    { id: "5", name: "São João de Caruaru 2025", client: "Prefeitura Caruaru", status: "PENDING_APPROVAL", budget: "R$ 85.000,00", influencersCount: 30, startDate: "2025-06-01", endDate: "2025-06-30" },
+    { id: "1", name: "Lançamento Verão 2025", client: "Cervejaria Bahia", status: "ACTIVE", budget: "R$ 25.000,00", influencersCount: 12, startDate: "2024-12-01", endDate: "2025-02-28", description: "Campanha de verão para lançamento da nova linha de cervejas artesanais", objective: "Brand Awareness", shareToken: "verao2025-abc123", influencers: [
+        { name: "biancabriste", instagram: "@biancabriste", followers: 472000, niche: "Beleza | Humor | Culture Pop", geoPercent: 74.6, topCities: "Maceió 58.6% | União dos Palmares 9.8% | São Miguel dos Campos 6.2% | São Paulo 1.7%", engagementRate: 7.32, avgLikes: 3900, avgComments: 54, statusBia: "Aprovado" },
+        { name: "kaua_zoeira", instagram: "@kaua_zoeira", followers: 22000, niche: "Entretenimento | Humor | Lifestyle", geoPercent: 65.4, topCities: "Maceió 44.9% | Delmiro Gouveia 13.4% | Pilar 7.1% | Recife 1.5%", engagementRate: 4.04, avgLikes: 843, avgComments: 38, statusBia: "Aprovado" },
+        { name: "dogclingua", instagram: "@dogclingua", followers: 95000, niche: "Entretenimento | Humor | Geek", geoPercent: 72.0, topCities: "Maceió 52.1% | Coruripe 11.6% | Penedo 8.3% | Salvador 1.6%", engagementRate: 1.38, avgLikes: 1300, avgComments: 35, statusBia: "Pendente" },
+        { name: "macorlilano", instagram: "@macorlilano", followers: 1000000, niche: "Entretenimento | Humor | Lifestyle", geoPercent: 64.9, topCities: "Maceió 47.3% | Satuba 10.9% | Marechal Deodoro 6.7% | Rio de Janeiro 1.4%", engagementRate: 2.38, avgLikes: 10900, avgComments: 258, statusBia: "Aprovado" },
+    ] },
+    { id: "2", name: "Promoção Dia das Mães", client: "Shopping Recife", status: "DRAFT", budget: "R$ 15.000,00", influencersCount: 5, startDate: "2025-04-15", endDate: "2025-05-12", description: "Campanha promocional para o Dia das Mães no Shopping Recife", objective: "Conversão", shareToken: "maes2025-def456" },
+    { id: "3", name: "Black Friday Tech", client: "Hitech Store CE", status: "COMPLETED", budget: "R$ 50.000,00", influencersCount: 20, startDate: "2024-11-01", endDate: "2024-11-30", description: "Campanha de Black Friday para produtos de tecnologia", objective: "Vendas", shareToken: "bf2024-ghi789" },
+    { id: "4", name: "Carnaval da Gente", client: "Gov Bahia", status: "ACTIVE", budget: "R$ 120.000,00", influencersCount: 45, startDate: "2025-01-10", endDate: "2025-03-05", description: "Cobertura do Carnaval da Bahia com influenciadores locais", objective: "Engajamento", shareToken: "carnaval2025-jkl012" },
+    { id: "5", name: "São João de Caruaru 2025", client: "Prefeitura Caruaru", status: "PENDING_APPROVAL", budget: "R$ 85.000,00", influencersCount: 30, startDate: "2025-06-01", endDate: "2025-06-30", description: "Campanha para o São João de Caruaru com creators nordestinos", objective: "Alcance Regional", shareToken: "saojoao2025-mno345" },
 ]
 
 const INITIAL_CONTRACTS: Contract[] = [
@@ -181,6 +221,7 @@ if (!globalForMock.mockMessages) globalForMock.mockMessages = [...INITIAL_MESSAG
 if (!globalForMock.mockCourses) globalForMock.mockCourses = [...INITIAL_COURSES]
 if (!globalForMock.mockPosts) globalForMock.mockPosts = [...INITIAL_POSTS]
 if (!globalForMock.mockMidiaKitUsers) globalForMock.mockMidiaKitUsers = [...INITIAL_MIDIA_KIT_USERS]
+if (!globalForMock.mockCreators) globalForMock.mockCreators = []
 
 export const mockDb = {
     influencer: {
@@ -212,6 +253,19 @@ export const mockDb = {
             await new Promise(r => setTimeout(r, 100))
             return globalForMock.mockCampaigns
         },
+        findById: async (id: string) => {
+            await new Promise(r => setTimeout(r, 100))
+            return globalForMock.mockCampaigns.find(c => c.id === id) || null
+        },
+        findByShareToken: async (token: string) => {
+            await new Promise(r => setTimeout(r, 100))
+            return globalForMock.mockCampaigns.find(c => c.shareToken === token) || null
+        },
+        create: async (data: Omit<Campaign, "id">) => {
+            const newCampaign: Campaign = { id: Math.random().toString(36).substring(7), ...data }
+            globalForMock.mockCampaigns.unshift(newCampaign)
+            return newCampaign
+        },
         count: async ({ where }: any = {}) => {
             if (where?.status === "ACTIVE") return globalForMock.mockCampaigns.filter(c => c.status === "ACTIVE").length
             return globalForMock.mockCampaigns.length
@@ -219,12 +273,26 @@ export const mockDb = {
     },
     contract: {
         findMany: async () => globalForMock.mockContracts,
+        findById: async (id: string) => {
+            await new Promise(r => setTimeout(r, 100))
+            return globalForMock.mockContracts.find(c => c.id === id) || null
+        },
+        create: async (data: Omit<Contract, "id">) => {
+            const newContract: Contract = { id: Math.random().toString(36).substring(7), ...data }
+            globalForMock.mockContracts.unshift(newContract)
+            return newContract
+        },
         count: async () => globalForMock.mockContracts.length,
     },
     message: {
         findMany: async ({ where }: any = {}) => {
             if (where?.contactId) return globalForMock.mockMessages.filter(m => m.contactId === where.contactId)
             return globalForMock.mockMessages
+        },
+        create: async (data: Omit<Message, "id">) => {
+            const newMsg: Message = { id: Math.random().toString(36).substring(7), ...data }
+            globalForMock.mockMessages.push(newMsg)
+            return newMsg
         }
     },
     course: {
@@ -243,5 +311,16 @@ export const mockDb = {
             await new Promise(r => setTimeout(r, 100))
             return globalForMock.mockMidiaKitUsers.find(u => u.email === email) || null
         },
-    }
+    },
+    creator: {
+        create: async ({ data }: { data: Omit<Creator, "id" | "createdAt"> }) => {
+            const newCreator: Creator = { id: Math.random().toString(36).substring(7), createdAt: new Date().toISOString(), ...data }
+            globalForMock.mockCreators.unshift(newCreator)
+            return newCreator
+        },
+        findByInstagramId: async (instagramId: string) => {
+            await new Promise(r => setTimeout(r, 100))
+            return globalForMock.mockCreators.find(c => c.instagramId === instagramId) || null
+        },
+    },
 }
