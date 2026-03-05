@@ -173,11 +173,12 @@ function parseCount(str: string): number {
 }
 
 async function fetchViaMetaTags(username: string): Promise<InstagramProfile> {
+    // Use Facebook's own link preview bot UA — Instagram (owned by Meta) won't block it
     const response = await fetch(`https://www.instagram.com/${username}/`, {
         headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+            "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "identity",
         },
         next: { revalidate: 3600 },
@@ -226,7 +227,9 @@ async function fetchViaMetaTags(username: string): Promise<InstagramProfile> {
     let biography = ""
     const metaDescription = extractMetaContent(html, "description")
     if (metaDescription) {
-        const bioMatch = metaDescription.match(/no Instagram:\s*"([\s\S]+)"$/)
+        // Try English format: 'on Instagram: "bio"'
+        // Try Portuguese format: 'no Instagram: "bio"'
+        const bioMatch = metaDescription.match(/(?:on|no) Instagram:\s*"([\s\S]+)"$/)
         if (bioMatch?.[1]) biography = bioMatch[1].trim()
     }
 
