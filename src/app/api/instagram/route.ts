@@ -58,7 +58,8 @@ function extractPostData(edge: any): RecentPost {
     }
 }
 
-async function fetchInstagramProfile(username: string): Promise<InstagramProfile> {
+// === PRIMARY: Instagram web_profile_info API (rich data) ===
+async function fetchViaAPI(username: string): Promise<InstagramProfile> {
     const response = await fetch(
         `${IG_API_URL}?username=${encodeURIComponent(username)}`,
         {
@@ -75,10 +76,7 @@ async function fetchInstagramProfile(username: string): Promise<InstagramProfile
     )
 
     if (!response.ok) {
-        if (response.status === 404) {
-            throw new Error("PROFILE_NOT_FOUND")
-        }
-        throw new Error(`Instagram returned status ${response.status}`)
+        throw new Error(`API_STATUS_${response.status}`)
     }
 
     const json = await response.json()
@@ -92,11 +90,9 @@ async function fetchInstagramProfile(username: string): Promise<InstagramProfile
     const following_count = user.edge_follow?.count || 0
     const posts_count = user.edge_owner_to_timeline_media?.count || 0
 
-    // Extract recent posts with engagement data
     const postEdges = user.edge_owner_to_timeline_media?.edges || []
     const recent_posts: RecentPost[] = postEdges.map(extractPostData)
 
-    // Calculate engagement metrics from recent posts
     let avg_likes = 0
     let avg_comments = 0
     let engagement_rate = 0
@@ -132,6 +128,130 @@ async function fetchInstagramProfile(username: string): Promise<InstagramProfile
     }
 }
 
+// === FALLBACK: Scrape meta tags from profile page ===
+function decodeHtmlEntities(str: string): string {
+    return str
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&#x27;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/&#x([0-9a-fA-F]+);/g, (_: string, hex: string) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/&#(\d+);/g, (_: string, dec: string) => String.fromCharCode(parseInt(dec, 10)))
+}
+
+function extractMetaContent(html: string, property: string): string {
+    const patterns = [
+        `<meta[^>]*property=["']${property}["'][^>]*content=["']([^"']*)["']`,
+        `<meta[^>]*content=["']([^"']*)["'][^>]*property=["']${property}["']`,
+        `<meta[^>]*name=["']${property}["'][^>]*content=["']([^"']*)["']`,
+        `<meta[^>]*content=["']([^"']*)["'][^>]*name=["']${property}["']`,
+    ]
+    for (const pattern of patterns) {
+        const match = html.match(new RegExp(pattern, "i"))
+        if (match) return decodeHtmlEntities(match[1])
+    }
+    return ""
+}
+
+function parseCount(str: string): number {
+    if (!str) return 0
+    const cleaned = str.replace(/,/g, "").trim()
+    const m = cleaned.match(/^([\d.]+)\s*([KkMmBb])?$/)
+    if (m) {
+        const num = parseFloat(m[1])
+        switch ((m[2] || "").toUpperCase()) {
+            case "K": return Math.round(num * 1_000)
+            case "M": return Math.round(num * 1_000_000)
+            case "B": return Math.round(num * 1_000_000_000)
+            default: return Math.round(num)
+        }
+    }
+    return parseInt(cleaned, 10) || 0
+}
+
+async function fetchViaMetaTags(username: string): Promise<InstagramProfile> {
+    const response = await fetch(`https://www.instagram.com/${username}/`, {
+        headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept-Encoding": "identity",
+        },
+        next: { revalidate: 3600 },
+    })
+
+    if (!response.ok) {
+        throw new Error(`Instagram returned status ${response.status}`)
+    }
+
+    const html = await response.text()
+
+    if (html.includes("loginForm") && !html.includes("og:image")) {
+        throw new Error("LOGIN_WALL")
+    }
+
+    const ogTitle = extractMetaContent(html, "og:title")
+    const ogDescription = extractMetaContent(html, "og:description")
+    const ogImage = extractMetaContent(html, "og:image")
+
+    if (!ogTitle && !ogDescription) {
+        throw new Error("PROFILE_NOT_FOUND")
+    }
+
+    let full_name = ""
+    const titleMatch = ogTitle.match(/^(.+?)\s*\(@/)
+    if (titleMatch) full_name = titleMatch[1].trim()
+
+    let follower_count = 0
+    let following_count = 0
+    let posts_count = 0
+
+    if (ogDescription) {
+        const decoded = ogDescription.replace(/&#x2014;/g, "—").replace(/&#064;/g, "@").replace(/&amp;/g, "&")
+
+        const ptMatch = decoded.match(/^([\d,.]+[KkMmBb]?)\s*seguidores?,?\s*seguindo\s*([\d,.]+[KkMmBb]?),?\s*([\d,.]+[KkMmBb]?)\s*posts?/i)
+        const engMatch = decoded.match(/^([\d,.]+[KkMmBb]?)\s*Followers?,?\s*([\d,.]+[KkMmBb]?)\s*Following,?\s*([\d,.]+[KkMmBb]?)\s*Posts?/i)
+
+        const match = ptMatch || engMatch
+        if (match) {
+            follower_count = parseCount(match[1])
+            following_count = parseCount(match[2])
+            posts_count = parseCount(match[3])
+        }
+    }
+
+    let biography = ""
+    const metaDescription = extractMetaContent(html, "description")
+    if (metaDescription) {
+        const bioMatch = metaDescription.match(/no Instagram:\s*"([\s\S]+)"$/)
+        if (bioMatch?.[1]) biography = bioMatch[1].trim()
+    }
+
+    const is_verified = html.includes('"is_verified":true') || html.includes("verified_badge")
+    const is_private = html.includes('"is_private":true') || html.includes("This Account is Private") || html.includes("Esta conta é privada")
+
+    return {
+        username,
+        full_name: full_name || username,
+        biography,
+        follower_count,
+        following_count,
+        posts_count,
+        profile_pic_url: ogImage || "",
+        is_verified,
+        is_private,
+        is_business: false,
+        category: "",
+        avg_likes: 0,
+        avg_comments: 0,
+        engagement_rate: 0,
+        recent_posts: [],
+    }
+}
+
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export async function GET(req: Request) {
@@ -140,22 +260,23 @@ export async function GET(req: Request) {
         const username = searchParams.get("username")
 
         if (!username) {
-            return NextResponse.json(
-                { error: "Username é obrigatório" },
-                { status: 400 }
-            )
+            return NextResponse.json({ error: "Username é obrigatório" }, { status: 400 })
         }
 
         const cleanUsername = username.replace(/^@/, "").trim().toLowerCase()
 
         if (!cleanUsername) {
-            return NextResponse.json(
-                { error: "Username inválido" },
-                { status: 400 }
-            )
+            return NextResponse.json({ error: "Username inválido" }, { status: 400 })
         }
 
-        const profile = await fetchInstagramProfile(cleanUsername)
+        // Try the rich API first, fallback to meta tags scraping
+        let profile: InstagramProfile
+        try {
+            profile = await fetchViaAPI(cleanUsername)
+        } catch (apiError) {
+            console.log("Instagram API failed, trying meta tags fallback:", apiError)
+            profile = await fetchViaMetaTags(cleanUsername)
+        }
 
         return NextResponse.json(profile)
     } catch (error) {
@@ -164,15 +285,16 @@ export async function GET(req: Request) {
         const message = error instanceof Error ? error.message : ""
 
         if (message === "PROFILE_NOT_FOUND") {
+            return NextResponse.json({ error: "Perfil não encontrado" }, { status: 404 })
+        }
+
+        if (message === "LOGIN_WALL") {
             return NextResponse.json(
-                { error: "Perfil não encontrado" },
-                { status: 404 }
+                { error: "Instagram bloqueou a requisição. Tente novamente em alguns minutos." },
+                { status: 429 }
             )
         }
 
-        return NextResponse.json(
-            { error: "Erro ao buscar dados do Instagram" },
-            { status: 500 }
-        )
+        return NextResponse.json({ error: "Erro ao buscar dados do Instagram" }, { status: 500 })
     }
 }
