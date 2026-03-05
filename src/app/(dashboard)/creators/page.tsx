@@ -23,7 +23,11 @@ import {
     CheckCircle,
     Lock,
     UserPlus,
-    ImageIcon
+    ImageIcon,
+    Heart,
+    MessageCircle,
+    Zap,
+    Briefcase,
 } from "lucide-react"
 
 // Dynamically import Leaflet components to avoid SSR issues
@@ -329,22 +333,53 @@ export default function CreatorsSearchPage() {
                                         )}
                                     </div>
 
+                                    {/* Category */}
+                                    {(igProfile.category || igProfile.is_business) && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {igProfile.is_business && (
+                                                <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20">
+                                                    <Briefcase className="h-3 w-3 mr-1" /> Conta Profissional
+                                                </Badge>
+                                            )}
+                                            {igProfile.category && (
+                                                <Badge variant="outline" className="text-xs uppercase">
+                                                    {igProfile.category}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Stats */}
-                                    <div className="grid grid-cols-3 gap-6">
-                                        <div className="text-center p-4 bg-muted/30 rounded-2xl">
-                                            <Users className="h-5 w-5 mx-auto mb-2 text-pink-500" />
-                                            <div className="text-2xl font-bold">{formatNumber(igProfile.follower_count)}</div>
-                                            <div className="text-xs text-muted-foreground uppercase font-bold">Seguidores</div>
+                                    <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                            <Users className="h-4 w-4 mx-auto mb-1 text-pink-500" />
+                                            <div className="text-xl font-bold">{formatNumber(igProfile.follower_count)}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div>
                                         </div>
-                                        <div className="text-center p-4 bg-muted/30 rounded-2xl">
-                                            <UserPlus className="h-5 w-5 mx-auto mb-2 text-purple-500" />
-                                            <div className="text-2xl font-bold">{formatNumber(igProfile.following_count)}</div>
-                                            <div className="text-xs text-muted-foreground uppercase font-bold">Seguindo</div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                            <UserPlus className="h-4 w-4 mx-auto mb-1 text-purple-500" />
+                                            <div className="text-xl font-bold">{formatNumber(igProfile.following_count)}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div>
                                         </div>
-                                        <div className="text-center p-4 bg-muted/30 rounded-2xl">
-                                            <ImageIcon className="h-5 w-5 mx-auto mb-2 text-orange-500" />
-                                            <div className="text-2xl font-bold">{formatNumber(igProfile.posts_count)}</div>
-                                            <div className="text-xs text-muted-foreground uppercase font-bold">Publicações</div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                            <ImageIcon className="h-4 w-4 mx-auto mb-1 text-orange-500" />
+                                            <div className="text-xl font-bold">{formatNumber(igProfile.posts_count)}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Publicações</div>
+                                        </div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                            <Heart className="h-4 w-4 mx-auto mb-1 text-red-500" />
+                                            <div className="text-xl font-bold">{formatNumber(igProfile.avg_likes)}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas/Post</div>
+                                        </div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                            <MessageCircle className="h-4 w-4 mx-auto mb-1 text-blue-500" />
+                                            <div className="text-xl font-bold">{formatNumber(igProfile.avg_comments)}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Comentários/Post</div>
+                                        </div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                            <Zap className="h-4 w-4 mx-auto mb-1 text-yellow-500" />
+                                            <div className="text-xl font-bold">{igProfile.engagement_rate}%</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Engajamento</div>
                                         </div>
                                     </div>
 
@@ -362,6 +397,45 @@ export default function CreatorsSearchPage() {
                                     </div>
                                 </CardContent>
                             </div>
+
+                            {/* Recent Posts */}
+                            {igProfile.recent_posts.length > 0 && (
+                                <div className="border-t border-border/50 p-8">
+                                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                        <ImageIcon className="h-5 w-5 text-primary" />
+                                        Posts Recentes ({igProfile.recent_posts.length})
+                                    </h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                        {igProfile.recent_posts.map((post) => (
+                                            <a
+                                                key={post.shortcode}
+                                                href={`https://instagram.com/p/${post.shortcode}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group relative aspect-square rounded-xl overflow-hidden bg-muted"
+                                            >
+                                                {post.thumbnail_url && (
+                                                    <Image
+                                                        src={post.thumbnail_url}
+                                                        alt={post.caption.slice(0, 50) || "Post"}
+                                                        fill
+                                                        className="object-cover group-hover:scale-105 transition-transform"
+                                                        unoptimized
+                                                    />
+                                                )}
+                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                                                    <div className="flex items-center gap-1 text-white text-sm font-bold">
+                                                        <Heart className="h-4 w-4 fill-white" /> {formatNumber(post.likes)}
+                                                    </div>
+                                                    <div className="flex items-center gap-1 text-white text-sm font-bold">
+                                                        <MessageCircle className="h-4 w-4 fill-white" /> {formatNumber(post.comments)}
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </Card>
                     )}
                 </>

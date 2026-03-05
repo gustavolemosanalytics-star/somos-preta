@@ -20,6 +20,10 @@ import {
     UserPlus,
     Lock,
     ImageIcon,
+    Heart,
+    MessageCircle,
+    Zap,
+    Briefcase,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useQuery } from "@tanstack/react-query"
@@ -288,22 +292,53 @@ export default function BuscaPage() {
                                                             )}
                                                         </div>
 
+                                                        {/* Category */}
+                                                        {(igProfile.category || igProfile.is_business) && (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {igProfile.is_business && (
+                                                                    <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20">
+                                                                        <Briefcase className="h-3 w-3 mr-1" /> Profissional
+                                                                    </Badge>
+                                                                )}
+                                                                {igProfile.category && (
+                                                                    <Badge variant="outline" className="text-xs uppercase">
+                                                                        {igProfile.category}
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        )}
+
                                                         {/* Stats */}
-                                                        <div className="grid grid-cols-3 gap-4">
+                                                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                                                             <div className="text-center p-3 bg-muted/30 rounded-2xl">
                                                                 <Users className="h-4 w-4 mx-auto mb-1 text-pink-500" />
-                                                                <div className="text-xl font-bold">{formatFollowers(igProfile.follower_count)}</div>
+                                                                <div className="text-lg font-bold">{formatFollowers(igProfile.follower_count)}</div>
                                                                 <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div>
                                                             </div>
                                                             <div className="text-center p-3 bg-muted/30 rounded-2xl">
                                                                 <UserPlus className="h-4 w-4 mx-auto mb-1 text-purple-500" />
-                                                                <div className="text-xl font-bold">{formatFollowers(igProfile.following_count)}</div>
+                                                                <div className="text-lg font-bold">{formatFollowers(igProfile.following_count)}</div>
                                                                 <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div>
                                                             </div>
                                                             <div className="text-center p-3 bg-muted/30 rounded-2xl">
                                                                 <ImageIcon className="h-4 w-4 mx-auto mb-1 text-orange-500" />
-                                                                <div className="text-xl font-bold">{formatFollowers(igProfile.posts_count)}</div>
+                                                                <div className="text-lg font-bold">{formatFollowers(igProfile.posts_count)}</div>
                                                                 <div className="text-[10px] text-muted-foreground uppercase font-bold">Publicações</div>
+                                                            </div>
+                                                            <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                                                <Heart className="h-4 w-4 mx-auto mb-1 text-red-500" />
+                                                                <div className="text-lg font-bold">{formatFollowers(igProfile.avg_likes)}</div>
+                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas/Post</div>
+                                                            </div>
+                                                            <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                                                <MessageCircle className="h-4 w-4 mx-auto mb-1 text-blue-500" />
+                                                                <div className="text-lg font-bold">{formatFollowers(igProfile.avg_comments)}</div>
+                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Coment./Post</div>
+                                                            </div>
+                                                            <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                                                <Zap className="h-4 w-4 mx-auto mb-1 text-yellow-500" />
+                                                                <div className="text-lg font-bold">{igProfile.engagement_rate}%</div>
+                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Engajamento</div>
                                                             </div>
                                                         </div>
 
@@ -318,6 +353,45 @@ export default function BuscaPage() {
                                                         </div>
                                                     </CardContent>
                                                 </div>
+
+                                                {/* Recent Posts */}
+                                                {igProfile.recent_posts.length > 0 && (
+                                                    <div className="border-t border-border/50 p-6">
+                                                        <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                                                            <ImageIcon className="h-4 w-4 text-primary" />
+                                                            Posts Recentes ({igProfile.recent_posts.length})
+                                                        </h3>
+                                                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                                            {igProfile.recent_posts.slice(0, 6).map((post) => (
+                                                                <a
+                                                                    key={post.shortcode}
+                                                                    href={`https://instagram.com/p/${post.shortcode}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="group relative aspect-square rounded-lg overflow-hidden bg-muted"
+                                                                >
+                                                                    {post.thumbnail_url && (
+                                                                        <Image
+                                                                            src={post.thumbnail_url}
+                                                                            alt="Post"
+                                                                            fill
+                                                                            className="object-cover group-hover:scale-105 transition-transform"
+                                                                            unoptimized
+                                                                        />
+                                                                    )}
+                                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                                                                        <div className="flex items-center gap-1 text-white text-xs font-bold">
+                                                                            <Heart className="h-3 w-3 fill-white" /> {formatFollowers(post.likes)}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1 text-white text-xs font-bold">
+                                                                            <MessageCircle className="h-3 w-3 fill-white" /> {formatFollowers(post.comments)}
+                                                                        </div>
+                                                                    </div>
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </Card>
                                         </motion.div>
                                     )}
