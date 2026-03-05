@@ -28,7 +28,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { useQuery } from "@tanstack/react-query"
 import { mockDb, type Influencer } from "@/lib/mock-db"
-import { useInstagramSearch } from "@/hooks/use-instagram"
+import { useInstagramSearch, useTikTokSearch } from "@/hooks/use-social-search"
 
 function formatFollowers(n: number): string {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`
@@ -90,10 +90,12 @@ export default function BuscaPage() {
     const [query, setQuery] = useState("")
     const [searchTerm, setSearchTerm] = useState("")
 
-    const isInstagramQuery = searchTerm.startsWith("@") && searchTerm.length >= 3
-    const { data: igProfile, isLoading: igLoading, error: igError } = useInstagramSearch(
-        isInstagramQuery ? searchTerm : ""
-    )
+    const isSocialQuery = searchTerm.startsWith("@") && searchTerm.length >= 3
+    const socialQueryArg = isSocialQuery ? searchTerm : ""
+    const { data: igProfile, isLoading: igLoading, error: igError } = useInstagramSearch(socialQueryArg)
+    const { data: ttProfile, isLoading: ttLoading, error: ttError } = useTikTokSearch(socialQueryArg)
+    const socialLoading = igLoading || ttLoading
+    const bothFailed = igError && ttError
 
     const { data: results, isLoading } = useQuery({
         queryKey: ["busca", searchTerm],
@@ -105,7 +107,7 @@ export default function BuscaPage() {
                 },
             })
         },
-        enabled: searchTerm.length > 0 && !isInstagramQuery,
+        enabled: searchTerm.length > 0 && !isSocialQuery,
     })
 
     const handleSearch = (e: React.FormEvent) => {
@@ -113,8 +115,8 @@ export default function BuscaPage() {
         setSearchTerm(query.trim())
     }
 
-    const hasResults = !isInstagramQuery && searchTerm && results && results.length > 0
-    const noResults = !isInstagramQuery && searchTerm && results && results.length === 0 && !isLoading
+    const hasResults = !isSocialQuery && searchTerm && results && results.length > 0
+    const noResults = !isSocialQuery && searchTerm && results && results.length === 0 && !isLoading
     const activeSearch = searchTerm.length > 0
 
     return (
@@ -141,7 +143,7 @@ export default function BuscaPage() {
                                 </span>
                             </h1>
                             <p className="text-muted-foreground text-lg">
-                                Pesquise pelo <strong>@usuario</strong> para buscar perfis reais do Instagram, ou digite um nome para encontrar influencers cadastrados.
+                                Pesquise pelo <strong>@usuario</strong> para buscar perfis no Instagram e TikTok, ou digite um nome para encontrar influencers cadastrados.
                             </p>
                             <form onSubmit={handleSearch} className="relative">
                                 <div className="relative">
@@ -200,34 +202,37 @@ export default function BuscaPage() {
                                         Buscar
                                     </Button>
                                 </div>
-                                {isInstagramQuery && (
-                                    <div className="flex justify-center mt-3">
+                                {isSocialQuery && (
+                                    <div className="flex justify-center mt-3 gap-2">
                                         <Badge variant="secondary" className="text-xs bg-gradient-to-r from-pink-500 to-purple-500 text-white border-none">
                                             <Instagram className="h-3 w-3 mr-1" />
-                                            Busca via Instagram
+                                            Instagram
+                                        </Badge>
+                                        <Badge variant="secondary" className="text-xs bg-black text-white border-none">
+                                            TikTok
                                         </Badge>
                                     </div>
                                 )}
                             </form>
 
-                            {/* Instagram Results */}
-                            {isInstagramQuery && (
+                            {/* Social Results */}
+                            {isSocialQuery && (
                                 <>
-                                    {igLoading && (
+                                    {socialLoading && (
                                         <div className="flex flex-col items-center justify-center py-20">
                                             <Loader2 className="h-10 w-10 animate-spin text-pink-500 mb-4" />
-                                            <span className="font-bold tracking-widest text-sm text-muted-foreground">BUSCANDO PERFIL DO INSTAGRAM...</span>
+                                            <span className="font-bold tracking-widest text-sm text-muted-foreground">BUSCANDO PERFIS...</span>
                                         </div>
                                     )}
 
-                                    {igError && !igLoading && (
+                                    {bothFailed && !socialLoading && (
                                         <div className="text-center py-20">
-                                            <Instagram className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                                            <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                                             <h3 className="text-lg font-bold text-muted-foreground">
                                                 Perfil não encontrado
                                             </h3>
                                             <p className="text-sm text-muted-foreground mt-2">
-                                                Não foi possível encontrar o perfil <strong>{searchTerm}</strong> no Instagram.
+                                                Não foi possível encontrar <strong>{searchTerm}</strong> no Instagram ou TikTok.
                                             </p>
                                             <Button
                                                 variant="outline"
@@ -239,15 +244,74 @@ export default function BuscaPage() {
                                         </div>
                                     )}
 
-                                    {igProfile && !igLoading && (
+                                    {/* TikTok Profile */}
+                                    {ttProfile && !socialLoading && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="max-w-3xl mx-auto mb-6"
+                                        >
+                                            <p className="text-sm text-muted-foreground mb-4">TikTok</p>
+                                            <Card className="overflow-hidden border-none shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl">
+                                                <div className="grid md:grid-cols-[200px_1fr] gap-0">
+                                                    <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-cyan-500/20 via-pink-500/20 to-purple-500/20 flex items-center justify-center min-h-[200px]">
+                                                        {ttProfile.profile_pic_url ? (
+                                                            <Image
+                                                                src={ttProfile.profile_pic_url}
+                                                                alt={ttProfile.full_name || ttProfile.username}
+                                                                fill
+                                                                className="object-cover"
+                                                                unoptimized
+                                                            />
+                                                        ) : (
+                                                            <div className="text-8xl font-bold opacity-10">
+                                                                {(ttProfile.full_name || ttProfile.username).charAt(0).toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                        <Badge className="absolute top-4 left-4 bg-black text-white text-xs">TikTok</Badge>
+                                                    </div>
+                                                    <CardContent className="p-6 flex flex-col justify-center gap-4">
+                                                        <div>
+                                                            <h2 className="text-2xl font-bold">{ttProfile.full_name || ttProfile.username}</h2>
+                                                            <p className="text-sm font-bold">@{ttProfile.username}</p>
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-3">
+                                                            <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                                                <Users className="h-4 w-4 mx-auto mb-1 text-pink-500" />
+                                                                <div className="text-lg font-bold">{formatFollowers(ttProfile.follower_count)}</div>
+                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div>
+                                                            </div>
+                                                            <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                                                <UserPlus className="h-4 w-4 mx-auto mb-1 text-purple-500" />
+                                                                <div className="text-lg font-bold">{formatFollowers(ttProfile.following_count)}</div>
+                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div>
+                                                            </div>
+                                                            <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                                                <Heart className="h-4 w-4 mx-auto mb-1 text-red-500" />
+                                                                <div className="text-lg font-bold">{formatFollowers(ttProfile.total_likes)}</div>
+                                                                <div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas Total</div>
+                                                            </div>
+                                                        </div>
+                                                        <Button
+                                                            className="bg-black text-white rounded-xl hover:bg-black/80 w-fit"
+                                                            onClick={() => window.open(`https://tiktok.com/@${ttProfile.username}`, "_blank")}
+                                                        >
+                                                            Ver no TikTok
+                                                        </Button>
+                                                    </CardContent>
+                                                </div>
+                                            </Card>
+                                        </motion.div>
+                                    )}
+
+                                    {/* Instagram Profile */}
+                                    {igProfile && !socialLoading && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             className="max-w-3xl mx-auto"
                                         >
-                                            <p className="text-sm text-muted-foreground mb-4">
-                                                Resultado do Instagram para &quot;{searchTerm}&quot;
-                                            </p>
+                                            <p className="text-sm text-muted-foreground mb-4">Instagram</p>
                                             <Card className="overflow-hidden border-none shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl">
                                                 <div className="grid md:grid-cols-[240px_1fr] gap-0">
                                                     {/* Profile Picture */}
@@ -399,7 +463,7 @@ export default function BuscaPage() {
                             )}
 
                             {/* Mock DB Results */}
-                            {!isInstagramQuery && isLoading && (
+                            {!isSocialQuery && isLoading && (
                                 <div className="flex justify-center py-20">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                 </div>

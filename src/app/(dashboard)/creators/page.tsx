@@ -5,7 +5,7 @@ import dynamic from "next/dynamic"
 import Image from "next/image"
 import { mockDb, type Influencer } from "@/lib/mock-db"
 import { useQuery } from "@tanstack/react-query"
-import { useInstagramSearch } from "@/hooks/use-instagram"
+import { useInstagramSearch, useTikTokSearch } from "@/hooks/use-social-search"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -74,8 +74,11 @@ export default function CreatorsSearchPage() {
     const [selectedState, setSelectedState] = useState<string | null>(null)
     const [isMapLoaded, setIsMapLoaded] = useState(false)
 
-    const isInstagramQuery = searchTerm.startsWith("@") && searchTerm.length >= 3
+    const isSocialQuery = searchTerm.startsWith("@") && searchTerm.length >= 3
     const { data: igProfile, isLoading: igLoading, error: igError } = useInstagramSearch(searchTerm)
+    const { data: ttProfile, isLoading: ttLoading, error: ttError } = useTikTokSearch(searchTerm)
+    const socialLoading = igLoading || ttLoading
+    const bothFailed = igError && ttError
 
     const { data: influencers, isLoading } = useQuery({
         queryKey: ['influencers-search', searchTerm, selectedState],
@@ -85,7 +88,7 @@ export default function CreatorsSearchPage() {
                 ...(selectedState ? { state: selectedState } : {})
             }
         }),
-        enabled: !isInstagramQuery,
+        enabled: !isSocialQuery,
     })
 
     // Calculate creators per state for the map
@@ -99,7 +102,8 @@ export default function CreatorsSearchPage() {
     }, [influencers])
 
     // Total creators for all visible states
-    const totalCreators = isInstagramQuery && igProfile ? 1 : (influencers?.length || 0)
+    const socialResults = (igProfile ? 1 : 0) + (ttProfile ? 1 : 0)
+    const totalCreators = isSocialQuery ? socialResults : (influencers?.length || 0)
 
     return (
         <div className="flex flex-col gap-8 p-6 lg:p-10">
@@ -248,16 +252,19 @@ export default function CreatorsSearchPage() {
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                     <Input
-                        placeholder="Buscar por nome, nicho ou @instagram de qualquer pessoa..."
+                        placeholder="Buscar por nome, nicho ou @usuario (Instagram + TikTok)..."
                         className="pl-10 h-12 border-none bg-muted/50 rounded-xl"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                    {isInstagramQuery && (
-                        <div className="absolute right-3 top-3">
+                    {isSocialQuery && (
+                        <div className="absolute right-3 top-3 flex gap-1">
                             <Badge variant="secondary" className="text-xs bg-gradient-to-r from-pink-500 to-purple-500 text-white border-none">
                                 <Instagram className="h-3 w-3 mr-1" />
-                                Instagram
+                                IG
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs bg-black text-white border-none">
+                                TikTok
                             </Badge>
                         </div>
                     )}
@@ -267,28 +274,88 @@ export default function CreatorsSearchPage() {
                 </Button>
             </div>
 
-            {/* Instagram Profile Result */}
-            {isInstagramQuery && (
+            {/* Social Profile Results */}
+            {isSocialQuery && (
                 <>
-                    {igLoading && (
+                    {socialLoading && (
                         <div className="flex flex-col items-center justify-center py-24">
                             <Loader2 className="h-12 w-12 animate-spin text-pink-500 mb-4" />
-                            <span className="font-bold tracking-widest text-muted-foreground">BUSCANDO PERFIL DO INSTAGRAM...</span>
+                            <span className="font-bold tracking-widest text-muted-foreground">BUSCANDO PERFIS...</span>
                         </div>
                     )}
 
-                    {igError && (
+                    {bothFailed && !socialLoading && (
                         <Card className="text-center py-12 border-none bg-card/50 rounded-3xl">
                             <Instagram className="h-12 w-12 text-muted mx-auto mb-4" />
                             <h3 className="text-2xl font-bold">Perfil não encontrado</h3>
                             <p className="text-muted-foreground mt-2">
-                                Não foi possível encontrar o perfil <strong>{searchTerm}</strong> no Instagram.
+                                Não foi possível encontrar <strong>{searchTerm}</strong> no Instagram ou TikTok.
                             </p>
                             <p className="text-sm text-muted-foreground mt-1">Verifique se o username está correto.</p>
                         </Card>
                     )}
 
-                    {igProfile && (
+                    {/* TikTok Profile */}
+                    {ttProfile && !socialLoading && (
+                        <Card className="overflow-hidden border-none shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl">
+                            <div className="grid md:grid-cols-[300px_1fr] gap-0">
+                                <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-cyan-500/20 via-pink-500/20 to-purple-500/20 flex items-center justify-center">
+                                    {ttProfile.profile_pic_url ? (
+                                        <Image
+                                            src={ttProfile.profile_pic_url}
+                                            alt={ttProfile.full_name || ttProfile.username}
+                                            fill
+                                            className="object-cover"
+                                            unoptimized
+                                        />
+                                    ) : (
+                                        <div className="text-9xl font-bold opacity-10">
+                                            {(ttProfile.full_name || ttProfile.username).charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    <Badge className="absolute top-4 left-4 bg-black text-white text-xs">
+                                        TikTok
+                                    </Badge>
+                                </div>
+                                <CardContent className="p-8 flex flex-col justify-center gap-6">
+                                    <div className="space-y-2">
+                                        <h2 className="text-3xl font-bold">{ttProfile.full_name || ttProfile.username}</h2>
+                                        <p className="text-lg font-bold flex items-center gap-2">
+                                            @{ttProfile.username}
+                                        </p>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                            <Users className="h-4 w-4 mx-auto mb-1 text-pink-500" />
+                                            <div className="text-xl font-bold">{formatNumber(ttProfile.follower_count)}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div>
+                                        </div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                            <UserPlus className="h-4 w-4 mx-auto mb-1 text-purple-500" />
+                                            <div className="text-xl font-bold">{formatNumber(ttProfile.following_count)}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div>
+                                        </div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl">
+                                            <Heart className="h-4 w-4 mx-auto mb-1 text-red-500" />
+                                            <div className="text-xl font-bold">{formatNumber(ttProfile.total_likes)}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas Total</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <Button
+                                            className="bg-black text-white rounded-xl hover:bg-black/80"
+                                            onClick={() => window.open(`https://tiktok.com/@${ttProfile.username}`, "_blank")}
+                                        >
+                                            Ver no TikTok
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Instagram Profile */}
+                    {igProfile && !socialLoading && (
                         <Card className="overflow-hidden border-none shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl">
                             <div className="grid md:grid-cols-[300px_1fr] gap-0">
                                 {/* Profile Picture */}
@@ -442,7 +509,7 @@ export default function CreatorsSearchPage() {
             )}
 
             {/* Regular Results Grid */}
-            {!isInstagramQuery && (
+            {!isSocialQuery && (
                 <>
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-24">
