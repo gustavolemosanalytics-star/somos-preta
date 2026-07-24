@@ -6,11 +6,15 @@ import Link from "next/link"
 import {
     LayoutDashboard,
     Users,
+    UserSearch,
     Megaphone,
+    Building2,
+    ClipboardList,
+    IdCard,
+    Newspaper,
     FileText,
     MessageSquare,
     BarChart3,
-    Settings,
     Sparkles,
 } from "lucide-react"
 
@@ -28,54 +32,25 @@ import {
     SidebarRail,
     useSidebar,
 } from "@/components/ui/sidebar"
-import { NavUser } from "@/components/nav-user"
+import { NavUser, type NavUserData } from "@/components/nav-user"
 import { cn } from "@/lib/utils"
 
-// Navigation items
+// Navegação — hierarquia principal: Cliente > Campanhas > Tarefas
 const navItems = [
-    {
-        title: "Dashboard",
-        url: "/dashboard",
-        icon: LayoutDashboard,
-    },
-    {
-        title: "Influenciadores",
-        url: "/influencers",
-        icon: Users,
-    },
-    {
-        title: "Creators",
-        url: "/creators",
-        icon: Users,
-    },
-    {
-        title: "Campanhas",
-        url: "/campaigns",
-        icon: Megaphone,
-    },
-    {
-        title: "Contratos",
-        url: "/contracts",
-        icon: FileText,
-    },
-    {
-        title: "Mensagens",
-        url: "/messages",
-        icon: MessageSquare,
-    },
-    {
-        title: "Analytics",
-        url: "/analytics",
-        icon: BarChart3,
-    },
-    {
-        title: "Configurações",
-        url: "/settings",
-        icon: Settings,
-    },
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Clientes", url: "/clientes", icon: Building2 },
+    { title: "Campanhas", url: "/campaigns", icon: Megaphone },
+    { title: "Tarefas", url: "/tarefas", icon: ClipboardList },
+    { title: "Influenciadores", url: "/influencers", icon: Users },
+    { title: "Creators", url: "/creators", icon: UserSearch },
+    { title: "Mídia Kits", url: "/media-kits", icon: IdCard },
+    { title: "Contratos", url: "/contracts", icon: FileText },
+    { title: "Mensagens", url: "/messages", icon: MessageSquare },
+    { title: "Blog", url: "/blog-admin", icon: Newspaper },
+    { title: "Analytics", url: "/analytics", icon: BarChart3 },
 ]
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ user, ...props }: { user: NavUserData } & React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname()
     const { setOpenMobile } = useSidebar()
 
@@ -140,7 +115,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarGroup>
             </SidebarContent>
             <SidebarFooter className="border-t border-sidebar-border/50">
-                <NavUser />
+                <NavUser user={user} />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

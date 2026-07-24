@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,38 +21,33 @@ export default function LoginPage() {
         setIsLoading(true)
         setError("")
 
-        try {
-            const result = await signIn("credentials", {
-                email,
-                password,
-                redirect: false,
-            })
+        const supabase = createClient()
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-            if (result?.error) {
-                setError("Email ou senha inválidos")
-                setIsLoading(false)
-            } else {
-                router.push("/dashboard")
-                router.refresh()
-            }
-        } catch {
-            setError("Ocorreu um erro. Tente novamente.")
+        if (error) {
+            setError(
+                error.message.includes("Invalid")
+                    ? "Email ou senha inválidos"
+                    : error.message.includes("confirm")
+                        ? "Confirme seu email antes de entrar"
+                        : "Não foi possível entrar. Tente novamente."
+            )
             setIsLoading(false)
+            return
         }
+
+        router.push("/dashboard")
+        router.refresh()
     }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#0d0d14] p-4">
             <div className="w-full max-w-sm space-y-8">
-                {/* Logo */}
                 <div className="text-center">
-                    <h1 className="text-4xl font-bold text-white mb-2">
-                        Somos Preta
-                    </h1>
+                    <h1 className="text-4xl font-bold text-white mb-2">Somos Preta</h1>
                     <p className="text-white/50 text-sm">Plataforma de Gestão de Creators</p>
                 </div>
 
-                {/* Login Form */}
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
                         <Label htmlFor="email" className="text-white/70">Email</Label>
@@ -89,19 +85,16 @@ export default function LoginPage() {
                         className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-lg"
                         disabled={isLoading}
                     >
-                        {isLoading ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                            "Entrar"
-                        )}
+                        {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Entrar"}
                     </Button>
                 </form>
 
-                {/* Demo Credentials */}
-                <div className="text-center text-white/30 text-xs space-y-1 pt-4 border-t border-white/10">
-                    <p><strong>Demo:</strong> admin@somospreta.com</p>
-                    <p><strong>Senha:</strong> 123456</p>
-                </div>
+                <p className="text-center text-white/50 text-sm">
+                    Não tem conta?{" "}
+                    <Link href="/registro" className="text-primary font-medium hover:underline">
+                        Criar conta
+                    </Link>
+                </p>
             </div>
         </div>
     )
