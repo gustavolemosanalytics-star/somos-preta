@@ -1,241 +1,149 @@
 "use client"
 
 import Link from "next/link"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
-import { ArrowRight, Search, Users2, GraduationCap, FileImage, Sparkles, Star, MapPin, TrendingUp, Shield } from "lucide-react"
+import { ArrowRight, IdCard, Users, Megaphone, MapPin } from "lucide-react"
 
-const features = [
+const Hero3D = dynamic(() => import("@/components/hero-3d"), { ssr: false })
+
+const pilares = [
     {
-        icon: Search,
-        title: "Busca de Influencers",
-        description: "Encontre os melhores criadores de conteúdo do Brasil. Pesquise por @, analise métricas reais e descubra talentos.",
-        href: "/busca",
-        color: "from-blue-500 to-cyan-500",
+        icon: Users,
+        title: "Gestão de creators",
+        description: "Uma base viva de criadores do Norte e Nordeste, com métricas reais e relacionamento próximo.",
     },
     {
-        icon: Users2,
-        title: "Comunidade",
-        description: "A rede social dos influencers. Conecte-se, compartilhe experiências e faça networking com outros creators.",
-        href: "/comunidade",
-        color: "from-purple-500 to-pink-500",
+        icon: Megaphone,
+        title: "Campanhas ponta a ponta",
+        description: "Do briefing à entrega: clientes, campanhas e tarefas organizados num só fluxo.",
     },
     {
-        icon: GraduationCap,
-        title: "Cursos",
-        description: "Capacite-se com cursos exclusivos para influenciadores digitais. Do básico ao avançado, tudo em um só lugar.",
-        href: "/cursos",
-        color: "from-amber-500 to-orange-500",
-    },
-    {
-        icon: FileImage,
-        title: "Mídia Kit",
-        description: "Crie seu mídia kit profissional direto na plataforma. Intuitivo, moderno e pronto para impressionar marcas.",
-        href: "/midia-kit",
-        color: "from-emerald-500 to-teal-500",
+        icon: IdCard,
+        title: "Mídia kits profissionais",
+        description: "O creator monta o próprio mídia kit e recebe uma página pronta para fechar contrato.",
     },
 ]
 
-const stats = [
-    { value: "500+", label: "Creators Ativos" },
-    { value: "2M+", label: "Alcance Total" },
-    { value: "150+", label: "Campanhas" },
-    { value: "98%", label: "Satisfação" },
+const numeros = [
+    { value: "11", label: "estados do N/NE" },
+    { value: "100%", label: "foco regional" },
+    { value: "1", label: "plataforma" },
 ]
+
+const fade = {
+    initial: { opacity: 0, y: 24 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: "-80px" },
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
+}
 
 export default function HomePage() {
     return (
-        <div className="flex flex-col overflow-hidden">
-            {/* Floating Decorative Elements */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
-                <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-secondary/10 to-transparent rounded-full blur-3xl" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-accent/5 to-transparent rounded-full blur-3xl" />
-            </div>
-
-            {/* Hero Section */}
-            <section className="relative py-24 lg:py-40 flex items-center justify-center">
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="max-w-4xl mx-auto text-center space-y-8">
+        <div className="flex flex-col">
+            {/* Hero */}
+            <section className="relative">
+                <div className="container mx-auto px-4 pt-16 pb-20 lg:pt-24 lg:pb-28">
+                    <div className="grid lg:grid-cols-2 gap-10 items-center">
                         <motion.div
-                            initial={{ opacity: 0, y: 30 }}
+                            initial={{ opacity: 0, y: 24 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6 }}
+                            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                            className="space-y-7"
                         >
-                            <Badge className="bg-gradient-to-r from-secondary/20 to-accent/20 text-secondary border-secondary/30 backdrop-blur-sm mb-6 px-6 py-2">
-                                <Sparkles className="h-3 w-3 mr-2" /> Plataforma Completa para Influencers
-                            </Badge>
-                            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight tracking-tight">
-                                O futuro da{" "}
-                                <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                                    influência digital
-                                </span>{" "}
-                                começa aqui.
+                            <span className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <MapPin className="h-4 w-4 text-primary" /> Norte &amp; Nordeste
+                            </span>
+                            <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold leading-[1.02] tracking-tight text-balance">
+                                A casa dos <span className="text-primary">creators</span> pretos do Brasil.
                             </h1>
-                            <p className="mt-8 text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-                                Busque influencers, conecte-se com a comunidade, aprenda com os melhores cursos e crie seu mídia kit profissional. Tudo em uma única plataforma.
+                            <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
+                                Uma plataforma que reúne gestão de influenciadores, campanhas e mídia kits — feita para valorizar o talento regional.
                             </p>
+                            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                                <Link href="/midia-kit">
+                                    <Button size="lg" className="h-12 px-7 rounded-full text-base font-medium w-full sm:w-auto">
+                                        Criar meu mídia kit <ArrowRight className="ml-1.5 h-4 w-4" />
+                                    </Button>
+                                </Link>
+                                <Link href="/login">
+                                    <Button size="lg" variant="outline" className="h-12 px-7 rounded-full text-base font-medium w-full sm:w-auto border-border">
+                                        Entrar no hub
+                                    </Button>
+                                </Link>
+                            </div>
                         </motion.div>
 
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.3, duration: 0.5 }}
-                            className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
-                        >
-                            <Link href="/busca">
-                                <Button size="lg" className="h-14 px-8 text-lg font-bold rounded-2xl bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all shadow-xl shadow-primary/20">
-                                    <Search className="mr-2 h-5 w-5" />
-                                    Buscar Influencers
-                                </Button>
-                            </Link>
-                            <Link href="/midia-kit">
-                                <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold rounded-2xl border-2 border-primary/30 hover:bg-primary/5 transition-all">
-                                    Criar Mídia Kit
-                                </Button>
-                            </Link>
-                        </motion.div>
+                        <div className="relative h-[320px] sm:h-[420px] lg:h-[520px]">
+                            <div className="absolute inset-0">
+                                <Hero3D />
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div className="absolute top-20 left-10 opacity-10"><Star className="h-32 w-32 text-accent" /></div>
-                <div className="absolute bottom-20 right-10 opacity-10 rotate-12"><MapPin className="h-40 w-40 text-secondary" /></div>
             </section>
 
-            {/* Stats Section */}
-            <section className="py-16 relative z-10">
-                <div className="container mx-auto px-4">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="grid grid-cols-2 md:grid-cols-4 gap-8"
-                    >
-                        {stats.map((stat, i) => (
-                            <div key={i} className="text-center">
-                                <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                                    {stat.value}
-                                </p>
-                                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-                            </div>
-                        ))}
-                    </motion.div>
-                </div>
-            </section>
-
-            {/* Features Grid */}
-            <section className="py-24 relative z-10">
-                <div className="container mx-auto px-4">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="text-center mb-16"
-                    >
-                        <h2 className="text-3xl md:text-5xl font-bold">
-                            Tudo que você precisa,{" "}
-                            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">em um só lugar</span>
+            {/* Pilares */}
+            <section className="border-t border-border/60">
+                <div className="container mx-auto px-4 py-20 lg:py-28">
+                    <motion.div {...fade} className="max-w-xl mb-14">
+                        <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
+                            Tudo o que a operação precisa, num lugar só.
                         </h2>
-                        <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-                            Explore nossas ferramentas e encontre o que precisa para crescer como influenciador digital.
-                        </p>
                     </motion.div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                        {features.map((feature, i) => (
+                    <div className="grid md:grid-cols-3 gap-px bg-border/60 rounded-3xl overflow-hidden border border-border/60">
+                        {pilares.map((p, i) => (
                             <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                viewport={{ once: true }}
+                                key={p.title}
+                                {...fade}
+                                transition={{ ...fade.transition, delay: i * 0.08 }}
+                                className="bg-background p-8 lg:p-10 group hover:bg-muted/30 transition-colors"
                             >
-                                <Link href={feature.href} className="block group">
-                                    <div className="relative p-8 bg-card/50 backdrop-blur-sm border border-border/50 rounded-3xl hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all h-full">
-                                        <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
-                                            <feature.icon className="h-7 w-7 text-white" />
-                                        </div>
-                                        <h3 className="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">{feature.title}</h3>
-                                        <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
-                                        <div className="mt-6 flex items-center text-primary font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                            Explorar <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                        </div>
-                                    </div>
-                                </Link>
+                                <div className="h-11 w-11 rounded-xl border border-border flex items-center justify-center mb-6 group-hover:border-primary/40 group-hover:text-primary transition-colors">
+                                    <p.icon className="h-5 w-5" />
+                                </div>
+                                <h3 className="text-lg font-semibold mb-2">{p.title}</h3>
+                                <p className="text-muted-foreground leading-relaxed text-[15px]">{p.description}</p>
                             </motion.div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* About Section */}
-            <section className="py-24 relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-primary to-primary/90" />
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="max-w-3xl mx-auto text-center space-y-8">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                        >
-                            <h2 className="text-3xl md:text-5xl font-bold text-primary-foreground">
-                                Sobre a Somos Preta
-                            </h2>
-                            <p className="mt-6 text-lg text-primary-foreground/80 leading-relaxed">
-                                Somos a plataforma que conecta influenciadores digitais do Brasil inteiro com as ferramentas, conhecimento e comunidade que precisam para prosperar. Nossa missão é democratizar o acesso ao mercado de influência, valorizando talentos de todas as regiões.
-                            </p>
-                        </motion.div>
-
-                        <div className="grid sm:grid-cols-3 gap-6 pt-8">
-                            {[
-                                { icon: TrendingUp, title: "Crescimento", desc: "Ferramentas para impulsionar sua carreira" },
-                                { icon: Shield, title: "Confiança", desc: "Dados reais e transparência total" },
-                                { icon: Users2, title: "Comunidade", desc: "Networking com creators de todo o Brasil" },
-                            ].map((item, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    viewport={{ once: true }}
-                                    className="p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/10"
-                                >
-                                    <item.icon className="h-8 w-8 text-accent mb-4" />
-                                    <h3 className="font-bold text-primary-foreground mb-2">{item.title}</h3>
-                                    <p className="text-sm text-primary-foreground/70">{item.desc}</p>
-                                </motion.div>
-                            ))}
-                        </div>
+            {/* Números */}
+            <section className="border-t border-border/60">
+                <div className="container mx-auto px-4 py-16">
+                    <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
+                        {numeros.map((n, i) => (
+                            <motion.div key={n.label} {...fade} transition={{ ...fade.transition, delay: i * 0.08 }} className="text-center">
+                                <p className="text-4xl md:text-5xl font-semibold tracking-tight">{n.value}</p>
+                                <p className="text-sm text-muted-foreground mt-2">{n.label}</p>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* CTA Section */}
-            <section className="py-24 relative z-10">
-                <div className="container mx-auto px-4 text-center space-y-8">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                    >
-                        <h2 className="text-3xl md:text-5xl font-bold">
-                            Pronto para{" "}
-                            <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                                começar?
-                            </span>
+            {/* CTA */}
+            <section className="border-t border-border/60">
+                <div className="container mx-auto px-4 py-24 lg:py-32">
+                    <motion.div {...fade} className="max-w-2xl mx-auto text-center space-y-7">
+                        <h2 className="text-3xl md:text-5xl font-semibold tracking-tight text-balance">
+                            Pronto para mostrar seu trabalho?
                         </h2>
-                        <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-                            Explore a plataforma agora mesmo. Busque influencers, participe da comunidade ou crie seu mídia kit.
+                        <p className="text-lg text-muted-foreground">
+                            Monte seu mídia kit em minutos e receba uma página profissional para compartilhar com as marcas.
                         </p>
+                        <div>
+                            <Link href="/midia-kit">
+                                <Button size="lg" className="h-12 px-8 rounded-full text-base font-medium">
+                                    Começar agora <ArrowRight className="ml-1.5 h-4 w-4" />
+                                </Button>
+                            </Link>
+                        </div>
                     </motion.div>
-                    <div className="flex flex-wrap gap-4 justify-center">
-                        <Link href="/busca">
-                            <Button size="lg" className="h-14 px-8 text-lg rounded-2xl bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-lg">
-                                Começar Agora <ArrowRight className="ml-2 h-5 w-5" />
-                            </Button>
-                        </Link>
-                    </div>
                 </div>
             </section>
         </div>
