@@ -3,6 +3,7 @@
 -- Fecha leituras públicas amplas que a chave publishable poderia explorar:
 --   • campanhas (orçamentos) e campanha_influencers (pagamentos)
 --   • influencers (email/telefone / PII)
+--   • midia_kits (email/telefone na vitrine pública)
 --
 -- Seguro rodar mesmo que 0001 já tenha sido aplicado (idempotente).
 -- Supabase Dashboard > SQL Editor > cole > Run.
@@ -34,6 +35,20 @@ as $$
   where c.share_token = p_token;
 $$;
 grant execute on function somos_preta_portal_campanha(text) to anon, authenticated;
+
+-- 4) MÍDIA KITS: esconde email/telefone da vitrine pública.
+--    Remove a leitura direta da tabela pelo público e expõe apenas colunas
+--    seguras por uma view (mantém o whatsapp — contato de contratação).
+drop policy if exists "public_read_midia_kits" on somos_preta_midia_kits;
+
+create or replace view somos_preta_midia_kits_publicos as
+  select id, slug, nome, whatsapp, bio, avatar_url, cover_url,
+         cidade, estado, nichos, tema, redes, portfolio, pacotes,
+         publicado, influencer_id, created_at
+  from somos_preta_midia_kits
+  where publicado = true;
+
+grant select on somos_preta_midia_kits_publicos to anon, authenticated;
 
 -- ============================================================================
 -- Conferência rápida (opcional): liste as policies ativas depois de rodar

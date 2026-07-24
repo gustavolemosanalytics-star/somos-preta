@@ -374,15 +374,22 @@ create policy "staff_all_influencers" on somos_preta_influencers for all to auth
   using (somos_preta_is_staff()) with check (somos_preta_is_staff());
 drop policy if exists "public_read_influencers" on somos_preta_influencers;
 
--- MÍDIA KITS: equipe gerencia tudo; o creator gerencia SÓ o próprio; público lê publicados
+-- MÍDIA KITS: equipe gerencia tudo; o creator gerencia SÓ o próprio.
 drop policy if exists "staff_all_midia_kits" on somos_preta_midia_kits;
 create policy "staff_all_midia_kits" on somos_preta_midia_kits for all to authenticated
   using (somos_preta_is_staff()) with check (somos_preta_is_staff());
 drop policy if exists "creator_own_midia_kits" on somos_preta_midia_kits;
 create policy "creator_own_midia_kits" on somos_preta_midia_kits for all to authenticated
   using (cadastrado_por = auth.uid()) with check (cadastrado_por = auth.uid());
+-- Vitrine pública SEM email/telefone: leitura só via view de colunas seguras.
 drop policy if exists "public_read_midia_kits" on somos_preta_midia_kits;
-create policy "public_read_midia_kits" on somos_preta_midia_kits for select using (publicado = true);
+create or replace view somos_preta_midia_kits_publicos as
+  select id, slug, nome, whatsapp, bio, avatar_url, cover_url,
+         cidade, estado, nichos, tema, redes, portfolio, pacotes,
+         publicado, influencer_id, created_at
+  from somos_preta_midia_kits
+  where publicado = true;
+grant select on somos_preta_midia_kits_publicos to anon, authenticated;
 
 -- BLOG: equipe gerencia; leitura pública dos posts publicados
 drop policy if exists "staff_all_blog" on somos_preta_blog_posts;
