@@ -1,149 +1,146 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
 import { KPICard } from "@/components/dashboard/kpi-card"
-import { ActivityFeed } from "@/components/dashboard/activity-feed"
-import { Users, Megaphone, Target, DollarSign, Loader2, MapPin, TrendingUp, Sparkles } from "lucide-react"
-import { useQuery } from "@tanstack/react-query"
-import { mockDb } from "@/lib/mock-db"
+import { Users, Megaphone, ClipboardList, Building2, Loader2, MapPin, TrendingUp, Sparkles } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
+type Stats = {
+    clientes: number
+    campanhasAtivas: number
+    tarefasPendentes: number
+    influencers: number
+    regional: { estado: string; count: number; pct: number }[]
+    recentes: { id: string; nome: string; status: string; cliente: string }[]
+}
+
+const CAMP_STATUS: Record<string, string> = {
+    rascunho: "Rascunho", planejamento: "Planejamento", ativa: "Ativa", concluida: "Concluída", cancelada: "Cancelada",
+}
+
 export default function AgencyDashboardHome() {
-    const { data: stats, isLoading } = useQuery({
-        queryKey: ['agency-stats'],
-        queryFn: async () => {
-            const totalInfluencers = await mockDb.influencer.count()
-            const activeCampaigns = await mockDb.campaign.count({ where: { status: "ACTIVE" } })
+    const [supabase] = useState(() => createClient())
+    const [stats, setStats] = useState<Stats | null>(null)
+    const [loading, setLoading] = useState(true)
 
-            return {
-                totalInfluencers,
-                activeCampaigns,
-                totalRevenue: "R$ 142.500",
-                avgEngagement: "4.8%",
-                regionalDensity: [
-                    { state: "Bahia", count: 42, percentage: 85 },
-                    { state: "Pernambuco", count: 28, percentage: 60 },
-                    { state: "Ceará", count: 24, percentage: 55 },
-                    { state: "Rio Grande do Norte", count: 18, percentage: 40 },
-                ]
+    useEffect(() => {
+        (async () => {
+            const [clientes, campAtivas, tarefasPend, infl, recentesRes] = await Promise.all([
+                supabase.from("somos_preta_clientes").select("*", { count: "exact", head: true }),
+                supabase.from("somos_preta_campanhas").select("*", { count: "exact", head: true }).eq("status", "ativa"),
+                supabase.from("somos_preta_tarefas").select("*", { count: "exact", head: true }).neq("status", "concluida"),
+                supabase.from("somos_preta_influencers").select("estado"),
+                supabase.from("somos_preta_campanhas").select("id, nome, status, cliente:somos_preta_clientes(nome)").order("created_at", { ascending: false }).limit(5),
+            ])
+
+            const estados = new Map<string, number>()
+            for (const row of (infl.data as { estado: string | null }[]) ?? []) {
+                if (!row.estado) continue
+                estados.set(row.estado, (estados.get(row.estado) ?? 0) + 1)
             }
-        }
-    })
+            const ordenados = [...estados.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4)
+            const max = ordenados[0]?.[1] ?? 1
+            const regional = ordenados.map(([estado, count]) => ({ estado, count, pct: Math.round((count / max) * 100) }))
 
-    if (isLoading) {
-        return (
-            <div className="flex h-[calc(100vh-100px)] items-center justify-center">
-                <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
-            </div>
-        )
+            const recentes = ((recentesRes.data as unknown as { id: string; nome: string; status: string; cliente: { nome: string } | null }[]) ?? [])
+                .map((c) => ({ id: c.id, nome: c.nome, status: c.status, cliente: c.cliente?.nome ?? "—" }))
+
+            setStats({
+                clientes: clientes.count ?? 0,
+                campanhasAtivas: campAtivas.count ?? 0,
+                tarefasPendentes: tarefasPend.count ?? 0,
+                influencers: (infl.data as unknown[])?.length ?? 0,
+                regional,
+                recentes,
+            })
+            setLoading(false)
+        })()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    if (loading || !stats) {
+        return <div className="flex h-[calc(100vh-140px)] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>
     }
 
     return (
-        <div className="flex flex-1 flex-col gap-4 sm:gap-6 lg:gap-8 bg-gradient-to-br from-background via-background to-primary/5 min-h-0">
-            {/* Header Section */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 sm:gap-4">
-                <div className="space-y-1 sm:space-y-2">
-                    <Badge className="bg-gradient-to-r from-secondary/20 to-accent/20 text-secondary border-secondary/30 backdrop-blur-sm text-[10px] sm:text-xs">
-                        AGENCY PANEL v1.0
-                    </Badge>
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold">
+        <div className="flex flex-1 flex-col gap-6 lg:gap-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
+                <div className="space-y-1">
+                    <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">HUB DE CREATORS</Badge>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
                         <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">Visão Geral</span>
                     </h1>
                 </div>
-                <div className="w-full sm:w-auto">
-                    <div className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-card/80 backdrop-blur-sm border border-white/10 shadow-lg shadow-primary/5 rounded-xl sm:rounded-2xl">
-                        <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-secondary shrink-0" />
-                        <span className="text-[10px] sm:text-xs font-bold tracking-wider uppercase truncate">Foco: Norte / Nordeste</span>
-                    </div>
+                <div className="flex items-center gap-2 px-3 py-2 bg-card/80 border border-white/10 rounded-xl">
+                    <MapPin className="h-4 w-4 text-secondary shrink-0" />
+                    <span className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Foco: Norte / Nordeste</span>
                 </div>
             </div>
 
-            {/* KPI Cards Grid */}
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 lg:grid-cols-4">
-                <KPICard
-                    title="Total Influencers"
-                    value={stats?.totalInfluencers?.toString() || "0"}
-                    description="da base regional"
-                    icon={<Users className="h-4 w-4 sm:h-5 sm:w-5" />}
-                    trend="up"
-                />
-                <KPICard
-                    title="Campanhas Ativas"
-                    value={stats?.activeCampaigns?.toString() || "0"}
-                    description="+3 novas esta semana"
-                    icon={<Megaphone className="h-4 w-4 sm:h-5 sm:w-5" />}
-                    trend="up"
-                />
-                <KPICard
-                    title="Receita Sob Gestão"
-                    value={stats?.totalRevenue || "R$ 0"}
-                    icon={<DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />}
-                    trend="up"
-                />
-                <KPICard
-                    title="Efetividade Média"
-                    value={stats?.avgEngagement || "0%"}
-                    description="Cliques/Alcance"
-                    icon={<Target className="h-4 w-4 sm:h-5 sm:w-5" />}
-                    trend="neutral"
-                />
+                <Link href="/clientes"><KPICard title="Clientes" value={String(stats.clientes)} description="contas ativas" icon={<Building2 className="h-4 w-4 sm:h-5 sm:w-5" />} trend="neutral" /></Link>
+                <Link href="/campaigns"><KPICard title="Campanhas Ativas" value={String(stats.campanhasAtivas)} description="em andamento" icon={<Megaphone className="h-4 w-4 sm:h-5 sm:w-5" />} trend="up" /></Link>
+                <Link href="/tarefas"><KPICard title="Tarefas Pendentes" value={String(stats.tarefasPendentes)} description="a concluir" icon={<ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />} trend="neutral" /></Link>
+                <Link href="/influencers"><KPICard title="Influenciadores" value={String(stats.influencers)} description="na base" icon={<Users className="h-4 w-4 sm:h-5 sm:w-5" />} trend="up" /></Link>
             </div>
 
-            {/* Main Content Grid */}
             <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-12">
-                {/* Regional Performance */}
-                <Card className="lg:col-span-8 border-none shadow-xl sm:shadow-2xl shadow-primary/5 bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-xl sm:rounded-2xl lg:rounded-3xl overflow-hidden relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
-                    <CardHeader className="bg-gradient-to-r from-secondary/10 to-transparent border-b border-border/50 relative z-10 p-4 sm:p-6">
-                        <div className="flex justify-between items-start sm:items-center gap-3">
-                            <div className="min-w-0 flex-1">
-                                <CardTitle className="font-bold text-base sm:text-lg lg:text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">DENSIDADE REGIONAL</CardTitle>
-                                <CardDescription className="text-xs sm:text-sm mt-1 line-clamp-2">Distribuição de talentos por estado do Nordeste</CardDescription>
+                <Card className="lg:col-span-8 rounded-2xl overflow-hidden">
+                    <CardHeader className="bg-gradient-to-r from-secondary/10 to-transparent border-b p-4 sm:p-6">
+                        <div className="flex justify-between items-center gap-3">
+                            <div>
+                                <CardTitle className="font-bold text-base sm:text-lg bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">DENSIDADE REGIONAL</CardTitle>
+                                <CardDescription className="text-xs sm:text-sm mt-1">Influenciadores por estado</CardDescription>
                             </div>
-                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center shrink-0">
-                                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
-                            </div>
+                            <div className="h-9 w-9 rounded-xl bg-accent/10 flex items-center justify-center shrink-0"><Sparkles className="h-4 w-4 text-accent" /></div>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 relative z-10">
-                        <div className="grid gap-6 sm:gap-8 lg:gap-12 md:grid-cols-2">
-                            {/* Progress Bars */}
-                            <div className="space-y-4 sm:space-y-6">
-                                {stats?.regionalDensity.map((item) => (
-                                    <div key={item.state} className="space-y-1.5 sm:space-y-2 group">
+                    <CardContent className="p-4 sm:p-6 lg:p-8">
+                        {stats.regional.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-8 text-center">Cadastre influenciadores com estado para ver a distribuição.</p>
+                        ) : (
+                            <div className="space-y-5">
+                                {stats.regional.map((item) => (
+                                    <div key={item.estado} className="space-y-2 group">
                                         <div className="flex justify-between text-xs sm:text-sm font-bold uppercase tracking-tight">
-                                            <span className="group-hover:text-primary transition-colors truncate mr-2">{item.state}</span>
-                                            <span className="text-primary shrink-0">{item.count} creators</span>
+                                            <span className="group-hover:text-primary transition-colors">{item.estado}</span>
+                                            <span className="text-primary">{item.count} creators</span>
                                         </div>
-                                        <div className="relative h-2 sm:h-3 bg-muted/30 rounded-full overflow-hidden">
-                                            <div
-                                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-1000 group-hover:shadow-lg group-hover:shadow-primary/30"
-                                                style={{ width: `${item.percentage}%` }}
-                                            />
+                                        <div className="relative h-2.5 bg-muted/30 rounded-full overflow-hidden">
+                                            <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-700" style={{ width: `${item.pct}%` }} />
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                            {/* Top State Highlight */}
-                            <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-muted/30 to-transparent rounded-xl sm:rounded-2xl lg:rounded-3xl border border-dashed border-border/50 relative overflow-hidden group min-h-[180px] sm:min-h-[200px]">
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <MapPin className="h-32 w-32 sm:h-40 sm:w-40 lg:h-48 lg:w-48 text-primary/5 absolute -bottom-8 -right-8 sm:-bottom-12 sm:-right-12 group-hover:scale-110 transition-transform" />
-                                <div className="text-center relative z-10">
-                                    <div className="h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/5 flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-                                        <TrendingUp className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-secondary" />
-                                    </div>
-                                    <h4 className="font-bold text-base sm:text-lg lg:text-xl mb-1 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">TOP ESTADO: BAHIA</h4>
-                                    <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-widest font-bold">Maior crescimento em 2024</p>
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* Activity Feed */}
-                <div className="lg:col-span-4 flex flex-col gap-4 sm:gap-6 lg:gap-8">
-                    <ActivityFeed />
-                </div>
+                <Card className="lg:col-span-4 rounded-2xl">
+                    <CardHeader className="bg-gradient-to-r from-accent/10 to-transparent border-b p-4 sm:p-6">
+                        <CardTitle className="text-base sm:text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Campanhas Recentes</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-3 sm:p-4">
+                        {stats.recentes.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma campanha ainda.</p>
+                        ) : (
+                            <div className="space-y-1">
+                                {stats.recentes.map((c) => (
+                                    <Link key={c.id} href={`/campaigns/${c.id}`} className="flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-muted/50 transition-colors">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium truncate">{c.nome}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{c.cliente}</p>
+                                        </div>
+                                        <Badge variant="secondary" className="shrink-0 text-[10px]">{CAMP_STATUS[c.status] ?? c.status}</Badge>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </div>
     )
