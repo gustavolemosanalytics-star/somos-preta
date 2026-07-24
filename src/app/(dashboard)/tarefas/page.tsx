@@ -114,7 +114,7 @@ export default function TarefasPage() {
                                     <p className={`font-medium truncate ${t.status === "concluida" ? "line-through text-muted-foreground" : ""}`}>{t.titulo}</p>
                                     <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground mt-0.5">
                                         <span className={PRIORIDADE[t.prioridade].className}>{PRIORIDADE[t.prioridade].label}</span>
-                                        {t.campanha && <Link href={`/campaigns/${t.campanha.id}`} className="hover:text-primary">• {t.campanha.nome}</Link>}
+                                        {t.campanha && <Link href={`/campanhas/${t.campanha.id}`} className="hover:text-primary">• {t.campanha.nome}</Link>}
                                         {t.data_entrega && <span>• entrega {t.data_entrega}</span>}
                                     </div>
                                 </div>

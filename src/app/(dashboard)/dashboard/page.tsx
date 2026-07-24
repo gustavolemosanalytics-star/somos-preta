@@ -79,9 +79,9 @@ export default function AgencyDashboardHome() {
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 lg:grid-cols-4">
                 <Link href="/clientes"><KPICard title="Clientes" value={String(stats.clientes)} description="contas ativas" icon={<Building2 className="h-4 w-4 sm:h-5 sm:w-5" />} trend="neutral" /></Link>
-                <Link href="/campaigns"><KPICard title="Campanhas Ativas" value={String(stats.campanhasAtivas)} description="em andamento" icon={<Megaphone className="h-4 w-4 sm:h-5 sm:w-5" />} trend="up" /></Link>
+                <Link href="/campanhas"><KPICard title="Campanhas Ativas" value={String(stats.campanhasAtivas)} description="em andamento" icon={<Megaphone className="h-4 w-4 sm:h-5 sm:w-5" />} trend="up" /></Link>
                 <Link href="/tarefas"><KPICard title="Tarefas Pendentes" value={String(stats.tarefasPendentes)} description="a concluir" icon={<ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />} trend="neutral" /></Link>
-                <Link href="/influencers"><KPICard title="Influenciadores" value={String(stats.influencers)} description="na base" icon={<Users className="h-4 w-4 sm:h-5 sm:w-5" />} trend="up" /></Link>
+                <Link href="/influenciadores"><KPICard title="Influenciadores" value={String(stats.influencers)} description="na base" icon={<Users className="h-4 w-4 sm:h-5 sm:w-5" />} trend="up" /></Link>
             </div>
 
             <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-12">
@@ -123,7 +123,7 @@ export default function AgencyDashboardHome() {
                         ) : (
                             <div className="space-y-1">
                                 {stats.recentes.map((c) => (
-                                    <Link key={c.id} href={`/campaigns/${c.id}`} className="flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-muted/50 transition-colors">
+                                    <Link key={c.id} href={`/campanhas/${c.id}`} className="flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-muted/50 transition-colors">
                                         <div className="min-w-0">
                                             <p className="text-sm font-medium truncate">{c.nome}</p>
                                             <p className="text-xs text-muted-foreground truncate">{c.cliente}</p>

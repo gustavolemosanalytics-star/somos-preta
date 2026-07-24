@@ -108,7 +108,7 @@ export default function CampanhaDetalhePage() {
     if (!campanha) {
         return (
             <div className="space-y-4">
-                <Link href="/campaigns" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Campanhas</Link>
+                <Link href="/campanhas" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Campanhas</Link>
                 <p className="text-muted-foreground">Campanha não encontrada.</p>
             </div>
         )
@@ -119,7 +119,7 @@ export default function CampanhaDetalhePage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Link href="/campaigns" className="hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Campanhas</Link>
+                <Link href="/campanhas" className="hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Campanhas</Link>
                 {campanha.cliente && (<><span>/</span><Link href={`/clientes/${campanha.cliente.id}`} className="hover:text-primary">{campanha.cliente.nome}</Link></>)}
             </div>
 

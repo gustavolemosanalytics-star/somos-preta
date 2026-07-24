@@ -109,7 +109,7 @@ export default function InfluencersPage() {
                 </div>
 
                 <div className="flex gap-2">
-                    <Link href="/creators"><Button variant="outline" className="rounded-xl"><Search className="h-4 w-4" /> Descobrir</Button></Link>
+                    <Link href="/descobrir"><Button variant="outline" className="rounded-xl"><Search className="h-4 w-4" /> Descobrir</Button></Link>
                     <Dialog open={open} onOpenChange={setOpen}>
                         <DialogTrigger asChild><Button className="rounded-xl"><Plus className="h-4 w-4" /> Novo</Button></DialogTrigger>
                         <DialogContent className="sm:max-w-lg">

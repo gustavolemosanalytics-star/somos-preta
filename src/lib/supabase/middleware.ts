@@ -6,13 +6,9 @@ const PUBLIC_PATHS = [
     "/",
     "/login",
     "/registro",
-    "/lp",
     "/blog",
     "/kit",
     "/midia-kit",
-    "/construcao_midia_kit",
-    "/busca",
-    "/cadastro",
     "/client-portal",
 ]
 

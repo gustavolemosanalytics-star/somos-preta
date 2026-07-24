@@ -189,7 +189,7 @@ export default function CampaignsPage() {
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filtradas.map((c) => (
-                        <Link key={c.id} href={`/campaigns/${c.id}`}>
+                        <Link key={c.id} href={`/campanhas/${c.id}`}>
                             <Card className="h-full hover:border-primary/50 transition-colors">
                                 <CardHeader className="pb-3">
                                     <div className="flex items-start justify-between gap-2">

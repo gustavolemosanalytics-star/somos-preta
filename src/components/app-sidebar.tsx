@@ -39,15 +39,15 @@ import { cn } from "@/lib/utils"
 const navItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Clientes", url: "/clientes", icon: Building2 },
-    { title: "Campanhas", url: "/campaigns", icon: Megaphone },
+    { title: "Campanhas", url: "/campanhas", icon: Megaphone },
     { title: "Tarefas", url: "/tarefas", icon: ClipboardList },
-    { title: "Influenciadores", url: "/influencers", icon: Users },
-    { title: "Creators", url: "/creators", icon: UserSearch },
-    { title: "Mídia Kits", url: "/media-kits", icon: IdCard },
-    { title: "Contratos", url: "/contracts", icon: FileText },
-    { title: "Mensagens", url: "/messages", icon: MessageSquare },
+    { title: "Influenciadores", url: "/influenciadores", icon: Users },
+    { title: "Descobrir", url: "/descobrir", icon: UserSearch },
+    { title: "Mídia Kits", url: "/midia-kits", icon: IdCard },
+    { title: "Contratos", url: "/contratos", icon: FileText },
+    { title: "Mensagens", url: "/mensagens", icon: MessageSquare },
     { title: "Blog", url: "/blog-admin", icon: Newspaper },
-    { title: "Analytics", url: "/analytics", icon: BarChart3 },
+    { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
 ]
 
 export function AppSidebar({ user, ...props }: { user: NavUserData } & React.ComponentProps<typeof Sidebar>) {
