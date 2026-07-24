@@ -132,21 +132,19 @@ export default function CreatorsSearchPage() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div className="space-y-2">
-                    <h1 className="text-4xl md:text-5xl font-bold">
-                        <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                            Buscador de Creators
-                        </span>
+                    <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
+                        Buscador de <span className="text-primary">Creators</span>
                     </h1>
                     <p className="text-muted-foreground text-lg">
                         Encontre os talentos mais quentes do Norte e Nordeste ou busque qualquer perfil com <strong>@usuario</strong>.
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Card className="bg-gradient-to-br from-primary/10 to-secondary/10 border-none px-6 py-3 rounded-2xl">
+                    <Card className="border border-border/60 shadow-sm px-6 py-3 rounded-2xl">
                         <div className="flex items-center gap-3">
                             <Users className="h-5 w-5 text-primary" />
                             <div>
-                                <div className="text-2xl font-bold">{totalCreators}</div>
+                                <div className="text-2xl font-semibold tracking-tight">{totalCreators}</div>
                                 <div className="text-xs text-muted-foreground">Creators encontrados</div>
                             </div>
                         </div>
@@ -157,9 +155,9 @@ export default function CreatorsSearchPage() {
             {/* Map & Filters Section */}
             <div className="grid lg:grid-cols-3 gap-8">
                 {/* Map */}
-                <Card className="lg:col-span-2 overflow-hidden border-none shadow-2xl shadow-primary/5 bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl">
+                <Card className="lg:col-span-2 overflow-hidden border border-border/60 shadow-sm rounded-2xl">
                     <CardHeader className="border-b border-border/50">
-                        <CardTitle className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 font-semibold tracking-tight">
                             <MapPin className="h-5 w-5 text-primary" />
                             Densidade Regional
                         </CardTitle>
@@ -177,7 +175,7 @@ export default function CreatorsSearchPage() {
                                     center={[-8.0, -40.0]}
                                     zoom={5}
                                     style={{ height: "100%", width: "100%" }}
-                                    className="rounded-b-3xl"
+                                    className="rounded-b-2xl"
                                     whenReady={() => setIsMapLoaded(true)}
                                 >
                                     <TileLayer
@@ -223,9 +221,9 @@ export default function CreatorsSearchPage() {
 
                 {/* Filters & Stats */}
                 <div className="space-y-6">
-                    <Card className="border-none shadow-xl bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl">
+                    <Card className="border border-border/60 shadow-sm rounded-2xl">
                         <CardHeader>
-                            <CardTitle className="text-lg">Filtrar por Estado</CardTitle>
+                            <CardTitle className="text-lg font-semibold tracking-tight">Filtrar por Estado</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <Button
@@ -256,13 +254,13 @@ export default function CreatorsSearchPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-none shadow-xl bg-gradient-to-br from-secondary/20 to-secondary/5 rounded-3xl">
+                    <Card className="border border-border/60 shadow-sm rounded-2xl">
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-3 mb-4">
-                                <TrendingUp className="h-6 w-6 text-secondary" />
-                                <span className="font-bold">Top Estado</span>
+                                <TrendingUp className="h-6 w-6 text-primary" />
+                                <span className="font-semibold tracking-tight">Top Estado</span>
                             </div>
-                            <div className="text-3xl font-bold text-secondary mb-1">Bahia</div>
+                            <div className="text-3xl font-semibold tracking-tight text-foreground mb-1">Bahia</div>
                             <p className="text-sm text-muted-foreground">Maior concentração de creators</p>
                         </CardContent>
                     </Card>
@@ -270,7 +268,7 @@ export default function CreatorsSearchPage() {
             </div>
 
             {/* Search Bar */}
-            <div className="flex flex-col md:flex-row gap-4 p-4 bg-card/80 backdrop-blur-sm border border-white/10 shadow-xl rounded-2xl">
+            <div className="flex flex-col md:flex-row gap-4 p-4 bg-card border border-border/60 shadow-sm rounded-2xl">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -281,17 +279,17 @@ export default function CreatorsSearchPage() {
                     />
                     {isSocialQuery && (
                         <div className="absolute right-3 top-3 flex gap-1">
-                            <Badge variant="secondary" className="text-xs bg-gradient-to-r from-pink-500 to-purple-500 text-white border-none">
+                            <Badge variant="secondary" className="text-xs">
                                 <Instagram className="h-3 w-3 mr-1" />
                                 IG
                             </Badge>
-                            <Badge variant="secondary" className="text-xs bg-black text-white border-none">
+                            <Badge variant="secondary" className="text-xs">
                                 TikTok
                             </Badge>
                         </div>
                     )}
                 </div>
-                <Button className="h-12 px-8 bg-gradient-to-r from-primary to-secondary rounded-xl">
+                <Button className="h-12 px-8 rounded-full">
                     <Filter className="mr-2 h-4 w-4" /> Filtros Avançados
                 </Button>
             </div>
@@ -307,9 +305,9 @@ export default function CreatorsSearchPage() {
                     )}
 
                     {bothFailed && !socialLoading && (
-                        <Card className="text-center py-12 border-none bg-card/50 rounded-3xl">
+                        <Card className="text-center py-12 border border-border/60 shadow-sm rounded-2xl">
                             <Instagram className="h-12 w-12 text-muted mx-auto mb-4" />
-                            <h3 className="text-2xl font-bold">Perfil não encontrado</h3>
+                            <h3 className="text-2xl font-semibold tracking-tight">Perfil não encontrado</h3>
                             <p className="text-muted-foreground mt-2">
                                 Não foi possível encontrar <strong>{searchTerm}</strong> no Instagram ou TikTok.
                             </p>
@@ -319,9 +317,9 @@ export default function CreatorsSearchPage() {
 
                     {/* TikTok Profile */}
                     {ttProfile && !socialLoading && (
-                        <Card className="overflow-hidden border-none shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl">
+                        <Card className="overflow-hidden border border-border/60 shadow-sm rounded-2xl">
                             <div className="grid md:grid-cols-[300px_1fr] gap-0">
-                                <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-cyan-500/20 via-pink-500/20 to-purple-500/20 flex items-center justify-center">
+                                <div className="relative aspect-square md:aspect-auto bg-muted flex items-center justify-center">
                                     {ttProfile.profile_pic_url ? (
                                         <Image
                                             src={ttProfile.profile_pic_url}
@@ -341,8 +339,8 @@ export default function CreatorsSearchPage() {
                                 </div>
                                 <CardContent className="p-8 flex flex-col justify-center gap-6">
                                     <div className="space-y-2">
-                                        <h2 className="text-3xl font-bold">{ttProfile.full_name || ttProfile.username}</h2>
-                                        <p className="text-lg font-bold flex items-center gap-2">
+                                        <h2 className="text-3xl font-semibold tracking-tight">{ttProfile.full_name || ttProfile.username}</h2>
+                                        <p className="text-lg font-semibold flex items-center gap-2 text-muted-foreground">
                                             @{ttProfile.username}
                                         </p>
                                     </div>
@@ -365,7 +363,7 @@ export default function CreatorsSearchPage() {
                                     </div>
                                     <div className="flex gap-3">
                                         <Button
-                                            className="bg-black text-white rounded-xl hover:bg-black/80"
+                                            className="bg-black text-white rounded-full hover:bg-black/80"
                                             onClick={() => window.open(`https://tiktok.com/@${ttProfile.username}`, "_blank")}
                                         >
                                             Ver no TikTok
@@ -378,10 +376,10 @@ export default function CreatorsSearchPage() {
 
                     {/* Instagram Profile */}
                     {igProfile && !socialLoading && (
-                        <Card className="overflow-hidden border-none shadow-2xl bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-3xl">
+                        <Card className="overflow-hidden border border-border/60 shadow-sm rounded-2xl">
                             <div className="grid md:grid-cols-[300px_1fr] gap-0">
                                 {/* Profile Picture */}
-                                <div className="relative aspect-square md:aspect-auto bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-orange-500/20 flex items-center justify-center">
+                                <div className="relative aspect-square md:aspect-auto bg-muted flex items-center justify-center">
                                     {igProfile.profile_pic_url ? (
                                         <Image
                                             src={igProfile.profile_pic_url}
@@ -406,13 +404,13 @@ export default function CreatorsSearchPage() {
                                 <CardContent className="p-8 flex flex-col justify-center gap-6">
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-3">
-                                            <h2 className="text-3xl font-bold">{igProfile.full_name || igProfile.username}</h2>
+                                            <h2 className="text-3xl font-semibold tracking-tight">{igProfile.full_name || igProfile.username}</h2>
                                             {igProfile.is_verified && (
                                                 <CheckCircle className="h-6 w-6 text-blue-500 fill-blue-500" />
                                             )}
                                         </div>
-                                        <p className="text-lg text-pink-500 font-bold flex items-center gap-2">
-                                            <Instagram className="h-5 w-5" />
+                                        <p className="text-lg text-muted-foreground font-semibold flex items-center gap-2">
+                                            <Instagram className="h-5 w-5 text-primary" />
                                             @{igProfile.username}
                                         </p>
                                         {igProfile.biography && (
@@ -475,12 +473,12 @@ export default function CreatorsSearchPage() {
                                     {/* Actions */}
                                     <div className="flex gap-3">
                                         <Button
-                                            className="bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl"
+                                            className="rounded-full"
                                             onClick={() => window.open(`https://instagram.com/${igProfile.username}`, "_blank")}
                                         >
                                             <Instagram className="mr-2 h-4 w-4" /> Ver no Instagram
                                         </Button>
-                                        <Button variant="outline" className="rounded-xl" onClick={adicionarInfluencer}>
+                                        <Button variant="outline" className="rounded-full" onClick={adicionarInfluencer}>
                                             <UserPlus className="mr-2 h-4 w-4" /> Adicionar à Plataforma
                                         </Button>
                                     </div>
@@ -490,7 +488,7 @@ export default function CreatorsSearchPage() {
                             {/* Recent Posts */}
                             {igProfile.recent_posts.length > 0 && (
                                 <div className="border-t border-border/50 p-8">
-                                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <h3 className="text-lg font-semibold tracking-tight mb-4 flex items-center gap-2">
                                         <ImageIcon className="h-5 w-5 text-primary" />
                                         Posts Recentes ({igProfile.recent_posts.length})
                                     </h3>
@@ -541,22 +539,22 @@ export default function CreatorsSearchPage() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {influencers?.map((influencer) => (
-                                <Card key={influencer.id} className="overflow-hidden border-none shadow-lg hover:shadow-2xl transition-all bg-gradient-to-br from-card to-card/80 backdrop-blur-xl rounded-2xl group">
-                                    <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
+                                <Card key={influencer.id} className="overflow-hidden border border-border/60 shadow-sm hover:shadow-md transition-all rounded-2xl group">
+                                    <div className="aspect-square bg-muted relative overflow-hidden">
                                         <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button className="w-full bg-white text-primary font-bold rounded-xl hover:bg-white/90">
+                                            <Button className="w-full bg-white text-primary font-semibold rounded-xl hover:bg-white/90">
                                                 VER MÍDIA KIT <ExternalLink className="ml-2 h-4 w-4" />
                                             </Button>
                                         </div>
                                         <div className="w-full h-full flex items-center justify-center text-8xl font-bold opacity-10 text-primary">
                                             {influencer.nome.charAt(0)}
                                         </div>
-                                        {influencer.estado && <Badge className="absolute top-4 left-4 bg-secondary text-white">{influencer.estado}</Badge>}
+                                        {influencer.estado && <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground">{influencer.estado}</Badge>}
                                     </div>
                                     <CardContent className="pt-6 space-y-4">
                                         <div>
-                                            <h3 className="text-xl font-bold leading-tight">{influencer.nome}</h3>
-                                            <p className="text-sm text-secondary font-bold">{influencer.instagram}</p>
+                                            <h3 className="text-xl font-semibold tracking-tight leading-tight">{influencer.nome}</h3>
+                                            <p className="text-sm text-muted-foreground font-medium">{influencer.instagram}</p>
                                         </div>
                                         <div className="flex flex-wrap gap-1">
                                             {(influencer.nicho ?? []).map(n => (
@@ -576,7 +574,7 @@ export default function CreatorsSearchPage() {
                                                 <span className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
                                                     <TrendingUp className="h-3 w-3" /> Engaj.
                                                 </span>
-                                                <div className="font-bold text-lg text-secondary">
+                                                <div className="font-bold text-lg text-primary">
                                                     {influencer.engagement}%
                                                 </div>
                                             </div>
@@ -588,9 +586,9 @@ export default function CreatorsSearchPage() {
                     )}
 
                     {influencers?.length === 0 && !isLoading && (
-                        <Card className="text-center py-24 border-none bg-card/50 rounded-3xl">
+                        <Card className="text-center py-24 border border-border/60 shadow-sm rounded-2xl">
                             <Star className="h-12 w-12 text-muted mx-auto mb-4" />
-                            <h3 className="text-2xl font-bold">Nenhum talento encontrado</h3>
+                            <h3 className="text-2xl font-semibold tracking-tight">Nenhum talento encontrado</h3>
                             <p className="text-muted-foreground">Tente ajustar seus filtros ou buscar por outra região.</p>
                         </Card>
                     )}

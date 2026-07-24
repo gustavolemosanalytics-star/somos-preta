@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { KPICard } from "@/components/dashboard/kpi-card"
-import { Users, Megaphone, ClipboardList, Building2, Loader2, MapPin, TrendingUp, Sparkles } from "lucide-react"
+import { Users, Megaphone, ClipboardList, Building2, Loader2, MapPin, TrendingUp } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
@@ -69,14 +69,11 @@ export default function AgencyDashboardHome() {
         <div className="flex flex-1 flex-col gap-6 lg:gap-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
                 <div className="space-y-1">
-                    <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">HUB DE CREATORS</Badge>
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-                        <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">Visão Geral</span>
-                    </h1>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">Visão Geral</h1>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-2 bg-card/80 border border-white/10 rounded-xl">
-                    <MapPin className="h-4 w-4 text-secondary shrink-0" />
-                    <span className="text-[10px] sm:text-xs font-bold tracking-wider uppercase">Foco: Norte / Nordeste</span>
+                <div className="flex items-center gap-2 px-3 py-2 border border-border/60 rounded-xl">
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-[10px] sm:text-xs font-medium tracking-wide uppercase text-muted-foreground">Foco: Norte / Nordeste</span>
                 </div>
             </div>
 
@@ -88,14 +85,11 @@ export default function AgencyDashboardHome() {
             </div>
 
             <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-12">
-                <Card className="lg:col-span-8 rounded-2xl overflow-hidden">
-                    <CardHeader className="bg-gradient-to-r from-secondary/10 to-transparent border-b p-4 sm:p-6">
-                        <div className="flex justify-between items-center gap-3">
-                            <div>
-                                <CardTitle className="font-bold text-base sm:text-lg bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">DENSIDADE REGIONAL</CardTitle>
-                                <CardDescription className="text-xs sm:text-sm mt-1">Influenciadores por estado</CardDescription>
-                            </div>
-                            <div className="h-9 w-9 rounded-xl bg-accent/10 flex items-center justify-center shrink-0"><Sparkles className="h-4 w-4 text-accent" /></div>
+                <Card className="lg:col-span-8 rounded-2xl overflow-hidden border border-border/60 shadow-sm">
+                    <CardHeader className="border-b p-4 sm:p-6">
+                        <div>
+                            <CardTitle className="font-semibold tracking-tight text-base sm:text-lg text-foreground">Densidade Regional</CardTitle>
+                            <CardDescription className="text-xs sm:text-sm mt-1">Influenciadores por estado</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 sm:p-6 lg:p-8">
@@ -105,12 +99,12 @@ export default function AgencyDashboardHome() {
                             <div className="space-y-5">
                                 {stats.regional.map((item) => (
                                     <div key={item.estado} className="space-y-2 group">
-                                        <div className="flex justify-between text-xs sm:text-sm font-bold uppercase tracking-tight">
+                                        <div className="flex justify-between text-xs sm:text-sm font-medium uppercase tracking-tight">
                                             <span className="group-hover:text-primary transition-colors">{item.estado}</span>
                                             <span className="text-primary">{item.count} creators</span>
                                         </div>
                                         <div className="relative h-2.5 bg-muted/30 rounded-full overflow-hidden">
-                                            <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-700" style={{ width: `${item.pct}%` }} />
+                                            <div className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-700" style={{ width: `${item.pct}%` }} />
                                         </div>
                                     </div>
                                 ))}
@@ -119,9 +113,9 @@ export default function AgencyDashboardHome() {
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-4 rounded-2xl">
-                    <CardHeader className="bg-gradient-to-r from-accent/10 to-transparent border-b p-4 sm:p-6">
-                        <CardTitle className="text-base sm:text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Campanhas Recentes</CardTitle>
+                <Card className="lg:col-span-4 rounded-2xl border border-border/60 shadow-sm">
+                    <CardHeader className="border-b p-4 sm:p-6">
+                        <CardTitle className="text-base sm:text-lg font-semibold tracking-tight text-foreground">Campanhas Recentes</CardTitle>
                     </CardHeader>
                     <CardContent className="p-3 sm:p-4">
                         {stats.recentes.length === 0 ? (

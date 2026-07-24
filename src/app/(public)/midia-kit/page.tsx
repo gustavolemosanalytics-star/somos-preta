@@ -2,9 +2,8 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { FileImage, CheckCircle2, Sparkles, ArrowRight, Star, Palette, BarChart3, Briefcase } from "lucide-react"
+import { FileImage, CheckCircle2, ArrowRight, Star, Palette, BarChart3, Briefcase } from "lucide-react"
 import { motion } from "framer-motion"
 
 const benefits = [
@@ -26,17 +25,13 @@ export default function MidiaKitPage() {
     return (
         <div className="flex flex-col">
             {/* Hero */}
-            <section className="relative py-20 lg:py-32 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-background to-teal-500/5" />
-                <div className="container mx-auto px-4 relative z-10">
+            <section className="py-20 lg:py-32">
+                <div className="container mx-auto px-4">
                     <div className="max-w-4xl mx-auto text-center space-y-8">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                            <Badge className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 mb-4 px-4 py-1.5">
-                                <FileImage className="h-3 w-3 mr-2" /> Mídia Kit Builder
-                            </Badge>
-                            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
+                            <h1 className="text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-tight text-foreground">
                                 Crie seu{" "}
-                                <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
+                                <span className="text-primary">
                                     Mídia Kit
                                 </span>{" "}
                                 profissional
@@ -53,12 +48,12 @@ export default function MidiaKitPage() {
                             className="flex flex-col sm:flex-row gap-4 justify-center"
                         >
                             <Link href="/midia-kit/registro">
-                                <Button size="lg" className="h-14 px-8 text-lg font-bold rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 shadow-xl shadow-emerald-500/20">
+                                <Button size="lg" className="h-14 px-8 text-lg font-semibold rounded-full">
                                     Criar Minha Conta <ArrowRight className="ml-2 h-5 w-5" />
                                 </Button>
                             </Link>
                             <Link href="/login/midia-kit">
-                                <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold rounded-2xl border-2 border-emerald-500/30 hover:bg-emerald-500/5">
+                                <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-semibold rounded-full border-border/60">
                                     Já tenho conta
                                 </Button>
                             </Link>
@@ -74,16 +69,16 @@ export default function MidiaKitPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                 >
-                    <Card className="border-none bg-gradient-to-br from-card to-card/50 shadow-2xl overflow-hidden max-w-4xl mx-auto">
+                    <Card className="rounded-2xl border border-border/60 shadow-sm overflow-hidden max-w-4xl mx-auto">
                         <CardContent className="p-0">
-                            <div className="aspect-[16/9] bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-primary/10 flex items-center justify-center relative">
-                                <div className="absolute inset-4 md:inset-8 border-2 border-dashed border-muted-foreground/20 rounded-2xl flex items-center justify-center">
+                            <div className="aspect-[16/9] bg-muted/30 flex items-center justify-center relative">
+                                <div className="absolute inset-4 md:inset-8 border-2 border-dashed border-border/60 rounded-2xl flex items-center justify-center">
                                     <div className="text-center space-y-4 p-4">
-                                        <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 mx-auto flex items-center justify-center">
-                                            <FileImage className="h-10 w-10 text-emerald-500" />
+                                        <div className="h-20 w-20 rounded-full bg-primary/10 mx-auto flex items-center justify-center">
+                                            <FileImage className="h-10 w-10 text-primary" />
                                         </div>
                                         <div>
-                                            <p className="font-bold text-lg">Preview do seu Mídia Kit</p>
+                                            <p className="font-semibold text-lg text-foreground">Preview do seu Mídia Kit</p>
                                             <p className="text-sm text-muted-foreground">Crie sua conta para começar a construir</p>
                                         </div>
                                     </div>
@@ -96,9 +91,9 @@ export default function MidiaKitPage() {
 
             {/* Benefits */}
             <section className="container mx-auto px-4 py-16">
-                <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-center mb-12 text-foreground">
                     Por que criar seu mídia kit{" "}
-                    <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">aqui?</span>
+                    <span className="text-primary">aqui?</span>
                 </h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {benefits.map((benefit, i) => (
@@ -109,12 +104,12 @@ export default function MidiaKitPage() {
                             transition={{ delay: i * 0.1 }}
                             viewport={{ once: true }}
                         >
-                            <Card className="border-none bg-card/50 hover:shadow-lg transition-all h-full">
+                            <Card className="rounded-2xl border border-border/60 shadow-sm hover:shadow-md transition-all h-full">
                                 <CardContent className="p-6 space-y-4">
-                                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
-                                        <benefit.icon className="h-6 w-6 text-emerald-500" />
+                                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                                        <benefit.icon className="h-6 w-6 text-primary" />
                                     </div>
-                                    <h3 className="font-bold text-lg">{benefit.title}</h3>
+                                    <h3 className="font-semibold text-lg text-foreground">{benefit.title}</h3>
                                     <p className="text-sm text-muted-foreground">{benefit.desc}</p>
                                 </CardContent>
                             </Card>
@@ -124,10 +119,9 @@ export default function MidiaKitPage() {
             </section>
 
             {/* Steps */}
-            <section className="py-16 relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent" />
-                <div className="container mx-auto px-4 relative z-10">
-                    <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+            <section className="py-16">
+                <div className="container mx-auto px-4">
+                    <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-center mb-12 text-foreground">
                         Como funciona
                     </h2>
                     <div className="max-w-3xl mx-auto space-y-6">
@@ -140,11 +134,11 @@ export default function MidiaKitPage() {
                                 viewport={{ once: true }}
                                 className="flex gap-6 items-start"
                             >
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                                <div className="h-12 w-12 shrink-0 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
                                     {item.step}
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-lg">{item.title}</h3>
+                                    <h3 className="font-semibold text-lg text-foreground">{item.title}</h3>
                                     <p className="text-muted-foreground">{item.desc}</p>
                                 </div>
                             </motion.div>
@@ -155,19 +149,15 @@ export default function MidiaKitPage() {
 
             {/* CTA */}
             <section className="container mx-auto px-4 py-16">
-                <div className="rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-500 p-8 md:p-12 text-center text-white relative overflow-hidden">
-                    <div className="relative z-10 space-y-6 max-w-xl mx-auto">
-                        <Sparkles className="h-10 w-10 mx-auto" />
-                        <h2 className="text-3xl md:text-4xl font-bold">Pronto para impressionar?</h2>
-                        <p className="text-emerald-100">Crie seu mídia kit profissional agora. É grátis para começar.</p>
+                <div className="rounded-2xl bg-primary p-8 md:p-12 text-center text-primary-foreground">
+                    <div className="space-y-6 max-w-xl mx-auto">
+                        <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">Pronto para impressionar?</h2>
+                        <p className="text-primary-foreground/80">Crie seu mídia kit profissional agora. É grátis para começar.</p>
                         <Link href="/midia-kit/registro">
-                            <Button size="lg" variant="secondary" className="h-14 px-8 text-lg font-bold rounded-2xl">
+                            <Button size="lg" variant="secondary" className="h-14 px-8 text-lg font-semibold rounded-full">
                                 Começar Agora <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
                         </Link>
-                    </div>
-                    <div className="absolute -right-10 -bottom-10 opacity-10">
-                        <FileImage className="h-64 w-64" />
                     </div>
                 </div>
             </section>

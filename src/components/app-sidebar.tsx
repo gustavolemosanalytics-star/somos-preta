@@ -16,7 +16,6 @@ import {
     MessageSquare,
     BarChart3,
     ShieldCheck,
-    Sparkles,
 } from "lucide-react"
 
 import {
@@ -72,11 +71,11 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="hover:bg-sidebar-accent/50">
                             <Link href="/dashboard" onClick={handleNavClick}>
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/20">
-                                    <Sparkles className="size-4" />
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                                    <span className="text-xs font-semibold tracking-tight">SP</span>
                                 </div>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-bold bg-gradient-to-r from-sidebar-foreground to-sidebar-foreground/70 bg-clip-text">Somos Preta</span>
+                                    <span className="truncate font-semibold tracking-tight text-sidebar-foreground">Somos Preta</span>
                                     <span className="truncate text-[10px] text-sidebar-foreground/60 uppercase tracking-wider">Creator Hub</span>
                                 </div>
                             </Link>
@@ -98,8 +97,8 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
                                             tooltip={item.title}
                                             isActive={isActive}
                                             className={cn(
-                                                "transition-all duration-200 rounded-xl",
-                                                isActive && "bg-gradient-to-r from-primary/20 to-secondary/10 text-primary font-medium shadow-sm"
+                                                "transition-colors rounded-xl",
+                                                isActive && "bg-primary/10 text-primary font-medium"
                                             )}
                                         >
                                             <Link href={item.url} onClick={handleNavClick}>
@@ -109,7 +108,7 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
                                                 )} />
                                                 <span>{item.title}</span>
                                                 {isActive && (
-                                                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
                                                 )}
                                             </Link>
                                         </SidebarMenuButton>
