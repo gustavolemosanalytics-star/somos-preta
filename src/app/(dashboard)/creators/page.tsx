@@ -3,8 +3,10 @@
 import { useState, useMemo } from "react"
 import dynamic from "next/dynamic"
 import Image from "next/image"
-import { mockDb, type Influencer } from "@/lib/mock-db"
+import { createClient } from "@/lib/supabase/client"
+import type { Influencer } from "@/lib/db/types"
 import { useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
 import { useInstagramSearch, useTikTokSearch } from "@/hooks/use-social-search"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -70,6 +72,7 @@ function formatNumber(n: number): string {
 }
 
 export default function CreatorsSearchPage() {
+    const [supabase] = useState(() => createClient())
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedState, setSelectedState] = useState<string | null>(null)
     const [isMapLoaded, setIsMapLoaded] = useState(false)
@@ -82,21 +85,40 @@ export default function CreatorsSearchPage() {
 
     const { data: influencers, isLoading } = useQuery({
         queryKey: ['influencers-search', searchTerm, selectedState],
-        queryFn: () => mockDb.influencer.findMany({
-            where: {
-                OR: [{ name: { contains: searchTerm } }],
-                ...(selectedState ? { state: selectedState } : {})
-            }
-        }),
+        queryFn: async () => {
+            let q = supabase.from("somos_preta_influencers").select("*").order("followers", { ascending: false })
+            if (selectedState) q = q.eq("estado", selectedState)
+            if (searchTerm.trim()) q = q.ilike("nome", `%${searchTerm.trim()}%`)
+            const { data } = await q
+            return (data as Influencer[]) ?? []
+        },
         enabled: !isSocialQuery,
     })
+
+    async function adicionarInfluencer() {
+        if (!igProfile) return
+        const { error } = await supabase.from("somos_preta_influencers").insert({
+            nome: igProfile.full_name || igProfile.username,
+            username: igProfile.username,
+            instagram: `@${igProfile.username}`,
+            avatar_url: igProfile.profile_pic_url ?? null,
+            bio: igProfile.biography ?? null,
+            followers: igProfile.follower_count ?? 0,
+            engagement: Number(igProfile.engagement_rate) || 0,
+            avg_likes: igProfile.avg_likes ?? 0,
+            avg_comments: igProfile.avg_comments ?? 0,
+            status: "ativo",
+        })
+        if (error) toast.error("Não foi possível adicionar")
+        else toast.success("Influenciador adicionado à base")
+    }
 
     // Calculate creators per state for the map
     const creatorsPerState = useMemo(() => {
         if (!influencers) return {}
         const counts: Record<string, number> = {}
         influencers.forEach(inf => {
-            counts[inf.state] = (counts[inf.state] || 0) + 1
+            if (inf.estado) counts[inf.estado] = (counts[inf.estado] || 0) + 1
         })
         return counts
     }, [influencers])
@@ -458,7 +480,7 @@ export default function CreatorsSearchPage() {
                                         >
                                             <Instagram className="mr-2 h-4 w-4" /> Ver no Instagram
                                         </Button>
-                                        <Button variant="outline" className="rounded-xl">
+                                        <Button variant="outline" className="rounded-xl" onClick={adicionarInfluencer}>
                                             <UserPlus className="mr-2 h-4 w-4" /> Adicionar à Plataforma
                                         </Button>
                                     </div>
@@ -527,17 +549,17 @@ export default function CreatorsSearchPage() {
                                             </Button>
                                         </div>
                                         <div className="w-full h-full flex items-center justify-center text-8xl font-bold opacity-10 text-primary">
-                                            {influencer.name.charAt(0)}
+                                            {influencer.nome.charAt(0)}
                                         </div>
-                                        <Badge className="absolute top-4 left-4 bg-secondary text-white">{influencer.state}</Badge>
+                                        {influencer.estado && <Badge className="absolute top-4 left-4 bg-secondary text-white">{influencer.estado}</Badge>}
                                     </div>
                                     <CardContent className="pt-6 space-y-4">
                                         <div>
-                                            <h3 className="text-xl font-bold leading-tight">{influencer.name}</h3>
+                                            <h3 className="text-xl font-bold leading-tight">{influencer.nome}</h3>
                                             <p className="text-sm text-secondary font-bold">{influencer.instagram}</p>
                                         </div>
                                         <div className="flex flex-wrap gap-1">
-                                            {influencer.niche.map(n => (
+                                            {(influencer.nicho ?? []).map(n => (
                                                 <Badge key={n} variant="outline" className="text-[10px] uppercase">{n}</Badge>
                                             ))}
                                         </div>

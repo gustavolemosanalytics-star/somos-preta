@@ -1,229 +1,151 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
-    ResponsiveContainer,
-    AreaChart,
-    Area,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    BarChart,
-    Bar,
-    Cell,
+    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell,
 } from "recharts"
-import { Button } from "@/components/ui/button"
-import { Calendar, Download, TrendingUp, Zap, ArrowUpRight, ArrowDownRight } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2, DollarSign, Megaphone, Users, CheckCircle2 } from "lucide-react"
 
-const performanceData = [
-    { name: "Jan", roi: 2.1, spend: 4000, revenue: 8400 },
-    { name: "Fev", roi: 2.5, spend: 3000, revenue: 7500 },
-    { name: "Mar", roi: 3.2, spend: 2000, revenue: 6400 },
-    { name: "Abr", roi: 2.8, spend: 5000, revenue: 14000 },
-    { name: "Mai", roi: 3.5, spend: 4500, revenue: 15750 },
-    { name: "Jun", roi: 4.1, spend: 6000, revenue: 24600 },
-]
+const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+const brlShort = (v: number) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`
 
-const influencerReach = [
-    { name: "Ana Silva", reach: 12500, engagement: 4.5 },
-    { name: "Maria Costa", reach: 8200, engagement: 5.8 },
-    { name: "João Victor", reach: 45000, engagement: 3.2 },
-    { name: "Carlos Tech", reach: 32000, engagement: 3.5 },
-    { name: "Bia Estilo", reach: 15000, engagement: 4.1 },
-]
+type Data = {
+    budgetTotal: number
+    campanhasAtivas: number
+    influencers: number
+    tarefasConcluidas: number
+    porCliente: { name: string; budget: number }[]
+    topInfluencers: { name: string; engagement: number }[]
+}
 
 export default function AnalyticsPage() {
+    const [supabase] = useState(() => createClient())
+    const [data, setData] = useState<Data | null>(null)
+
+    useEffect(() => {
+        (async () => {
+            const [{ data: camps }, { data: infl }, tarefas] = await Promise.all([
+                supabase.from("somos_preta_campanhas").select("budget, status, cliente:somos_preta_clientes(nome)"),
+                supabase.from("somos_preta_influencers").select("nome, engagement, followers"),
+                supabase.from("somos_preta_tarefas").select("*", { count: "exact", head: true }).eq("status", "concluida"),
+            ])
+
+            const campanhas = (camps as unknown as { budget: number; status: string; cliente: { nome: string } | null }[]) ?? []
+            const influencers = (infl as { nome: string; engagement: number; followers: number }[]) ?? []
+
+            const budgetTotal = campanhas.reduce((s, c) => s + Number(c.budget || 0), 0)
+            const campanhasAtivas = campanhas.filter((c) => c.status === "ativa").length
+
+            const clienteMap = new Map<string, number>()
+            for (const c of campanhas) {
+                const nome = c.cliente?.nome ?? "Sem cliente"
+                clienteMap.set(nome, (clienteMap.get(nome) ?? 0) + Number(c.budget || 0))
+            }
+            const porCliente = [...clienteMap.entries()]
+                .map(([name, budget]) => ({ name, budget }))
+                .sort((a, b) => b.budget - a.budget).slice(0, 6)
+
+            const topInfluencers = [...influencers]
+                .sort((a, b) => Number(b.engagement) - Number(a.engagement))
+                .slice(0, 5)
+                .map((i) => ({ name: i.nome, engagement: Number(i.engagement) }))
+
+            setData({
+                budgetTotal,
+                campanhasAtivas,
+                influencers: influencers.length,
+                tarefasConcluidas: tarefas.count ?? 0,
+                porCliente,
+                topInfluencers,
+            })
+        })()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    if (!data) {
+        return <div className="flex items-center justify-center py-24 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+    }
+
+    const kpis = [
+        { label: "Budget sob gestão", value: brl(data.budgetTotal), icon: <DollarSign className="h-4 w-4" />, border: "border-l-primary" },
+        { label: "Campanhas ativas", value: String(data.campanhasAtivas), icon: <Megaphone className="h-4 w-4" />, border: "border-l-blue-500" },
+        { label: "Influenciadores", value: String(data.influencers), icon: <Users className="h-4 w-4" />, border: "border-l-orange-500" },
+        { label: "Tarefas concluídas", value: String(data.tarefasConcluidas), icon: <CheckCircle2 className="h-4 w-4" />, border: "border-l-green-500" },
+    ]
+
+    const tooltipStyle = {
+        borderRadius: "12px", border: "1px solid hsl(var(--border))",
+        backgroundColor: "hsl(var(--popover))", fontSize: "12px", padding: "8px 12px",
+    }
+
     return (
-        <div className="flex flex-col gap-4 sm:gap-6">
-            {/* Header Section */}
-            <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1">
-                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Analytics & Insights</h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Monitore o desempenho das suas campanhas e o ROI real.</p>
-                </div>
-                <div className="flex flex-row gap-2 w-full sm:w-auto">
-                    <Select defaultValue="6m">
-                        <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px] h-9 sm:h-10 text-xs sm:text-sm rounded-xl">
-                            <Calendar className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
-                            <SelectValue placeholder="Período" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="7d">Últimos 7 dias</SelectItem>
-                            <SelectItem value="30d">Últimos 30 dias</SelectItem>
-                            <SelectItem value="3m">Últimos 3 Meses</SelectItem>
-                            <SelectItem value="6m">Últimos 6 Meses</SelectItem>
-                            <SelectItem value="1y">Este Ano</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Button variant="outline" className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm rounded-xl">
-                        <Download className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        <span className="hidden xs:inline">Exportar</span>
-                    </Button>
-                </div>
+        <div className="flex flex-col gap-6">
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight">Analytics & Insights</h2>
+                <p className="text-sm text-muted-foreground">Desempenho consolidado a partir dos dados reais do hub.</p>
             </div>
 
-            {/* KPI Cards */}
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow rounded-xl sm:rounded-2xl">
-                    <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4 lg:p-6">
-                        <CardDescription className="text-[10px] sm:text-xs">ROI Consolidado</CardDescription>
-                        <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold">3.2x</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-                        <div className="flex items-center gap-1 text-emerald-500 text-[10px] sm:text-xs lg:text-sm font-medium flex-wrap">
-                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                            <span>+12.5%</span>
-                            <span className="text-muted-foreground font-normal hidden sm:inline">vs meses ant.</span>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow rounded-xl sm:rounded-2xl">
-                    <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4 lg:p-6">
-                        <CardDescription className="text-[10px] sm:text-xs">Alcance Total</CardDescription>
-                        <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold">842k</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-                        <div className="flex items-center gap-1 text-emerald-500 text-[10px] sm:text-xs lg:text-sm font-medium flex-wrap">
-                            <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                            <span>+5.2%</span>
-                            <span className="text-muted-foreground font-normal hidden sm:inline">impressões</span>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-orange-500 shadow-sm hover:shadow-md transition-shadow rounded-xl sm:rounded-2xl">
-                    <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4 lg:p-6">
-                        <CardDescription className="text-[10px] sm:text-xs">CPE Médio</CardDescription>
-                        <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold">R$ 0,12</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-                        <div className="flex items-center gap-1 text-emerald-500 text-[10px] sm:text-xs lg:text-sm font-medium flex-wrap">
-                            <ArrowDownRight className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500 shrink-0" />
-                            <span>-8.1%</span>
-                            <span className="text-muted-foreground font-normal hidden sm:inline">custo/eng.</span>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition-shadow rounded-xl sm:rounded-2xl">
-                    <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4 lg:p-6">
-                        <CardDescription className="text-[10px] sm:text-xs">Taxa de Conversão</CardDescription>
-                        <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold">4.8%</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-                        <div className="flex items-center gap-1 text-emerald-500 text-[10px] sm:text-xs lg:text-sm font-medium flex-wrap">
-                            <Zap className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                            <span>+1.2%</span>
-                            <span className="text-muted-foreground font-normal hidden sm:inline">via links</span>
-                        </div>
-                    </CardContent>
-                </Card>
+                {kpis.map((k) => (
+                    <Card key={k.label} className={`border-l-4 ${k.border} rounded-2xl`}>
+                        <CardHeader className="pb-2 p-4">
+                            <div className="flex items-center justify-between">
+                                <CardDescription className="text-xs">{k.label}</CardDescription>
+                                <span className="text-muted-foreground">{k.icon}</span>
+                            </div>
+                            <CardTitle className="text-xl lg:text-2xl font-bold">{k.value}</CardTitle>
+                        </CardHeader>
+                    </Card>
+                ))}
             </div>
 
-            {/* Charts Section */}
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-7">
-                {/* Performance Chart */}
-                <Card className="lg:col-span-4 shadow-sm rounded-xl sm:rounded-2xl">
+                <Card className="lg:col-span-4 rounded-2xl">
                     <CardHeader className="p-4 sm:p-6">
-                        <CardTitle className="text-sm sm:text-base lg:text-lg">Evolução de Performance</CardTitle>
-                        <CardDescription className="text-[10px] sm:text-xs lg:text-sm">Investimento vs Receita Gerada</CardDescription>
+                        <CardTitle className="text-base lg:text-lg">Budget por cliente</CardTitle>
+                        <CardDescription className="text-xs">Investimento total gerido por conta</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[250px] sm:h-[300px] lg:h-[350px] p-2 sm:p-4 lg:p-6 pt-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                                <XAxis
-                                    dataKey="name"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                                    dy={10}
-                                    interval="preserveStartEnd"
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                                    tickFormatter={(value) => `${value / 1000}k`}
-                                    width={40}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        borderRadius: '12px',
-                                        border: '1px solid hsl(var(--border))',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                        backgroundColor: 'hsl(var(--popover))',
-                                        color: 'hsl(var(--popover-foreground))',
-                                        fontSize: '12px',
-                                        padding: '8px 12px'
-                                    }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="revenue"
-                                    name="Receita"
-                                    stroke="hsl(var(--primary))"
-                                    fillOpacity={1}
-                                    fill="url(#colorRevenue)"
-                                    strokeWidth={2}
-                                    activeDot={{ r: 6 }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="spend"
-                                    name="Investimento"
-                                    stroke="hsl(var(--destructive))"
-                                    fill="none"
-                                    strokeWidth={2}
-                                    strokeDasharray="5 5"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                    <CardContent className="h-[300px] p-2 sm:p-4 pt-0">
+                        {data.porCliente.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Sem campanhas ainda</div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={data.porCliente} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} interval={0} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={brlShort} width={50} />
+                                    <Tooltip contentStyle={tooltipStyle} formatter={(v?: number) => brl(Number(v ?? 0))} cursor={{ fill: "hsl(var(--muted)/0.2)" }} />
+                                    <Bar dataKey="budget" name="Budget" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" barSize={36} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* Top Influencers Chart */}
-                <Card className="lg:col-span-3 shadow-sm rounded-xl sm:rounded-2xl">
+                <Card className="lg:col-span-3 rounded-2xl">
                     <CardHeader className="p-4 sm:p-6">
-                        <CardTitle className="text-sm sm:text-base lg:text-lg">Top Influencers</CardTitle>
-                        <CardDescription className="text-[10px] sm:text-xs lg:text-sm">Ranking por engajamento</CardDescription>
+                        <CardTitle className="text-base lg:text-lg">Top influenciadores</CardTitle>
+                        <CardDescription className="text-xs">Ranking por engajamento</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[250px] sm:h-[300px] lg:h-[350px] p-2 sm:p-4 lg:p-6 pt-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={influencerReach} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
-                                <XAxis type="number" hide />
-                                <YAxis
-                                    dataKey="name"
-                                    type="category"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                                    width={70}
-                                    tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: 'hsl(var(--muted)/0.2)' }}
-                                    contentStyle={{
-                                        borderRadius: '12px',
-                                        border: '1px solid hsl(var(--border))',
-                                        backgroundColor: 'hsl(var(--popover))',
-                                        fontSize: '12px',
-                                        padding: '8px 12px'
-                                    }}
-                                />
-                                <Bar dataKey="engagement" radius={[0, 4, 4, 0]} barSize={20}>
-                                    {influencerReach.map((_, index) => (
-                                        <Cell key={`cell-${index}`} fill={index === 0 ? "hsl(var(--primary))" : "hsl(var(--muted))"} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <CardContent className="h-[300px] p-2 sm:p-4 pt-0">
+                        {data.topInfluencers.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Sem influenciadores ainda</div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={data.topInfluencers} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={80} tickFormatter={(v: string) => v.length > 12 ? `${v.substring(0, 12)}...` : v} />
+                                    <Tooltip contentStyle={tooltipStyle} formatter={(v?: number) => `${Number(v ?? 0)}%`} cursor={{ fill: "hsl(var(--muted)/0.2)" }} />
+                                    <Bar dataKey="engagement" name="Engajamento" radius={[0, 4, 4, 0]} barSize={20}>
+                                        {data.topInfluencers.map((_, i) => (
+                                            <Cell key={i} fill={i === 0 ? "hsl(var(--primary))" : "hsl(var(--muted))"} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </CardContent>
                 </Card>
             </div>
