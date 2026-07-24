@@ -1,317 +1,217 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { DataTable } from "@/components/ui/data-table"
+import { useEffect, useMemo, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import type { Contrato, ContratoStatus, Influencer, Campanha } from "@/lib/db/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { FileText, Plus, Clock, AlertCircle, CheckCircle2, Loader2, Upload, Eye, X, ArrowLeft } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ColumnDef } from "@tanstack/react-table"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { mockDb, type Contract } from "@/lib/mock-db"
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
+import {
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table"
+import { FileText, Plus, Loader2, ExternalLink } from "lucide-react"
+import { toast } from "sonner"
 
-function statusLabel(status: string) {
-    const map: Record<string, string> = { SIGNED: "Assinado", PENDING: "Pendente", EXPIRED: "Expirado", CANCELLED: "Cancelado" }
-    return map[status] || status
+type ContratoRow = Contrato & { influencer: { nome: string } | null; campanha: { nome: string } | null }
+
+const STATUS_META: Record<ContratoStatus, { label: string; className: string }> = {
+    pendente: { label: "Pendente", className: "bg-yellow-500/15 text-yellow-600" },
+    assinado: { label: "Assinado", className: "bg-green-500/15 text-green-600" },
+    expirado: { label: "Expirado", className: "bg-red-500/15 text-red-600" },
+    cancelado: { label: "Cancelado", className: "bg-muted text-muted-foreground" },
 }
 
 export default function ContractsPage() {
-    const queryClient = useQueryClient()
-    const [showCreate, setShowCreate] = useState(false)
-    const [viewingPdf, setViewingPdf] = useState<string | null>(null)
-    const [viewingTitle, setViewingTitle] = useState("")
-    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [supabase] = useState(() => createClient())
+    const [contratos, setContratos] = useState<ContratoRow[]>([])
+    const [influencers, setInfluencers] = useState<Influencer[]>([])
+    const [campanhas, setCampanhas] = useState<Campanha[]>([])
+    const [loading, setLoading] = useState(true)
+    const [open, setOpen] = useState(false)
+    const [saving, setSaving] = useState(false)
 
-    const { data: contracts, isLoading } = useQuery({
-        queryKey: ["contracts"],
-        queryFn: () => mockDb.contract.findMany()
-    })
-
-    // Create contract form state
     const [form, setForm] = useState({
-        title: "",
-        influencer: "",
-        status: "PENDING" as Contract["status"],
-        expiresAt: "",
+        titulo: "", influencer_id: "", campanha_id: "",
+        status: "pendente" as ContratoStatus, expira_em: "", pdf_url: "",
     })
-    const [pdfFile, setPdfFile] = useState<File | null>(null)
-    const [creating, setCreating] = useState(false)
+
+    async function load() {
+        setLoading(true)
+        const [{ data: cs }, { data: infl }, { data: camps }] = await Promise.all([
+            supabase.from("somos_preta_contratos").select("*, influencer:somos_preta_influencers(nome), campanha:somos_preta_campanhas(nome)").order("created_at", { ascending: false }),
+            supabase.from("somos_preta_influencers").select("*").order("nome"),
+            supabase.from("somos_preta_campanhas").select("*").order("nome"),
+        ])
+        setContratos((cs as unknown as ContratoRow[]) ?? [])
+        setInfluencers((infl as Influencer[]) ?? [])
+        setCampanhas((camps as Campanha[]) ?? [])
+        setLoading(false)
+    }
+
+    useEffect(() => {
+        load()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    const contagem = useMemo(() => ({
+        assinado: contratos.filter((c) => c.status === "assinado").length,
+        pendente: contratos.filter((c) => c.status === "pendente").length,
+        expirado: contratos.filter((c) => c.status === "expirado").length,
+        total: contratos.length,
+    }), [contratos])
 
     async function handleCreate(e: React.FormEvent) {
         e.preventDefault()
-        setCreating(true)
-
-        let pdfUrl = ""
-        let pdfName = ""
-
-        if (pdfFile) {
-            // Create a blob URL for the PDF (in production this would be an upload to S3/R2)
-            pdfUrl = URL.createObjectURL(pdfFile)
-            pdfName = pdfFile.name
-        }
-
-        await mockDb.contract.create({
-            title: form.title,
-            influencer: form.influencer,
+        if (!form.titulo.trim()) return
+        setSaving(true)
+        const { data: { user } } = await supabase.auth.getUser()
+        const { error } = await supabase.from("somos_preta_contratos").insert({
+            titulo: form.titulo.trim(),
+            influencer_id: form.influencer_id || null,
+            campanha_id: form.campanha_id || null,
             status: form.status,
-            createdAt: new Date().toISOString().split("T")[0],
-            expiresAt: form.expiresAt,
-            pdfUrl,
-            pdfName,
+            expira_em: form.expira_em || null,
+            assinado_em: form.status === "assinado" ? new Date().toISOString() : null,
+            pdf_url: form.pdf_url || null,
+            created_by: user?.id ?? null,
         })
-
-        queryClient.invalidateQueries({ queryKey: ["contracts"] })
-        setCreating(false)
-        setForm({ title: "", influencer: "", status: "PENDING", expiresAt: "" })
-        setPdfFile(null)
-        setShowCreate(false)
+        setSaving(false)
+        if (error) { toast.error("Não foi possível salvar o contrato"); return }
+        toast.success("Contrato criado")
+        setOpen(false)
+        setForm({ titulo: "", influencer_id: "", campanha_id: "", status: "pendente", expira_em: "", pdf_url: "" })
+        load()
     }
 
-    const columns: ColumnDef<Contract>[] = [
-        {
-            accessorKey: "title",
-            header: "Título / Objeto",
-            cell: ({ row }) => (
-                <div>
-                    <div className="font-semibold">{row.getValue("title")}</div>
-                    {row.original.pdfName && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <FileText className="h-3 w-3" /> {row.original.pdfName}
-                        </div>
-                    )}
-                </div>
-            ),
-        },
-        {
-            accessorKey: "influencer",
-            header: "Influenciador",
-        },
-        {
-            accessorKey: "status",
-            header: "Status",
-            cell: ({ row }) => {
-                const status = row.getValue("status") as string
-                return (
-                    <Badge variant={
-                        status === "SIGNED" ? "default" :
-                            status === "PENDING" ? "secondary" :
-                                "destructive"
-                    }>
-                        {statusLabel(status)}
-                    </Badge>
-                )
-            },
-        },
-        {
-            accessorKey: "createdAt",
-            header: "Criado em",
-        },
-        {
-            accessorKey: "expiresAt",
-            header: "Expira em",
-        },
-        {
-            id: "actions",
-            cell: ({ row }) => {
-                const contract = row.original
-                return (
-                    <div className="flex gap-1">
-                        {contract.pdfUrl && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="gap-1"
-                                onClick={() => {
-                                    setViewingPdf(contract.pdfUrl!)
-                                    setViewingTitle(contract.title)
-                                }}
-                            >
-                                <Eye className="h-4 w-4" /> Ver PDF
-                            </Button>
-                        )}
-                    </div>
-                )
-            },
-        },
+    const stats = [
+        { label: "Assinados", value: contagem.assinado, className: "text-green-600" },
+        { label: "Pendentes", value: contagem.pendente, className: "text-yellow-600" },
+        { label: "Expirados", value: contagem.expirado, className: "text-red-600" },
+        { label: "Total", value: contagem.total, className: "text-primary" },
     ]
 
-    // PDF Viewer
-    if (viewingPdf) {
-        return (
-            <div className="flex flex-1 flex-col gap-4 p-6 lg:p-10">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => setViewingPdf(null)} className="rounded-xl">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <div className="flex-1">
-                        <h2 className="text-xl font-bold">{viewingTitle}</h2>
-                        <p className="text-sm text-muted-foreground">Visualizando contrato em PDF</p>
-                    </div>
-                    <Button variant="outline" onClick={() => setViewingPdf(null)} className="gap-2">
-                        <X className="h-4 w-4" /> Fechar
-                    </Button>
-                </div>
-                <Card className="flex-1">
-                    <CardContent className="p-0 h-[calc(100vh-220px)]">
-                        <iframe
-                            src={viewingPdf}
-                            className="w-full h-full rounded-xl"
-                            title="PDF Viewer"
-                        />
-                    </CardContent>
-                </Card>
-            </div>
-        )
-    }
-
     return (
-        <div className="flex flex-1 flex-col gap-8 p-6 lg:p-10">
-            <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl md:text-5xl font-bold mb-2">
-                        <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                            Rastreabilidade de Contratos
-                        </span>
-                    </h1>
-                    <p className="text-muted-foreground text-lg">Gestão centralizada de conformidade e assinaturas digitais.</p>
+                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><FileText className="h-6 w-6 text-primary" /> Contratos</h1>
+                    <p className="text-muted-foreground text-sm">Acompanhe o status dos contratos com os creators.</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="rounded-xl">Templates</Button>
-                    <Button className="bg-gradient-to-r from-primary to-secondary rounded-xl" onClick={() => setShowCreate(true)}>
-                        <Plus className="mr-2 h-4 w-4" /> Novo Contrato
-                    </Button>
-                </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-4">
-                <Card className="rounded-2xl border-none shadow-lg bg-gradient-to-br from-card to-card/80 backdrop-blur-xl">
-                    <CardContent className="pt-6 flex flex-col items-center justify-center text-center">
-                        <CheckCircle2 className="h-8 w-8 text-green-500 mb-2" />
-                        <div className="text-2xl font-bold">{contracts?.filter(c => c.status === "SIGNED").length || 0}</div>
-                        <p className="text-xs text-muted-foreground">Assinados</p>
-                    </CardContent>
-                </Card>
-                <Card className="rounded-2xl border-none shadow-lg bg-gradient-to-br from-card to-card/80 backdrop-blur-xl">
-                    <CardContent className="pt-6 flex flex-col items-center justify-center text-center">
-                        <Clock className="h-8 w-8 text-blue-500 mb-2" />
-                        <div className="text-2xl font-bold">{contracts?.filter(c => c.status === "PENDING").length || 0}</div>
-                        <p className="text-xs text-muted-foreground">Aguardando assinatura</p>
-                    </CardContent>
-                </Card>
-                <Card className="rounded-2xl border-none shadow-lg bg-gradient-to-br from-card to-card/80 backdrop-blur-xl">
-                    <CardContent className="pt-6 flex flex-col items-center justify-center text-center">
-                        <AlertCircle className="h-8 w-8 text-orange-500 mb-2" />
-                        <div className="text-2xl font-bold">{contracts?.filter(c => c.status === "EXPIRED").length || 0}</div>
-                        <p className="text-xs text-muted-foreground">Expirados</p>
-                    </CardContent>
-                </Card>
-                <Card className="rounded-2xl border-none shadow-lg bg-gradient-to-br from-card to-card/80 backdrop-blur-xl">
-                    <CardContent className="pt-6 flex flex-col items-center justify-center text-center">
-                        <FileText className="h-8 w-8 text-primary mb-2" />
-                        <div className="text-2xl font-bold">{contracts?.length || 0}</div>
-                        <p className="text-xs text-muted-foreground">Total</p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {isLoading ? (
-                <div className="flex justify-center p-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-            ) : (
-                <DataTable columns={columns} data={contracts || []} searchKey="title" />
-            )}
-
-            {/* Create Contract Dialog */}
-            <Dialog open={showCreate} onOpenChange={(v) => !v && setShowCreate(false)}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>Novo Contrato</DialogTitle>
-                        <DialogDescription>Cadastre um novo contrato e anexe o PDF.</DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleCreate} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Título do Contrato</Label>
-                            <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required className="rounded-xl" placeholder="Ex: Campanha Verão - Exclusividade" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Influenciador</Label>
-                                <Input value={form.influencer} onChange={e => setForm({ ...form, influencer: e.target.value })} required className="rounded-xl" placeholder="Nome do influencer" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Status</Label>
-                                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v as Contract["status"] })}>
-                                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="PENDING">Pendente</SelectItem>
-                                        <SelectItem value="SIGNED">Assinado</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Data de Expiração</Label>
-                            <Input type="date" value={form.expiresAt} onChange={e => setForm({ ...form, expiresAt: e.target.value })} required className="rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Arquivo PDF do Contrato</Label>
-                            <div
-                                className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept=".pdf"
-                                    className="hidden"
-                                    onChange={e => {
-                                        const file = e.target.files?.[0]
-                                        if (file) setPdfFile(file)
-                                    }}
-                                />
-                                {pdfFile ? (
-                                    <div className="flex items-center justify-center gap-2">
-                                        <FileText className="h-5 w-5 text-primary" />
-                                        <span className="text-sm font-medium">{pdfFile.name}</span>
-                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setPdfFile(null) }}>
-                                            <X className="h-3 w-3" />
-                                        </Button>
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild><Button className="rounded-xl"><Plus className="h-4 w-4" /> Novo contrato</Button></DialogTrigger>
+                    <DialogContent className="sm:max-w-lg">
+                        <form onSubmit={handleCreate}>
+                            <DialogHeader>
+                                <DialogTitle>Novo contrato</DialogTitle>
+                                <DialogDescription>Registre um contrato e seu status.</DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="titulo">Título *</Label>
+                                    <Input id="titulo" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>Influenciador</Label>
+                                        <Select value={form.influencer_id} onValueChange={(v) => setForm({ ...form, influencer_id: v })}>
+                                            <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+                                            <SelectContent>{influencers.map((i) => <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>)}</SelectContent>
+                                        </Select>
                                     </div>
-                                ) : (
-                                    <>
-                                        <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                                        <p className="text-sm text-muted-foreground">Clique para fazer upload do PDF</p>
-                                        <p className="text-xs text-muted-foreground">ou arraste e solte aqui</p>
-                                    </>
-                                )}
+                                    <div className="grid gap-2">
+                                        <Label>Campanha</Label>
+                                        <Select value={form.campanha_id} onValueChange={(v) => setForm({ ...form, campanha_id: v })}>
+                                            <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+                                            <SelectContent>{campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>Status</Label>
+                                        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as ContratoStatus })}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>{Object.entries(STATUS_META).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="exp">Expira em</Label>
+                                        <Input id="exp" type="date" value={form.expira_em} onChange={(e) => setForm({ ...form, expira_em: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="pdf">Link do PDF (opcional)</Label>
+                                    <Input id="pdf" type="url" placeholder="https://..." value={form.pdf_url} onChange={(e) => setForm({ ...form, pdf_url: e.target.value })} />
+                                </div>
                             </div>
+                            <DialogFooter>
+                                <Button type="submit" disabled={saving} className="rounded-xl">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar contrato"}</Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {stats.map((s) => (
+                    <Card key={s.label}><CardContent className="py-4">
+                        <p className={`text-2xl font-bold ${s.className}`}>{s.value}</p>
+                        <p className="text-xs text-muted-foreground">{s.label}</p>
+                    </CardContent></Card>
+                ))}
+            </div>
+
+            <Card>
+                <CardContent className="p-0">
+                    {loading ? (
+                        <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+                    ) : contratos.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                            <p className="font-medium">Nenhum contrato ainda</p>
                         </div>
-                        <div className="flex justify-end gap-2 pt-2">
-                            <Button type="button" variant="outline" onClick={() => setShowCreate(false)} className="rounded-xl">Cancelar</Button>
-                            <Button type="submit" disabled={creating} className="rounded-xl bg-gradient-to-r from-primary to-secondary">
-                                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cadastrar Contrato"}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Título</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Influenciador</TableHead>
+                                    <TableHead className="hidden md:table-cell">Campanha</TableHead>
+                                    <TableHead className="hidden lg:table-cell">Expira</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">PDF</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {contratos.map((c) => (
+                                    <TableRow key={c.id}>
+                                        <TableCell className="font-medium">{c.titulo}</TableCell>
+                                        <TableCell className="hidden sm:table-cell text-muted-foreground">{c.influencer?.nome ?? "—"}</TableCell>
+                                        <TableCell className="hidden md:table-cell text-muted-foreground">{c.campanha?.nome ?? "—"}</TableCell>
+                                        <TableCell className="hidden lg:table-cell text-muted-foreground">{c.expira_em ?? "—"}</TableCell>
+                                        <TableCell><Badge className={STATUS_META[c.status].className} variant="secondary">{STATUS_META[c.status].label}</Badge></TableCell>
+                                        <TableCell className="text-right">
+                                            {c.pdf_url ? (
+                                                <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="text-primary inline-flex items-center gap-1 text-sm hover:underline">
+                                                    abrir <ExternalLink className="h-3.5 w-3.5" />
+                                                </a>
+                                            ) : "—"}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     )
 }
