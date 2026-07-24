@@ -367,12 +367,12 @@ drop policy if exists "self_profile" on somos_preta_profiles;
 create policy "self_profile" on somos_preta_profiles for all to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
 
--- INFLUENCERS: equipe gerencia; leitura pública (diretório)
+-- INFLUENCERS: acesso APENAS para a equipe (contém PII: email/telefone).
+-- Sem leitura pública, para não expor dados via chave publishable.
 drop policy if exists "staff_all_influencers" on somos_preta_influencers;
 create policy "staff_all_influencers" on somos_preta_influencers for all to authenticated
   using (somos_preta_is_staff()) with check (somos_preta_is_staff());
 drop policy if exists "public_read_influencers" on somos_preta_influencers;
-create policy "public_read_influencers" on somos_preta_influencers for select using (true);
 
 -- MÍDIA KITS: equipe gerencia tudo; o creator gerencia SÓ o próprio; público lê publicados
 drop policy if exists "staff_all_midia_kits" on somos_preta_midia_kits;
@@ -391,11 +391,30 @@ create policy "staff_all_blog" on somos_preta_blog_posts for all to authenticate
 drop policy if exists "public_read_blog" on somos_preta_blog_posts;
 create policy "public_read_blog" on somos_preta_blog_posts for select using (status = 'publicado');
 
--- PORTAL DO CLIENTE (público via link): leitura das campanhas e vínculos
+-- PORTAL DO CLIENTE (público via link): SEM leitura direta das tabelas.
+-- O acesso é feito por uma função que recebe o share_token e devolve APENAS
+-- a campanha daquele link — nunca a tabela inteira. Assim orçamentos e
+-- pagamentos não ficam abertos para quem tem a chave publishable.
 drop policy if exists "portal_read_campanhas" on somos_preta_campanhas;
-create policy "portal_read_campanhas" on somos_preta_campanhas for select to anon using (true);
 drop policy if exists "portal_read_camp_inf" on somos_preta_campanha_influencers;
-create policy "portal_read_camp_inf" on somos_preta_campanha_influencers for select to anon using (true);
+
+create or replace function somos_preta_portal_campanha(p_token text)
+returns jsonb
+language sql stable security definer set search_path = public
+as $$
+  select jsonb_build_object(
+    'campanha', to_jsonb(c),
+    'influencers', coalesce((
+      select jsonb_agg(jsonb_build_object('vinculo', to_jsonb(ci), 'influencer', to_jsonb(i)))
+      from somos_preta_campanha_influencers ci
+      join somos_preta_influencers i on i.id = ci.influencer_id
+      where ci.campanha_id = c.id
+    ), '[]'::jsonb)
+  )
+  from somos_preta_campanhas c
+  where c.share_token = p_token;
+$$;
+grant execute on function somos_preta_portal_campanha(text) to anon, authenticated;
 
 -- ============================================================================
 -- FIM
