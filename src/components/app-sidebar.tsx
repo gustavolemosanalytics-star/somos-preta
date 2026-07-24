@@ -15,6 +15,7 @@ import {
     FileText,
     MessageSquare,
     BarChart3,
+    ShieldCheck,
     Sparkles,
 } from "lucide-react"
 
@@ -54,6 +55,11 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
     const pathname = usePathname()
     const { setOpenMobile } = useSidebar()
 
+    // "Usuários" só aparece para admins
+    const items = user.role === "admin"
+        ? [...navItems, { title: "Usuários", url: "/usuarios", icon: ShieldCheck }]
+        : navItems
+
     const handleNavClick = () => {
         // Close mobile sidebar when navigating
         setOpenMobile(false)
@@ -83,7 +89,7 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
                     <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/50 font-bold">Plataforma</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu className="gap-1">
-                            {navItems.map((item) => {
+                            {items.map((item) => {
                                 const isActive = pathname === item.url || pathname.startsWith(`${item.url}/`)
                                 return (
                                     <SidebarMenuItem key={item.title}>

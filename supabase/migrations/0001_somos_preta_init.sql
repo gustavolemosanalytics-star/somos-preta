@@ -90,6 +90,39 @@ as $$
   );
 $$;
 
+-- Helper: o usuário atual é admin?
+create or replace function somos_preta_is_admin()
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (
+    select 1 from somos_preta_profiles where id = auth.uid() and role = 'admin'
+  );
+$$;
+
+-- Trava: só admin pode alterar `role`. Permite contexto sem login
+-- (SQL editor / service_role) para não travar a promoção inicial.
+create or replace function somos_preta_guard_role_change()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+begin
+  if new.role is distinct from old.role then
+    if auth.uid() is not null and not exists (
+      select 1 from somos_preta_profiles where id = auth.uid() and role = 'admin'
+    ) then
+      raise exception 'Apenas administradores podem alterar o papel de um usuário';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists somos_preta_guard_role on somos_preta_profiles;
+create trigger somos_preta_guard_role
+  before update on somos_preta_profiles
+  for each row execute function somos_preta_guard_role_change();
+
 -- ============================================================================
 -- CLIENTES  (topo da hierarquia)
 -- ============================================================================
@@ -359,13 +392,24 @@ begin
   end loop;
 end $$;
 
--- PROFILES: equipe vê/gerencia todos; cada usuário vê/edita o próprio perfil
+-- PROFILES:
+--   • leitura: equipe vê todos; qualquer um vê o próprio;
+--   • admin gerencia todos (inclui trocar papel);
+--   • usuário edita o próprio perfil (o papel é travado pelo trigger acima).
 drop policy if exists "staff_all_profiles" on somos_preta_profiles;
-create policy "staff_all_profiles" on somos_preta_profiles for all to authenticated
-  using (somos_preta_is_staff()) with check (somos_preta_is_staff());
 drop policy if exists "self_profile" on somos_preta_profiles;
-create policy "self_profile" on somos_preta_profiles for all to authenticated
-  using (id = auth.uid()) with check (id = auth.uid());
+drop policy if exists "profiles_read_staff" on somos_preta_profiles;
+create policy "profiles_read_staff" on somos_preta_profiles
+  for select to authenticated using (somos_preta_is_staff());
+drop policy if exists "profiles_read_self" on somos_preta_profiles;
+create policy "profiles_read_self" on somos_preta_profiles
+  for select to authenticated using (id = auth.uid());
+drop policy if exists "profiles_admin_all" on somos_preta_profiles;
+create policy "profiles_admin_all" on somos_preta_profiles
+  for all to authenticated using (somos_preta_is_admin()) with check (somos_preta_is_admin());
+drop policy if exists "profiles_self_update" on somos_preta_profiles;
+create policy "profiles_self_update" on somos_preta_profiles
+  for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 
 -- INFLUENCERS: acesso APENAS para a equipe (contém PII: email/telefone).
 -- Sem leitura pública, para não expor dados via chave publishable.
