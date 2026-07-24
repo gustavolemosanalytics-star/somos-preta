@@ -12,6 +12,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { FileImage, ArrowLeft, ArrowRight, Check, User, AtSign, Briefcase, DollarSign, Palette, Eye, LogOut, Save, Plus, X, MapPin, Users, TrendingUp, Heart } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
+import type { MidiaKit } from "@/lib/db/types"
+import { toast } from "sonner"
 
 type MidiaKitData = {
     name: string
@@ -21,6 +25,7 @@ type MidiaKitData = {
     instagram: string
     tiktok: string
     youtube: string
+    whatsapp: string
     followers: string
     engagement: string
     avgLikes: string
@@ -38,6 +43,7 @@ const initialData: MidiaKitData = {
     instagram: "",
     tiktok: "",
     youtube: "",
+    whatsapp: "",
     followers: "",
     engagement: "",
     avgLikes: "",
@@ -179,27 +185,110 @@ function MidiaKitPreview({ data }: { data: MidiaKitData }) {
 
 export default function MidiaKitCriarPage() {
     const router = useRouter()
+    const [supabase] = useState(() => createClient())
     const [currentStep, setCurrentStep] = useState(0)
     const [data, setData] = useState<MidiaKitData>(initialData)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
-    const [newNiche, setNewNiche] = useState("")
+    const [saving, setSaving] = useState(false)
+    const [savedSlug, setSavedSlug] = useState<string | null>(null)
+    const [existingId, setExistingId] = useState<string | null>(null)
+    const [existingSlug, setExistingSlug] = useState<string | null>(null)
+    const [email, setEmail] = useState("")
     const [newPortfolio, setNewPortfolio] = useState({ title: "", brand: "" })
     const [newPackage, setNewPackage] = useState({ name: "", price: "", description: "" })
 
     useEffect(() => {
-        const user = localStorage.getItem("midiakit-user")
-        if (!user) {
-            router.push("/login/midia-kit")
-            return
-        }
-        const parsed = JSON.parse(user)
-        setData((prev) => ({ ...prev, name: parsed.name || "", instagram: parsed.instagram || "" }))
-        setIsAuthenticated(true)
-    }, [router])
+        (async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) { router.push("/login/midia-kit"); return }
+            setEmail(user.email ?? "")
+            const { data: prof } = await supabase.from("somos_preta_profiles").select("nome").eq("id", user.id).single()
+            const { data: kit } = await supabase
+                .from("somos_preta_midia_kits")
+                .select("*")
+                .eq("cadastrado_por", user.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle()
+            if (kit) {
+                const k = kit as MidiaKit
+                const redes = (k.redes ?? {}) as Record<string, string>
+                setData({
+                    name: k.nome ?? "",
+                    bio: k.bio ?? "",
+                    city: k.cidade ?? "",
+                    state: k.estado ?? "",
+                    instagram: redes.instagram ?? "",
+                    tiktok: redes.tiktok ?? "",
+                    youtube: redes.youtube ?? "",
+                    whatsapp: k.whatsapp ?? "",
+                    followers: redes.followers ?? "",
+                    engagement: redes.engagement ?? "",
+                    avgLikes: redes.avgLikes ?? "",
+                    niches: k.nichos ?? [],
+                    portfolio: (k.portfolio as MidiaKitData["portfolio"]) ?? [],
+                    packages: (k.pacotes as MidiaKitData["packages"]) ?? [],
+                    primaryColor: k.tema ?? "#e57c4a",
+                })
+                setExistingId(k.id)
+                setExistingSlug(k.slug)
+            } else {
+                setData((prev) => ({ ...prev, name: prof?.nome ?? "" }))
+            }
+            setIsAuthenticated(true)
+        })()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
-    const handleLogout = () => {
-        localStorage.removeItem("midiakit-user")
+    const slugify = (s: string) =>
+        s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "kit"
+
+    async function handleSave() {
+        setSaving(true)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { router.push("/login/midia-kit"); return }
+        const payload = {
+            nome: data.name || "Meu mídia kit",
+            email: email || null,
+            whatsapp: data.whatsapp || null,
+            bio: data.bio || null,
+            cidade: data.city || null,
+            estado: data.state || null,
+            nichos: data.niches,
+            tema: data.primaryColor,
+            redes: {
+                instagram: data.instagram, tiktok: data.tiktok, youtube: data.youtube,
+                followers: data.followers, engagement: data.engagement, avgLikes: data.avgLikes,
+            },
+            portfolio: data.portfolio,
+            pacotes: data.packages,
+            publicado: true,
+            cadastrado_por: user.id,
+        }
+
+        if (existingId) {
+            const { error } = await supabase.from("somos_preta_midia_kits").update(payload).eq("id", existingId)
+            if (error) { toast.error("Não foi possível salvar"); setSaving(false); return }
+            setSavedSlug(existingSlug)
+        } else {
+            const base = slugify(data.name || data.instagram || "kit")
+            let saved: { id: string; slug: string } | null = null
+            for (let attempt = 0; attempt < 3 && !saved; attempt++) {
+                const trySlug = attempt === 0 ? base : `${base}-${Math.floor(1000 + Math.random() * 9000)}`
+                const res = await supabase.from("somos_preta_midia_kits").insert({ ...payload, slug: trySlug }).select("id, slug").single()
+                if (!res.error) saved = res.data as { id: string; slug: string }
+                else if (res.error.code !== "23505") { toast.error("Não foi possível salvar"); setSaving(false); return }
+            }
+            if (!saved) { toast.error("Slug em uso, tente outro nome"); setSaving(false); return }
+            setExistingId(saved.id); setExistingSlug(saved.slug); setSavedSlug(saved.slug)
+        }
+        toast.success("Mídia kit salvo!")
+        setSaving(false)
+    }
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
         router.push("/midia-kit")
     }
 
@@ -348,6 +437,10 @@ export default function MidiaKitCriarPage() {
                                             <div className="space-y-2">
                                                 <Label>YouTube</Label>
                                                 <Input value={data.youtube} onChange={(e) => setData({ ...data, youtube: e.target.value })} placeholder="Seu canal" className="rounded-xl" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>WhatsApp (para contratação)</Label>
+                                                <Input value={data.whatsapp} onChange={(e) => setData({ ...data, whatsapp: e.target.value })} placeholder="Ex: 5571999999999" className="rounded-xl" />
                                             </div>
                                             <div className="border-t border-border/50 pt-4 mt-4">
                                                 <p className="text-sm font-bold mb-4">Métricas</p>
@@ -512,9 +605,14 @@ export default function MidiaKitCriarPage() {
                                                 <p className="text-sm text-muted-foreground">
                                                     Revise o preview ao lado e quando estiver satisfeito, salve seu mídia kit.
                                                 </p>
-                                                <Button className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 font-bold">
-                                                    <Save className="h-4 w-4 mr-2" /> Salvar Mídia Kit
+                                                <Button onClick={handleSave} disabled={saving} className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 font-bold">
+                                                    <Save className="h-4 w-4 mr-2" /> {saving ? "Salvando..." : "Salvar Mídia Kit"}
                                                 </Button>
+                                                {savedSlug && (
+                                                    <Link href={`/kit/${savedSlug}`} className="block text-sm text-emerald-600 font-medium hover:underline">
+                                                        Ver meu mídia kit público →
+                                                    </Link>
+                                                )}
                                             </div>
                                         </CardContent>
                                     </Card>
