@@ -67,11 +67,6 @@ export default function HomePage() {
                                         Criar meu mídia kit <ArrowRight className="ml-1.5 h-4 w-4" />
                                     </Button>
                                 </Link>
-                                <Link href="/login">
-                                    <Button size="lg" variant="outline" className="h-12 px-7 rounded-full text-base font-medium w-full sm:w-auto border-border">
-                                        Entrar no hub
-                                    </Button>
-                                </Link>
                             </div>
                         </motion.div>
 

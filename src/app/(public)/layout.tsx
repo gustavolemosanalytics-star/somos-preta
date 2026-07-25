@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const navLinks = [
@@ -45,9 +44,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                                 </Link>
                             )
                         })}
-                        <Link href="/login">
-                            <Button size="sm" className="rounded-full px-5 ml-1">Entrar</Button>
-                        </Link>
                     </div>
                 </div>
             </nav>
@@ -65,7 +61,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     <div className="flex gap-6 text-sm text-muted-foreground">
                         <Link href="/midia-kit" className="hover:text-foreground transition-colors">Mídia Kit</Link>
                         <Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link>
-                        <Link href="/login" className="hover:text-foreground transition-colors">Entrar</Link>
                     </div>
                     <p className="text-xs text-muted-foreground">&copy; 2026 Somos Preta</p>
                 </div>
