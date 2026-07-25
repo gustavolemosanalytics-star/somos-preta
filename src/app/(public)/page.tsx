@@ -56,7 +56,7 @@ export default function HomePage() {
                                 <MapPin className="h-4 w-4 text-primary" /> Norte &amp; Nordeste
                             </span>
                             <h1 className="text-5xl md:text-6xl lg:text-7xl font-semibold leading-[1.02] tracking-tight text-balance">
-                                A casa dos <span className="text-primary">creators</span> pretos do Brasil.
+                                Agência <span className="text-primary">Somos Preta</span>
                             </h1>
                             <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
                                 Uma plataforma que reúne gestão de influenciadores, campanhas e mídia kits — feita para valorizar o talento regional.
