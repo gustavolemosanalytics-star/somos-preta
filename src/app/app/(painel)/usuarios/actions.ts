@@ -49,6 +49,22 @@ export async function criarUsuario(input: {
     return { ok: true }
 }
 
+export async function atualizarPapel(
+    userId: string,
+    role: "admin" | "gestor" | "analista" | "creator" | "pendente"
+): Promise<{ ok?: true; error?: string }> {
+    const me = await getAdmin()
+    if (!me) return { error: "Acesso restrito a administradores." }
+    if (semServiceKey()) {
+        return { error: "Sem permissão (RLS) e a SUPABASE_SERVICE_ROLE_KEY não está configurada. Rode a migração 0003 no Supabase ou configure a secret key na Vercel." }
+    }
+    const admin = createAdminClient()
+    const { error } = await admin.from("somos_preta_profiles").update({ role }).eq("id", userId)
+    if (error) return { error: error.message }
+    revalidatePath("/app/usuarios")
+    return { ok: true }
+}
+
 export async function excluirUsuario(id: string): Promise<{ ok?: true; error?: string }> {
     const me = await getAdmin()
     if (!me) return { error: "Acesso restrito a administradores." }

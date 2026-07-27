@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Profile, Role } from "@/lib/db/types"
-import { criarUsuario, excluirUsuario } from "./actions"
+import { criarUsuario, excluirUsuario, atualizarPapel } from "./actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -72,10 +72,26 @@ export function UsuariosClient({ meId }: { meId: string }) {
     }, [usuarios, busca])
 
     async function mudarRole(u: Profile, role: Role) {
+        if (role === u.role) return
+        const anterior = u.role
         setUsuarios((prev) => prev.map((x) => x.id === u.id ? { ...x, role } : x))
-        const { error } = await supabase.from("somos_preta_profiles").update({ role }).eq("id", u.id)
-        if (error) { toast.error("Não foi possível mudar o papel"); load() }
-        else toast.success(`${u.nome ?? u.email} agora é ${roleLabel(role)}`)
+
+        // 1) tenta pelo client (RLS de admin); .select() detecta bloqueio silencioso (0 linhas)
+        const { data, error } = await supabase
+            .from("somos_preta_profiles").update({ role }).eq("id", u.id).select("id")
+        if (!error && data && data.length > 0) {
+            toast.success(`${u.nome ?? u.email} agora é ${roleLabel(role)}`)
+            return
+        }
+
+        // 2) fallback: server action com privilégio (bypassa RLS e o trigger de guarda)
+        const res = await atualizarPapel(u.id, role)
+        if (res.error) {
+            toast.error(res.error)
+            setUsuarios((prev) => prev.map((x) => x.id === u.id ? { ...x, role: anterior } : x))
+            return
+        }
+        toast.success(`${u.nome ?? u.email} agora é ${roleLabel(role)}`)
     }
 
     async function handleCreate(e: React.FormEvent) {
@@ -185,8 +201,8 @@ export function UsuariosClient({ meId }: { meId: string }) {
                                                     <Badge className={roleClass[u.role]} variant="secondary">{roleLabel(u.role)}</Badge>
                                                 ) : (
                                                     <Select value={u.role} onValueChange={(v) => mudarRole(u, v as Role)}>
-                                                        <SelectTrigger className="w-[150px] h-8">
-                                                            <Badge className={roleClass[u.role]} variant="secondary">{roleLabel(u.role)}</Badge>
+                                                        <SelectTrigger className="w-[180px] h-9">
+                                                            <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
                                                     </Select>
