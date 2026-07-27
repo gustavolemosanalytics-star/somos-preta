@@ -1,15 +1,38 @@
 import type { NextConfig } from "next";
 
-// Redireciona as URLs antigas (EN) para as novas em português, preservando
-// sub-caminhos (ex.: /campaigns/123 -> /campanhas/123).
+// Redireciona URLs antigas para a nova estrutura (hub sob /app, creator sob /criador),
+// preservando sub-caminhos. Config redirects rodam ANTES do middleware.
+// Ordem importa: rotas mais específicas (ex.: /login/midia-kit) vêm antes das genéricas.
 const routeMap: [string, string][] = [
-  ["/campaigns", "/campanhas"],
-  ["/contracts", "/contratos"],
-  ["/messages", "/mensagens"],
-  ["/media-kits", "/midia-kits"],
-  ["/creators", "/descobrir"],
-  ["/influencers", "/influenciadores"],
-  ["/analytics", "/relatorios"],
+  // Creator (subpaths de /login e /midia-kit) — precisam vir antes de /login
+  ["/login/midia-kit", "/criador/login"],
+  ["/midia-kit/registro", "/criador/criar-conta"],
+  ["/midia-kit/criar", "/criador/login"],
+
+  // Hub — EN antigo -> /app
+  ["/campaigns", "/app/campanhas"],
+  ["/contracts", "/app/contratos"],
+  ["/messages", "/app/mensagens"],
+  ["/media-kits", "/app/midia-kits"],
+  ["/creators", "/app/descobrir"],
+  ["/influencers", "/app/influenciadores"],
+  ["/analytics", "/app/relatorios"],
+
+  // Hub — PT na raiz (antes do prefixo /app) -> /app
+  ["/dashboard", "/app/dashboard"],
+  ["/clientes", "/app/clientes"],
+  ["/campanhas", "/app/campanhas"],
+  ["/tarefas", "/app/tarefas"],
+  ["/influenciadores", "/app/influenciadores"],
+  ["/descobrir", "/app/descobrir"],
+  ["/midia-kits", "/app/midia-kits"],
+  ["/contratos", "/app/contratos"],
+  ["/mensagens", "/app/mensagens"],
+  ["/relatorios", "/app/relatorios"],
+  ["/usuarios", "/app/usuarios"],
+  ["/blog-admin", "/app/blog"],
+  ["/login", "/app/login"],
+  ["/registro", "/app/criar-conta"],
 ];
 
 const nextConfig: NextConfig = {

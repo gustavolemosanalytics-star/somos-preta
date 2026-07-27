@@ -47,12 +47,12 @@ export default function MidiaKitPage() {
                             transition={{ delay: 0.3 }}
                             className="flex flex-col sm:flex-row gap-4 justify-center"
                         >
-                            <Link href="/midia-kit/registro">
+                            <Link href="/criador/criar-conta">
                                 <Button size="lg" className="h-14 px-8 text-lg font-semibold rounded-full">
                                     Criar Minha Conta <ArrowRight className="ml-2 h-5 w-5" />
                                 </Button>
                             </Link>
-                            <Link href="/login/midia-kit">
+                            <Link href="/criador/login">
                                 <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-semibold rounded-full border-border/60">
                                     Já tenho conta
                                 </Button>
@@ -153,7 +153,7 @@ export default function MidiaKitPage() {
                     <div className="space-y-6 max-w-xl mx-auto">
                         <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">Pronto para impressionar?</h2>
                         <p className="text-primary-foreground/80">Crie seu mídia kit profissional agora. É grátis para começar.</p>
-                        <Link href="/midia-kit/registro">
+                        <Link href="/criador/criar-conta">
                             <Button size="lg" variant="secondary" className="h-14 px-8 text-lg font-semibold rounded-full">
                                 Começar Agora <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>

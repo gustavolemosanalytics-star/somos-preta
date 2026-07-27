@@ -49,7 +49,7 @@ export function NavUser({ user }: { user: NavUserData }) {
     const handleLogout = async () => {
         const supabase = createClient()
         await supabase.auth.signOut()
-        router.push("/login")
+        router.push("/app/login")
         router.refresh()
     }
 

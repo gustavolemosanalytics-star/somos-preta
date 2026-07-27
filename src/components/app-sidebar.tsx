@@ -37,17 +37,17 @@ import { cn } from "@/lib/utils"
 
 // Navegação — hierarquia principal: Cliente > Campanhas > Tarefas
 const navItems = [
-    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Clientes", url: "/clientes", icon: Building2 },
-    { title: "Campanhas", url: "/campanhas", icon: Megaphone },
-    { title: "Tarefas", url: "/tarefas", icon: ClipboardList },
-    { title: "Influenciadores", url: "/influenciadores", icon: Users },
-    { title: "Descobrir", url: "/descobrir", icon: UserSearch },
-    { title: "Mídia Kits", url: "/midia-kits", icon: IdCard },
-    { title: "Contratos", url: "/contratos", icon: FileText },
-    { title: "Mensagens", url: "/mensagens", icon: MessageSquare },
-    { title: "Blog", url: "/blog-admin", icon: Newspaper },
-    { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+    { title: "Dashboard", url: "/app/dashboard", icon: LayoutDashboard },
+    { title: "Clientes", url: "/app/clientes", icon: Building2 },
+    { title: "Campanhas", url: "/app/campanhas", icon: Megaphone },
+    { title: "Tarefas", url: "/app/tarefas", icon: ClipboardList },
+    { title: "Influenciadores", url: "/app/influenciadores", icon: Users },
+    { title: "Descobrir", url: "/app/descobrir", icon: UserSearch },
+    { title: "Mídia Kits", url: "/app/midia-kits", icon: IdCard },
+    { title: "Contratos", url: "/app/contratos", icon: FileText },
+    { title: "Mensagens", url: "/app/mensagens", icon: MessageSquare },
+    { title: "Blog", url: "/app/blog", icon: Newspaper },
+    { title: "Relatórios", url: "/app/relatorios", icon: BarChart3 },
 ]
 
 export function AppSidebar({ user, ...props }: { user: NavUserData } & React.ComponentProps<typeof Sidebar>) {
@@ -56,7 +56,7 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
 
     // "Usuários" só aparece para admins
     const items = user.role === "admin"
-        ? [...navItems, { title: "Usuários", url: "/usuarios", icon: ShieldCheck }]
+        ? [...navItems, { title: "Usuários", url: "/app/usuarios", icon: ShieldCheck }]
         : navItems
 
     const handleNavClick = () => {
@@ -70,7 +70,7 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="hover:bg-sidebar-accent/50">
-                            <Link href="/dashboard" onClick={handleNavClick}>
+                            <Link href="/app/dashboard" onClick={handleNavClick}>
                                 <div className="flex aspect-square size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
                                     <span className="text-xs font-semibold tracking-tight">SP</span>
                                 </div>
