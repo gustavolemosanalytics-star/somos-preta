@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
-import { FileImage, ArrowLeft, ArrowRight, Check, User, AtSign, Briefcase, DollarSign, Palette, Eye, LogOut, Save, Plus, X, MapPin, Users, TrendingUp, Heart, ExternalLink } from "lucide-react"
+import { FileImage, ArrowLeft, ArrowRight, Check, User, AtSign, Briefcase, DollarSign, Palette, Eye, LogOut, Save, Plus, X, MapPin, Users, TrendingUp, Heart, ExternalLink, Copy, Info, AlertTriangle } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -194,6 +195,7 @@ export default function MidiaKitCriarPage() {
     const [savedSlug, setSavedSlug] = useState<string | null>(null)
     const [existingId, setExistingId] = useState<string | null>(null)
     const [existingSlug, setExistingSlug] = useState<string | null>(null)
+    const [publicado, setPublicado] = useState(true)
     const [email, setEmail] = useState("")
     const [newPortfolio, setNewPortfolio] = useState({ title: "", brand: "" })
     const [newPackage, setNewPackage] = useState({ name: "", price: "", description: "" })
@@ -233,6 +235,7 @@ export default function MidiaKitCriarPage() {
                 })
                 setExistingId(k.id)
                 setExistingSlug(k.slug)
+                setPublicado(k.publicado ?? true)
             } else {
                 setData((prev) => ({ ...prev, name: prof?.nome ?? "" }))
             }
@@ -263,7 +266,7 @@ export default function MidiaKitCriarPage() {
             },
             portfolio: data.portfolio,
             pacotes: data.packages,
-            publicado: true,
+            publicado,
             cadastrado_por: user.id,
         }
 
@@ -285,6 +288,12 @@ export default function MidiaKitCriarPage() {
         }
         toast.success("Mídia kit salvo!")
         setSaving(false)
+    }
+
+    async function copiarLink() {
+        if (!existingSlug) return
+        await navigator.clipboard.writeText(`${window.location.origin}/kit/${existingSlug}`)
+        toast.success("Link copiado!")
     }
 
     const handleLogout = async () => {
@@ -320,18 +329,36 @@ export default function MidiaKitCriarPage() {
                             <Eye className="h-4 w-4 mr-1" />
                             Preview
                         </Button>
-                        {existingSlug && (
-                            <Button asChild variant="outline" size="sm" className="rounded-xl">
-                                <a href={`/kit/${existingSlug}`} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-4 w-4 mr-1" /> Ver meu kit
-                                </a>
-                            </Button>
+                        {existingSlug && publicado && (
+                            <>
+                                <Button asChild variant="outline" size="sm" className="rounded-xl">
+                                    <a href={`/kit/${existingSlug}`} target="_blank" rel="noopener noreferrer">
+                                        <ExternalLink className="h-4 w-4 mr-1" /> Ver meu kit
+                                    </a>
+                                </Button>
+                                <Button variant="outline" size="sm" className="rounded-xl" onClick={copiarLink}>
+                                    <Copy className="h-4 w-4 mr-1" /> Copiar link
+                                </Button>
+                            </>
                         )}
                         <Button variant="ghost" size="sm" className="rounded-xl text-muted-foreground" onClick={handleLogout}>
                             <LogOut className="h-4 w-4 mr-1" /> Sair
                         </Button>
                     </div>
                 </div>
+
+                {existingId && !publicado && (
+                    <div className="mb-4 rounded-xl border border-amber-300/60 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-500 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        Seu mídia kit está como <strong>rascunho</strong> — publique (na última etapa) para gerar o link público.
+                    </div>
+                )}
+                {!existingId && (
+                    <div className="mb-4 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground flex items-start gap-2">
+                        <Info className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+                        <span><strong className="text-foreground">Primeiros passos:</strong> preencha as 5 etapas, acompanhe no preview ao lado e clique em <strong>Salvar</strong> na última etapa para publicar e gerar seu link.</span>
+                    </div>
+                )}
 
                 {/* Progress */}
                 <div className="mb-6">
@@ -606,17 +633,21 @@ export default function MidiaKitCriarPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6 text-center space-y-3">
-                                                <Check className="h-8 w-8 text-emerald-500 mx-auto" />
-                                                <h3 className="font-bold text-lg">Seu Mídia Kit está pronto!</h3>
+                                            <div className="rounded-2xl border border-border/60 bg-muted/20 p-6 text-center space-y-4">
+                                                <Check className="h-8 w-8 text-primary mx-auto" />
+                                                <h3 className="font-semibold text-lg">Seu mídia kit está pronto!</h3>
                                                 <p className="text-sm text-muted-foreground">
-                                                    Revise o preview ao lado e quando estiver satisfeito, salve seu mídia kit.
+                                                    Revise no preview ao lado. Salve como rascunho ou publique para gerar o link público.
                                                 </p>
-                                                <Button onClick={handleSave} disabled={saving} className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 font-bold">
-                                                    <Save className="h-4 w-4 mr-2" /> {saving ? "Salvando..." : "Salvar Mídia Kit"}
+                                                <label className="flex items-center justify-center gap-3 text-sm cursor-pointer">
+                                                    <Switch checked={publicado} onCheckedChange={setPublicado} />
+                                                    {publicado ? "Publicado (visível no link)" : "Rascunho (só você vê)"}
+                                                </label>
+                                                <Button onClick={handleSave} disabled={saving} className="rounded-xl font-medium">
+                                                    <Save className="h-4 w-4 mr-2" /> {saving ? "Salvando..." : "Salvar mídia kit"}
                                                 </Button>
-                                                {savedSlug && (
-                                                    <Link href={`/kit/${savedSlug}`} className="block text-sm text-emerald-600 font-medium hover:underline">
+                                                {savedSlug && publicado && (
+                                                    <Link href={`/kit/${savedSlug}`} target="_blank" rel="noopener noreferrer" className="block text-sm text-primary font-medium hover:underline">
                                                         Ver meu mídia kit público →
                                                     </Link>
                                                 )}
