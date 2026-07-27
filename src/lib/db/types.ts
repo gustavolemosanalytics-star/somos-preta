@@ -1,6 +1,6 @@
 // Tipos das tabelas somos_preta_* (espelham o schema em supabase/migrations/0001_somos_preta_init.sql)
 
-export type Role = "admin" | "gestor" | "analista" | "creator"
+export type Role = "admin" | "gestor" | "analista" | "creator" | "pendente"
 export type InfluencerStatus = "ativo" | "inativo" | "negociando" | "bloqueado"
 export type CampanhaStatus = "rascunho" | "planejamento" | "ativa" | "concluida" | "cancelada"
 export type TarefaStatus = "pendente" | "em_andamento" | "concluida" | "bloqueada"

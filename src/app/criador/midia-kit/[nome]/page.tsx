@@ -205,7 +205,9 @@ export default function MidiaKitCriarPage() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) { router.push("/criador/login"); return }
             setEmail(user.email ?? "")
-            const { data: prof } = await supabase.from("somos_preta_profiles").select("nome").eq("id", user.id).single()
+            const { data: prof } = await supabase.from("somos_preta_profiles").select("nome, role").eq("id", user.id).single()
+            // 'pendente' (cadastro interno sem liberação) não acessa a área do creator
+            if (prof?.role === "pendente") { router.push("/app/sem-acesso"); return }
             const { data: kit } = await supabase
                 .from("somos_preta_midia_kits")
                 .select("*")

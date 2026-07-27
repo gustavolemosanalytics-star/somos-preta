@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, CheckCircle2 } from "lucide-react"
-import { creatorAreaPath } from "@/lib/creator-route"
 
 export default function RegistroPage() {
     const router = useRouter()
@@ -43,8 +42,9 @@ export default function RegistroPage() {
 
         // Novo cadastro entra como 'creator' -> vai para a área do creator.
         // (um admin promove a staff pela tela de Usuários, se for o caso.)
+        // Cadastro interno entra como 'pendente' (sem acesso) até um admin liberar.
         if (data.session) {
-            router.push(await creatorAreaPath(supabase))
+            router.push("/app/sem-acesso")
             router.refresh()
             return
         }

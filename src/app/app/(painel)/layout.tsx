@@ -5,7 +5,6 @@ import { Separator } from "@/components/ui/separator"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { getProfile } from "@/lib/supabase/auth"
-import { slugify } from "@/lib/slug"
 
 const STAFF_ROLES = ["admin", "gestor", "analista"]
 
@@ -19,8 +18,8 @@ export default async function DashboardLayout({
     // Sem perfil (não logado ou schema ainda não aplicado) -> login
     if (!profile) redirect("/app/login")
 
-    // Creators não acessam o hub interno -> vão para a própria área
-    if (!STAFF_ROLES.includes(profile.role)) redirect(`/criador/midia-kit/${slugify(profile.nome ?? "creator")}`)
+    // Sem papel de equipe -> sem acesso ao sistema interno (aguarda liberação de um admin)
+    if (!STAFF_ROLES.includes(profile.role)) redirect("/app/sem-acesso")
 
     const navUser = {
         name: profile.nome ?? "Usuário",

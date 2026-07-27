@@ -24,7 +24,7 @@ export async function criarUsuario(input: {
     email: string
     senha: string
     nome: string
-    role: "admin" | "gestor" | "analista" | "creator"
+    role: "admin" | "gestor" | "analista" | "creator" | "pendente"
 }): Promise<{ ok?: true; error?: string }> {
     const me = await getAdmin()
     if (!me) return { error: "Acesso restrito a administradores." }

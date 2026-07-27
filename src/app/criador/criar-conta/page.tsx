@@ -31,7 +31,7 @@ export default function MidiaKitRegistroPage() {
         const { data, error } = await supabase.auth.signUp({
             email: form.email,
             password: form.password,
-            options: { data: { nome: form.name, instagram: form.instagram } },
+            options: { data: { nome: form.name, instagram: form.instagram, role_hint: "creator" } },
         })
         if (error) {
             setError(error.message.includes("already") ? "Este email já está cadastrado." : "Erro ao criar conta. Tente novamente.")

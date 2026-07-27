@@ -26,6 +26,7 @@ import { ShieldCheck, Plus, Loader2, Trash2, Search } from "lucide-react"
 import { toast } from "sonner"
 
 const ROLES: { value: Role; label: string }[] = [
+    { value: "pendente", label: "Pendente (sem acesso)" },
     { value: "admin", label: "Administrador" },
     { value: "gestor", label: "Gestor" },
     { value: "analista", label: "Analista" },
@@ -37,6 +38,7 @@ const roleClass: Record<Role, string> = {
     gestor: "bg-blue-500/15 text-blue-600",
     analista: "bg-green-500/15 text-green-600",
     creator: "bg-muted text-muted-foreground",
+    pendente: "bg-amber-500/15 text-amber-600",
 }
 
 export function UsuariosClient({ meId }: { meId: string }) {
