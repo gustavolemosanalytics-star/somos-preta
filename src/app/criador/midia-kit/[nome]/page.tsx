@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
-import { FileImage, ArrowLeft, ArrowRight, Check, User, AtSign, Briefcase, DollarSign, Palette, Eye, LogOut, Save, Plus, X, MapPin, Users, TrendingUp, Heart } from "lucide-react"
+import { FileImage, ArrowLeft, ArrowRight, Check, User, AtSign, Briefcase, DollarSign, Palette, Eye, LogOut, Save, Plus, X, MapPin, Users, TrendingUp, Heart, ExternalLink } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -320,6 +320,13 @@ export default function MidiaKitCriarPage() {
                             <Eye className="h-4 w-4 mr-1" />
                             Preview
                         </Button>
+                        {existingSlug && (
+                            <Button asChild variant="outline" size="sm" className="rounded-xl">
+                                <a href={`/kit/${existingSlug}`} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4 mr-1" /> Ver meu kit
+                                </a>
+                            </Button>
+                        )}
                         <Button variant="ghost" size="sm" className="rounded-xl text-muted-foreground" onClick={handleLogout}>
                             <LogOut className="h-4 w-4 mr-1" /> Sair
                         </Button>
