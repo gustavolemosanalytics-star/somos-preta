@@ -17,7 +17,11 @@ import {
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
-import { FileText, Plus, Loader2, ExternalLink } from "lucide-react"
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+    AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { FileText, Plus, Loader2, ExternalLink, Eye, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 type ContratoRow = Contrato & { influencer: { nome: string } | null; campanha: { nome: string } | null }
@@ -27,6 +31,189 @@ const STATUS_META: Record<ContratoStatus, { label: string; className: string }> 
     assinado: { label: "Assinado", className: "bg-green-500/15 text-green-600" },
     expirado: { label: "Expirado", className: "bg-red-500/15 text-red-600" },
     cancelado: { label: "Cancelado", className: "bg-muted text-muted-foreground" },
+}
+
+function RowActions({ row, influencers, campanhas, supabase, reload }: {
+    row: ContratoRow
+    influencers: Influencer[]
+    campanhas: Campanha[]
+    supabase: ReturnType<typeof createClient>
+    reload: () => void
+}) {
+    const [viewOpen, setViewOpen] = useState(false)
+    const [editOpen, setEditOpen] = useState(false)
+    const [deleteOpen, setDeleteOpen] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+    const [form, setForm] = useState({
+        titulo: row.titulo,
+        influencer_id: row.influencer_id ?? "",
+        campanha_id: row.campanha_id ?? "",
+        status: row.status,
+        expira_em: row.expira_em ?? "",
+        pdf_url: row.pdf_url ?? "",
+    })
+
+    function openEdit() {
+        setForm({
+            titulo: row.titulo,
+            influencer_id: row.influencer_id ?? "",
+            campanha_id: row.campanha_id ?? "",
+            status: row.status,
+            expira_em: row.expira_em ?? "",
+            pdf_url: row.pdf_url ?? "",
+        })
+        setEditOpen(true)
+    }
+
+    async function handleUpdate(e: React.FormEvent) {
+        e.preventDefault()
+        if (!form.titulo.trim()) return
+        setSaving(true)
+        const { error } = await supabase.from("somos_preta_contratos").update({
+            titulo: form.titulo.trim(),
+            influencer_id: form.influencer_id || null,
+            campanha_id: form.campanha_id || null,
+            status: form.status,
+            expira_em: form.expira_em || null,
+            assinado_em: form.status === "assinado" ? new Date().toISOString() : null,
+            pdf_url: form.pdf_url || null,
+        }).eq("id", row.id)
+        setSaving(false)
+        if (error) { toast.error("Não foi possível atualizar o contrato"); return }
+        toast.success("Contrato atualizado")
+        setEditOpen(false)
+        reload()
+    }
+
+    async function handleDelete() {
+        setDeleting(true)
+        const { error } = await supabase.from("somos_preta_contratos").delete().eq("id", row.id)
+        setDeleting(false)
+        if (error) { toast.error("Não foi possível excluir o contrato"); return }
+        toast.success("Contrato excluído")
+        setDeleteOpen(false)
+        reload()
+    }
+
+    return (
+        <div className="flex items-center justify-end gap-1">
+            {/* Ver */}
+            <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon-sm" className="rounded-xl" aria-label="Ver contrato"><Eye className="h-4 w-4" /></Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{row.titulo}</DialogTitle>
+                        <DialogDescription>Detalhes do contrato.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-3 py-2 text-sm">
+                        <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/60 p-3">
+                            <span className="text-muted-foreground">Título</span>
+                            <span className="col-span-2 font-medium">{row.titulo}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/60 p-3">
+                            <span className="text-muted-foreground">Influenciador</span>
+                            <span className="col-span-2">{row.influencer?.nome ?? "—"}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/60 p-3">
+                            <span className="text-muted-foreground">Campanha</span>
+                            <span className="col-span-2">{row.campanha?.nome ?? "—"}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/60 p-3">
+                            <span className="text-muted-foreground">Status</span>
+                            <span className="col-span-2"><Badge className={STATUS_META[row.status].className} variant="secondary">{STATUS_META[row.status].label}</Badge></span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/60 p-3">
+                            <span className="text-muted-foreground">Expira em</span>
+                            <span className="col-span-2">{row.expira_em ?? "—"}</span>
+                        </div>
+                        {row.pdf_url ? (
+                            <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/60 p-3">
+                                <span className="text-muted-foreground">PDF</span>
+                                <a href={row.pdf_url} target="_blank" rel="noopener noreferrer" className="col-span-2 text-primary inline-flex items-center gap-1 hover:underline">abrir <ExternalLink className="h-3.5 w-3.5" /></a>
+                            </div>
+                        ) : null}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Editar */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <Button variant="ghost" size="icon-sm" className="rounded-xl" aria-label="Editar contrato" onClick={openEdit}><Pencil className="h-4 w-4" /></Button>
+                <DialogContent className="sm:max-w-lg">
+                    <form onSubmit={handleUpdate}>
+                        <DialogHeader>
+                            <DialogTitle>Editar contrato</DialogTitle>
+                            <DialogDescription>Atualize as informações do contrato.</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor={`edit-titulo-${row.id}`}>Título *</Label>
+                                <Input id={`edit-titulo-${row.id}`} value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label>Influenciador</Label>
+                                    <Select value={form.influencer_id} onValueChange={(v) => setForm({ ...form, influencer_id: v })}>
+                                        <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+                                        <SelectContent>{influencers.map((i) => <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>Campanha</Label>
+                                    <Select value={form.campanha_id} onValueChange={(v) => setForm({ ...form, campanha_id: v })}>
+                                        <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+                                        <SelectContent>{campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label>Status</Label>
+                                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as ContratoStatus })}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>{Object.entries(STATUS_META).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`edit-exp-${row.id}`}>Expira em</Label>
+                                    <Input id={`edit-exp-${row.id}`} type="date" value={form.expira_em} onChange={(e) => setForm({ ...form, expira_em: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor={`edit-pdf-${row.id}`}>Link do PDF (opcional)</Label>
+                                <Input id={`edit-pdf-${row.id}`} type="url" placeholder="https://..." value={form.pdf_url} onChange={(e) => setForm({ ...form, pdf_url: e.target.value })} />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" disabled={saving} className="rounded-xl">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar alterações"}</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Excluir */}
+            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon-sm" className="rounded-xl text-destructive hover:text-destructive" aria-label="Excluir contrato"><Trash2 className="h-4 w-4" /></Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir contrato?</AlertDialogTitle>
+                        <AlertDialogDescription>Esta ação não pode ser desfeita. O contrato &quot;{row.titulo}&quot; será removido permanentemente.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleting} className="rounded-xl">Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={(e) => { e.preventDefault(); handleDelete() }} disabled={deleting} className="rounded-xl bg-destructive text-white hover:bg-destructive/90">
+                            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    )
 }
 
 export default function ContractsPage() {
@@ -188,6 +375,7 @@ export default function ContractsPage() {
                                     <TableHead className="hidden lg:table-cell">Expira</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead className="text-right">PDF</TableHead>
+                                    <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -204,6 +392,9 @@ export default function ContractsPage() {
                                                     abrir <ExternalLink className="h-3.5 w-3.5" />
                                                 </a>
                                             ) : "—"}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <RowActions row={c} influencers={influencers} campanhas={campanhas} supabase={supabase} reload={load} />
                                         </TableCell>
                                     </TableRow>
                                 ))}

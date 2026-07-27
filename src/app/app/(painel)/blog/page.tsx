@@ -20,7 +20,7 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
     AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Newspaper, Plus, Loader2, Trash2, ExternalLink } from "lucide-react"
+import { Newspaper, Plus, Loader2, Trash2, ExternalLink, Pencil } from "lucide-react"
 import { toast } from "sonner"
 
 const slugify = (s: string) =>
@@ -33,6 +33,9 @@ export default function BlogAdminPage() {
     const [open, setOpen] = useState(false)
     const [saving, setSaving] = useState(false)
     const [form, setForm] = useState({ titulo: "", categoria: "", resumo: "", conteudo: "", cover_url: "", status: "rascunho" as BlogStatus })
+    const [editing, setEditing] = useState<BlogPost | null>(null)
+    const [editSaving, setEditSaving] = useState(false)
+    const [editForm, setEditForm] = useState({ titulo: "", categoria: "", resumo: "", conteudo: "", cover_url: "", status: "rascunho" as BlogStatus })
 
     async function load() {
         setLoading(true)
@@ -91,6 +94,31 @@ export default function BlogAdminPage() {
         const { error } = await supabase.from("somos_preta_blog_posts").delete().eq("id", p.id)
         if (error) { toast.error("Erro ao excluir"); return }
         toast.success("Post excluído")
+        load()
+    }
+
+    function openEdit(p: BlogPost) {
+        setEditForm({ titulo: p.titulo, categoria: p.categoria ?? "", resumo: p.resumo ?? "", conteudo: p.conteudo ?? "", cover_url: p.cover_url ?? "", status: p.status })
+        setEditing(p)
+    }
+
+    async function handleUpdate(e: React.FormEvent) {
+        e.preventDefault()
+        if (!editing || !editForm.titulo.trim()) return
+        setEditSaving(true)
+        const { error } = await supabase.from("somos_preta_blog_posts").update({
+            titulo: editForm.titulo.trim(),
+            categoria: editForm.categoria || null,
+            cover_url: editForm.cover_url || null,
+            resumo: editForm.resumo || null,
+            conteudo: editForm.conteudo || null,
+            status: editForm.status,
+            publicado_em: editForm.status === "publicado" ? (editing.publicado_em ?? new Date().toISOString()) : editing.publicado_em,
+        }).eq("id", editing.id)
+        setEditSaving(false)
+        if (error) { toast.error("Erro ao atualizar"); return }
+        toast.success("Post atualizado")
+        setEditing(null)
         load()
     }
 
@@ -176,6 +204,7 @@ export default function BlogAdminPage() {
                                                 {p.status === "publicado" && (
                                                     <a href={`/blog/${p.slug}`} target="_blank" rel="noopener noreferrer" className="text-primary p-1.5 hover:bg-muted rounded-lg"><ExternalLink className="h-4 w-4" /></a>
                                                 )}
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600"><Trash2 className="h-4 w-4" /></Button>
@@ -200,6 +229,42 @@ export default function BlogAdminPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Dialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)}>
+                <DialogContent className="sm:max-w-2xl">
+                    <form onSubmit={handleUpdate}>
+                        <DialogHeader>
+                            <DialogTitle>Editar post</DialogTitle>
+                            <DialogDescription>Atualize as informações do post.</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-titulo">Título *</Label>
+                                <Input id="edit-titulo" value={editForm.titulo} onChange={(e) => setEditForm({ ...editForm, titulo: e.target.value })} required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2"><Label htmlFor="edit-cat">Categoria</Label><Input id="edit-cat" value={editForm.categoria} onChange={(e) => setEditForm({ ...editForm, categoria: e.target.value })} /></div>
+                                <div className="grid gap-2"><Label htmlFor="edit-cover">Imagem de capa (URL)</Label><Input id="edit-cover" type="url" value={editForm.cover_url} onChange={(e) => setEditForm({ ...editForm, cover_url: e.target.value })} /></div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-resumo">Resumo</Label>
+                                <Textarea id="edit-resumo" value={editForm.resumo} onChange={(e) => setEditForm({ ...editForm, resumo: e.target.value })} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-conteudo">Conteúdo</Label>
+                                <Textarea id="edit-conteudo" value={editForm.conteudo} onChange={(e) => setEditForm({ ...editForm, conteudo: e.target.value })} className="min-h-[160px]" />
+                            </div>
+                            <label className="flex items-center gap-3 text-sm">
+                                <Switch checked={editForm.status === "publicado"} onCheckedChange={(v) => setEditForm({ ...editForm, status: v ? "publicado" : "rascunho" })} />
+                                Publicado
+                            </label>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" disabled={editSaving} className="rounded-xl">{editSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar alterações"}</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

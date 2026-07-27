@@ -18,7 +18,11 @@ import {
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
-import { Users, Plus, Loader2, Search, Instagram } from "lucide-react"
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Users, Plus, Loader2, Search, Instagram, Eye, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 const STATUS_META: Record<InfluencerStatus, { label: string; className: string }> = {
@@ -182,6 +186,7 @@ export default function InfluencersPage() {
                                     <TableHead className="hidden lg:table-cell">Local</TableHead>
                                     <TableHead className="hidden sm:table-cell">Fonte</TableHead>
                                     <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -200,6 +205,9 @@ export default function InfluencersPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell><Badge className={STATUS_META[i.status].className} variant="secondary">{STATUS_META[i.status].label}</Badge></TableCell>
+                                        <TableCell className="text-right">
+                                            <RowActions row={i} supabase={supabase} reload={load} />
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -207,6 +215,174 @@ export default function InfluencersPage() {
                     )}
                 </CardContent>
             </Card>
+        </div>
+    )
+}
+
+function Detail({ label, value }: { label: string; value: React.ReactNode }) {
+    return (
+        <div className="flex items-start justify-between gap-4 border-b border-border/60 pb-2 last:border-b-0 last:pb-0">
+            <span className="text-muted-foreground shrink-0">{label}</span>
+            <span className="text-right font-medium">{value}</span>
+        </div>
+    )
+}
+
+function RowActions({ row, supabase, reload }: {
+    row: Influencer
+    supabase: ReturnType<typeof createClient>
+    reload: () => Promise<void> | void
+}) {
+    const [viewOpen, setViewOpen] = useState(false)
+    const [editOpen, setEditOpen] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const [edit, setEdit] = useState({
+        nome: "", instagram: "", tiktok: "", cidade: "", estado: "",
+        followers: "", engagement: "", nicho: "", status: "ativo" as InfluencerStatus,
+    })
+
+    function onEditOpenChange(o: boolean) {
+        if (o) {
+            setEdit({
+                nome: row.nome ?? "",
+                instagram: row.instagram ?? "",
+                tiktok: row.tiktok ?? "",
+                cidade: row.cidade ?? "",
+                estado: row.estado ?? "",
+                followers: row.followers != null ? String(row.followers) : "",
+                engagement: row.engagement != null ? String(row.engagement) : "",
+                nicho: (row.nicho ?? []).join(", "),
+                status: row.status,
+            })
+        }
+        setEditOpen(o)
+    }
+
+    async function handleUpdate(e: React.FormEvent) {
+        e.preventDefault()
+        if (!edit.nome.trim()) return
+        setSaving(true)
+        const { error } = await supabase.from("somos_preta_influencers").update({
+            nome: edit.nome.trim(),
+            instagram: edit.instagram || null,
+            tiktok: edit.tiktok || null,
+            estado: edit.estado || null,
+            cidade: edit.cidade || null,
+            nicho: edit.nicho ? edit.nicho.split(",").map((s) => s.trim()).filter(Boolean) : [],
+            followers: edit.followers ? Number(edit.followers) : 0,
+            engagement: edit.engagement ? Number(edit.engagement) : 0,
+            status: edit.status,
+        }).eq("id", row.id)
+        setSaving(false)
+        if (error) { toast.error("Não foi possível atualizar"); return }
+        toast.success("Criador atualizado")
+        setEditOpen(false)
+        await reload()
+    }
+
+    async function handleDelete() {
+        const { error } = await supabase.from("somos_preta_influencers").delete().eq("id", row.id)
+        if (error) { toast.error("Não foi possível excluir"); return }
+        toast.success("Criador excluído")
+        await reload()
+    }
+
+    return (
+        <div className="flex items-center justify-end gap-1">
+            <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Ver detalhes"><Eye className="h-4 w-4" /></Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{row.nome}</DialogTitle>
+                        <DialogDescription>Detalhes do criador.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-3 py-2 text-sm">
+                        <Detail label="Instagram" value={row.instagram || "—"} />
+                        <Detail label="TikTok" value={row.tiktok || "—"} />
+                        <Detail label="Seguidores" value={fmt(row.followers)} />
+                        <Detail label="Engajamento" value={`${Number(row.engagement)}%`} />
+                        <Detail
+                            label="Nichos"
+                            value={row.nicho?.length ? (
+                                <span className="flex flex-wrap justify-end gap-1">
+                                    {row.nicho.map((n) => <Badge key={n} variant="secondary" className="bg-muted text-muted-foreground">{n}</Badge>)}
+                                </span>
+                            ) : "—"}
+                        />
+                        <Detail label="Local" value={[row.cidade, row.estado].filter(Boolean).join(" / ") || "—"} />
+                        <Detail label="Status" value={<Badge className={STATUS_META[row.status].className} variant="secondary">{STATUS_META[row.status].label}</Badge>} />
+                        <Detail label="Fonte" value={row.fonte === "app" ? "App" : "Interna"} />
+                        {row.email ? <Detail label="E-mail" value={row.email} /> : null}
+                        {row.telefone ? <Detail label="Telefone" value={row.telefone} /> : null}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={editOpen} onOpenChange={onEditOpenChange}>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar"><Pencil className="h-4 w-4" /></Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                    <form onSubmit={handleUpdate}>
+                        <DialogHeader>
+                            <DialogTitle>Editar criador</DialogTitle>
+                            <DialogDescription>Atualize os dados do creator.</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor={`e-nome-${row.id}`}>Nome *</Label>
+                                <Input id={`e-nome-${row.id}`} value={edit.nome} onChange={(e) => setEdit({ ...edit, nome: e.target.value })} required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2"><Label htmlFor={`e-ig-${row.id}`}>Instagram</Label><Input id={`e-ig-${row.id}`} placeholder="@user" value={edit.instagram} onChange={(e) => setEdit({ ...edit, instagram: e.target.value })} /></div>
+                                <div className="grid gap-2"><Label htmlFor={`e-tt-${row.id}`}>TikTok</Label><Input id={`e-tt-${row.id}`} placeholder="@user" value={edit.tiktok} onChange={(e) => setEdit({ ...edit, tiktok: e.target.value })} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2"><Label htmlFor={`e-cid-${row.id}`}>Cidade</Label><Input id={`e-cid-${row.id}`} value={edit.cidade} onChange={(e) => setEdit({ ...edit, cidade: e.target.value })} /></div>
+                                <div className="grid gap-2"><Label htmlFor={`e-uf-${row.id}`}>Estado (UF)</Label><Input id={`e-uf-${row.id}`} maxLength={2} value={edit.estado} onChange={(e) => setEdit({ ...edit, estado: e.target.value.toUpperCase() })} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2"><Label htmlFor={`e-fol-${row.id}`}>Seguidores</Label><Input id={`e-fol-${row.id}`} type="number" min="0" value={edit.followers} onChange={(e) => setEdit({ ...edit, followers: e.target.value })} /></div>
+                                <div className="grid gap-2"><Label htmlFor={`e-eng-${row.id}`}>Engajamento (%)</Label><Input id={`e-eng-${row.id}`} type="number" min="0" step="0.01" value={edit.engagement} onChange={(e) => setEdit({ ...edit, engagement: e.target.value })} /></div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor={`e-nicho-${row.id}`}>Nichos (separados por vírgula)</Label>
+                                <Input id={`e-nicho-${row.id}`} placeholder="moda, lifestyle" value={edit.nicho} onChange={(e) => setEdit({ ...edit, nicho: e.target.value })} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Status</Label>
+                                <Select value={edit.status} onValueChange={(v) => setEdit({ ...edit, status: v as InfluencerStatus })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>{Object.entries(STATUS_META).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" disabled={saving} className="rounded-xl">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600" aria-label="Excluir"><Trash2 className="h-4 w-4" /></Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir criador?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. O criador <span className="font-medium text-foreground">{row.nome}</span> será removido da base.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 text-white hover:bg-red-700">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

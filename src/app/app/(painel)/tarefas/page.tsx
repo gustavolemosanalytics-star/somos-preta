@@ -10,7 +10,18 @@ import { Button } from "@/components/ui/button"
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { ClipboardList, Loader2 } from "lucide-react"
+import {
+    Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { ClipboardList, Loader2, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 type TarefaComCampanha = Tarefa & { campanha: { id: string; nome: string } | null }
@@ -34,6 +45,114 @@ const FILTROS: { value: TarefaStatus | "todas"; label: string }[] = [
     { value: "concluida", label: "Concluídas" },
     { value: "bloqueada", label: "Bloqueadas" },
 ]
+
+function TarefaAcoes({ t, supabase, reload }: {
+    t: TarefaComCampanha
+    supabase: ReturnType<typeof createClient>
+    reload: () => Promise<void>
+}) {
+    const [editOpen, setEditOpen] = useState(false)
+    const [titulo, setTitulo] = useState(t.titulo)
+    const [descricao, setDescricao] = useState(t.descricao ?? "")
+    const [prioridade, setPrioridade] = useState<TarefaPrioridade>(t.prioridade)
+    const [dataEntrega, setDataEntrega] = useState(t.data_entrega ?? "")
+    const [saving, setSaving] = useState(false)
+
+    function resetForm() {
+        setTitulo(t.titulo)
+        setDescricao(t.descricao ?? "")
+        setPrioridade(t.prioridade)
+        setDataEntrega(t.data_entrega ?? "")
+    }
+
+    async function salvar() {
+        setSaving(true)
+        const { error } = await supabase.from("somos_preta_tarefas").update({
+            titulo,
+            descricao: descricao || null,
+            prioridade,
+            data_entrega: dataEntrega || null,
+        }).eq("id", t.id)
+        setSaving(false)
+        if (error) { toast.error("Erro ao salvar"); return }
+        setEditOpen(false)
+        await reload()
+        toast.success("Tarefa atualizada")
+    }
+
+    async function excluir() {
+        const { error } = await supabase.from("somos_preta_tarefas").delete().eq("id", t.id)
+        if (error) { toast.error("Erro ao excluir"); return }
+        await reload()
+        toast.success("Tarefa excluída")
+    }
+
+    return (
+        <div className="flex items-center gap-1">
+            <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (o) resetForm() }}>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Editar tarefa</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`titulo-${t.id}`}>Título</Label>
+                            <Input id={`titulo-${t.id}`} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`descricao-${t.id}`}>Descrição</Label>
+                            <Textarea id={`descricao-${t.id}`} rows={3} value={descricao} onChange={(e) => setDescricao(e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label>Prioridade</Label>
+                                <Select value={prioridade} onValueChange={(v) => setPrioridade(v as TarefaPrioridade)}>
+                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                    <SelectContent>{Object.entries(PRIORIDADE).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor={`entrega-${t.id}`}>Entrega</Label>
+                                <Input id={`entrega-${t.id}`} type="date" value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} />
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+                        <Button onClick={salvar} disabled={saving || !titulo.trim()}>
+                            {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Salvar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600">
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. A tarefa &quot;{t.titulo}&quot; será removida permanentemente.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={excluir} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    )
+}
 
 export default function TarefasPage() {
     const [supabase] = useState(() => createClient())
@@ -124,6 +243,7 @@ export default function TarefasPage() {
                                     </SelectTrigger>
                                     <SelectContent>{Object.entries(TAREFA_STATUS).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}</SelectContent>
                                 </Select>
+                                <TarefaAcoes t={t} supabase={supabase} reload={load} />
                             </CardContent>
                         </Card>
                     ))}

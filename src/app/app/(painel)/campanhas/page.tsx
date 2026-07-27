@@ -15,7 +15,11 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { Megaphone, Plus, Loader2, Search } from "lucide-react"
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Megaphone, Plus, Loader2, Search, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 type CampanhaComCliente = Campanha & { cliente: { nome: string } | null }
@@ -40,6 +44,14 @@ export default function CampaignsPage() {
     const [saving, setSaving] = useState(false)
 
     const [form, setForm] = useState({
+        cliente_id: "", nome: "", objetivo: "", budget: "",
+        data_inicio: "", data_fim: "", status: "rascunho" as CampanhaStatus,
+    })
+
+    const [editing, setEditing] = useState<CampanhaComCliente | null>(null)
+    const [savingEdit, setSavingEdit] = useState(false)
+    const [deleting, setDeleting] = useState<CampanhaComCliente | null>(null)
+    const [editForm, setEditForm] = useState({
         cliente_id: "", nome: "", objetivo: "", budget: "",
         data_inicio: "", data_fim: "", status: "rascunho" as CampanhaStatus,
     })
@@ -89,6 +101,52 @@ export default function CampaignsPage() {
         toast.success("Campanha criada")
         setOpen(false)
         setForm({ cliente_id: "", nome: "", objetivo: "", budget: "", data_inicio: "", data_fim: "", status: "rascunho" })
+        load()
+    }
+
+    function openEdit(c: CampanhaComCliente) {
+        setEditing(c)
+        setEditForm({
+            cliente_id: c.cliente_id ?? "",
+            nome: c.nome,
+            objetivo: c.objetivo ?? "",
+            budget: c.budget != null ? String(c.budget) : "",
+            data_inicio: c.data_inicio ?? "",
+            data_fim: c.data_fim ?? "",
+            status: c.status,
+        })
+    }
+
+    async function handleUpdate(e: React.FormEvent) {
+        e.preventDefault()
+        if (!editing) return
+        if (!editForm.nome.trim() || !editForm.cliente_id) {
+            toast.error("Escolha o cliente e informe o nome")
+            return
+        }
+        setSavingEdit(true)
+        const { error } = await supabase.from("somos_preta_campanhas").update({
+            cliente_id: editForm.cliente_id,
+            nome: editForm.nome.trim(),
+            objetivo: editForm.objetivo || null,
+            budget: editForm.budget ? Number(editForm.budget) : 0,
+            data_inicio: editForm.data_inicio || null,
+            data_fim: editForm.data_fim || null,
+            status: editForm.status,
+        }).eq("id", editing.id)
+        setSavingEdit(false)
+        if (error) { toast.error("Não foi possível atualizar a campanha"); return }
+        toast.success("Campanha atualizada")
+        setEditing(null)
+        load()
+    }
+
+    async function handleDelete() {
+        if (!deleting) return
+        const { error } = await supabase.from("somos_preta_campanhas").delete().eq("id", deleting.id)
+        if (error) { toast.error("Não foi possível excluir a campanha"); return }
+        toast.success("Campanha excluída")
+        setDeleting(null)
         load()
     }
 
@@ -189,23 +247,120 @@ export default function CampaignsPage() {
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filtradas.map((c) => (
-                        <Link key={c.id} href={`/app/campanhas/${c.id}`}>
-                            <Card className="h-full hover:border-primary/50 transition-colors">
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <CardTitle className="text-base">{c.nome}</CardTitle>
-                                        <Badge className={STATUS_META[c.status].className} variant="secondary">{STATUS_META[c.status].label}</Badge>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">{c.cliente?.nome ?? "Sem cliente"}</p>
-                                </CardHeader>
-                                <CardContent className="text-sm">
-                                    <p className="font-semibold">{brl(Number(c.budget))}</p>
-                                </CardContent>
-                            </Card>
-                        </Link>
+                        <div key={c.id} className="relative group">
+                            <Link href={`/app/campanhas/${c.id}`}>
+                                <Card className="h-full hover:border-primary/50 transition-colors">
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <CardTitle className="text-base">{c.nome}</CardTitle>
+                                            <Badge className={STATUS_META[c.status].className} variant="secondary">{STATUS_META[c.status].label}</Badge>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{c.cliente?.nome ?? "Sem cliente"}</p>
+                                    </CardHeader>
+                                    <CardContent className="text-sm">
+                                        <p className="font-semibold">{brl(Number(c.budget))}</p>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                            <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-background/80 p-0.5 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    aria-label="Editar campanha"
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(c) }}
+                                >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-red-600 hover:text-red-600"
+                                    aria-label="Excluir campanha"
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleting(c) }}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}
+
+            <Dialog open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null) }}>
+                <DialogContent className="sm:max-w-lg">
+                    <form onSubmit={handleUpdate}>
+                        <DialogHeader>
+                            <DialogTitle>Editar campanha</DialogTitle>
+                            <DialogDescription>Atualize os dados da campanha.</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label>Cliente *</Label>
+                                <Select value={editForm.cliente_id} onValueChange={(v) => setEditForm({ ...editForm, cliente_id: v })}>
+                                    <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                                    <SelectContent>
+                                        {clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-nome">Nome *</Label>
+                                <Input id="edit-nome" value={editForm.nome} onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })} required />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-objetivo">Objetivo</Label>
+                                <Input id="edit-objetivo" value={editForm.objetivo} onChange={(e) => setEditForm({ ...editForm, objetivo: e.target.value })} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit-budget">Budget (R$)</Label>
+                                    <Input id="edit-budget" type="number" min="0" step="0.01" value={editForm.budget} onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>Status</Label>
+                                    <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v as CampanhaStatus })}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(STATUS_META).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit-ini">Início</Label>
+                                    <Input id="edit-ini" type="date" value={editForm.data_inicio} onChange={(e) => setEditForm({ ...editForm, data_inicio: e.target.value })} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit-fim">Fim</Label>
+                                    <Input id="edit-fim" type="date" value={editForm.data_fim} onChange={(e) => setEditForm({ ...editForm, data_fim: e.target.value })} />
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" disabled={savingEdit} className="rounded-xl">
+                                {savingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar alterações"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog open={!!deleting} onOpenChange={(o) => { if (!o) setDeleting(null) }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
+                        <AlertDialogDescription>As tarefas vinculadas também serão removidas.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 text-white hover:bg-red-700">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

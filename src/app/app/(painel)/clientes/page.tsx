@@ -26,7 +26,18 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Building2, Plus, Loader2, Search } from "lucide-react"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Building2, Plus, Loader2, Search, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 export default function ClientesPage() {
@@ -213,6 +224,7 @@ export default function ClientesPage() {
                                     <TableHead className="hidden md:table-cell">Segmento</TableHead>
                                     <TableHead className="hidden lg:table-cell">Local</TableHead>
                                     <TableHead className="text-right">Campanhas</TableHead>
+                                    <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -233,6 +245,9 @@ export default function ClientesPage() {
                                                 ver
                                             </Link>
                                         </TableCell>
+                                        <TableCell className="text-right">
+                                            <ClienteRowActions cliente={c} supabase={supabase} onDone={load} />
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -240,6 +255,183 @@ export default function ClientesPage() {
                     )}
                 </CardContent>
             </Card>
+        </div>
+    )
+}
+
+function ClienteRowActions({
+    cliente,
+    supabase,
+    onDone,
+}: {
+    cliente: Cliente
+    supabase: ReturnType<typeof createClient>
+    onDone: () => void
+}) {
+    const [openEdit, setOpenEdit] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+    const [form, setForm] = useState({
+        nome: cliente.nome ?? "",
+        empresa: cliente.empresa ?? "",
+        email: cliente.email ?? "",
+        telefone: cliente.telefone ?? "",
+        segmento: cliente.segmento ?? "",
+        cidade: cliente.cidade ?? "",
+        estado: cliente.estado ?? "",
+        observacoes: cliente.observacoes ?? "",
+    })
+
+    async function handleUpdate(e: React.FormEvent) {
+        e.preventDefault()
+        if (!form.nome.trim()) return
+        setSaving(true)
+
+        const { error } = await supabase
+            .from("somos_preta_clientes")
+            .update({
+                nome: form.nome.trim(),
+                empresa: form.empresa || null,
+                email: form.email || null,
+                telefone: form.telefone || null,
+                segmento: form.segmento || null,
+                cidade: form.cidade || null,
+                estado: form.estado || null,
+                observacoes: form.observacoes || null,
+            })
+            .eq("id", cliente.id)
+
+        setSaving(false)
+        if (error) {
+            toast.error("Não foi possível atualizar o cliente")
+            return
+        }
+        toast.success("Cliente atualizado")
+        setOpenEdit(false)
+        onDone()
+    }
+
+    async function handleDelete() {
+        setDeleting(true)
+        const { error } = await supabase
+            .from("somos_preta_clientes")
+            .delete()
+            .eq("id", cliente.id)
+        setDeleting(false)
+        if (error) {
+            toast.error("Não foi possível excluir o cliente")
+            return
+        }
+        toast.success("Cliente excluído")
+        onDone()
+    }
+
+    return (
+        <div
+            className="flex items-center justify-end gap-1"
+            onClick={(e) => e.stopPropagation()}
+        >
+            <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+                <DialogTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-xl text-muted-foreground hover:text-foreground"
+                        title="Editar"
+                        aria-label="Editar cliente"
+                    >
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                    <form onSubmit={handleUpdate}>
+                        <DialogHeader>
+                            <DialogTitle>Editar cliente</DialogTitle>
+                            <DialogDescription>Atualize os dados da marca/conta atendida.</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor={`edit-nome-${cliente.id}`}>Nome *</Label>
+                                <Input id={`edit-nome-${cliente.id}`} value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`edit-empresa-${cliente.id}`}>Empresa</Label>
+                                    <Input id={`edit-empresa-${cliente.id}`} value={form.empresa} onChange={(e) => setForm({ ...form, empresa: e.target.value })} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`edit-segmento-${cliente.id}`}>Segmento</Label>
+                                    <Input id={`edit-segmento-${cliente.id}`} value={form.segmento} onChange={(e) => setForm({ ...form, segmento: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`edit-email-${cliente.id}`}>Email</Label>
+                                    <Input id={`edit-email-${cliente.id}`} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`edit-telefone-${cliente.id}`}>Telefone</Label>
+                                    <Input id={`edit-telefone-${cliente.id}`} value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`edit-cidade-${cliente.id}`}>Cidade</Label>
+                                    <Input id={`edit-cidade-${cliente.id}`} value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`edit-estado-${cliente.id}`}>Estado (UF)</Label>
+                                    <Input id={`edit-estado-${cliente.id}`} maxLength={2} value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value.toUpperCase() })} />
+                                </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor={`edit-obs-${cliente.id}`}>Observações</Label>
+                                <Textarea id={`edit-obs-${cliente.id}`} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" disabled={saving} className="rounded-xl">
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar alterações"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-xl text-muted-foreground hover:text-destructive"
+                        title="Excluir"
+                        aria-label="Excluir cliente"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="border border-border/60 rounded-xl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            As campanhas vinculadas também serão removidas.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-xl" disabled={deleting}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="rounded-xl bg-destructive text-white hover:bg-destructive/90"
+                            disabled={deleting}
+                            onClick={(e) => {
+                                e.preventDefault()
+                                handleDelete()
+                            }}
+                        >
+                            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
