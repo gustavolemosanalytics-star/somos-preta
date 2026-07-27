@@ -41,7 +41,7 @@ const navItems = [
     { title: "Clientes", url: "/app/clientes", icon: Building2 },
     { title: "Campanhas", url: "/app/campanhas", icon: Megaphone },
     { title: "Tarefas", url: "/app/tarefas", icon: ClipboardList },
-    { title: "Influenciadores", url: "/app/influenciadores", icon: Users },
+    { title: "Criadores", url: "/app/criadores", icon: Users },
     { title: "Descobrir", url: "/app/descobrir", icon: UserSearch },
     { title: "Mídia Kits", url: "/app/midia-kits", icon: IdCard },
     { title: "Contratos", url: "/app/contratos", icon: FileText },

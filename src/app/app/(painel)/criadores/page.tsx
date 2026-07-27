@@ -50,7 +50,7 @@ export default function InfluencersPage() {
             .from("somos_preta_influencers")
             .select("*")
             .order("followers", { ascending: false })
-        if (error) toast.error("Erro ao carregar influenciadores")
+        if (error) toast.error("Erro ao carregar criadores")
         setInfluencers((data as Influencer[]) ?? [])
         setLoading(false)
     }
@@ -89,7 +89,7 @@ export default function InfluencersPage() {
         })
         setSaving(false)
         if (error) { toast.error("Não foi possível salvar"); return }
-        toast.success("Influenciador cadastrado")
+        toast.success("Criador cadastrado")
         setOpen(false)
         setForm({ nome: "", instagram: "", tiktok: "", email: "", telefone: "", estado: "", cidade: "", nicho: "", followers: "", engagement: "", status: "ativo" })
         load()
@@ -104,7 +104,7 @@ export default function InfluencersPage() {
                             <Users className="h-3 w-3 mr-1" /> {influencers.length} cadastrados
                         </Badge>
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight mt-1">Influenciadores</h1>
+                    <h1 className="text-2xl font-bold tracking-tight mt-1">Criadores</h1>
                     <p className="text-muted-foreground text-sm">Sua base de creators do Norte e Nordeste.</p>
                 </div>
 
@@ -115,7 +115,7 @@ export default function InfluencersPage() {
                         <DialogContent className="sm:max-w-lg">
                             <form onSubmit={handleCreate}>
                                 <DialogHeader>
-                                    <DialogTitle>Novo influenciador</DialogTitle>
+                                    <DialogTitle>Novo criador</DialogTitle>
                                     <DialogDescription>Cadastre um creator na base.</DialogDescription>
                                 </DialogHeader>
                                 <div className="grid gap-4 py-4">
@@ -158,7 +158,7 @@ export default function InfluencersPage() {
 
             <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar influenciador..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9 rounded-xl" />
+                <Input placeholder="Buscar criador..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9 rounded-xl" />
             </div>
 
             <Card>
@@ -168,7 +168,7 @@ export default function InfluencersPage() {
                     ) : filtrados.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center">
                             <Users className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                            <p className="font-medium">Nenhum influenciador ainda</p>
+                            <p className="font-medium">Nenhum criador ainda</p>
                             <p className="text-sm text-muted-foreground">Cadastre um ou use “Descobrir” para buscar por @.</p>
                         </div>
                     ) : (
@@ -180,6 +180,7 @@ export default function InfluencersPage() {
                                     <TableHead className="text-right">Seguidores</TableHead>
                                     <TableHead className="hidden md:table-cell text-right">Eng.</TableHead>
                                     <TableHead className="hidden lg:table-cell">Local</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Fonte</TableHead>
                                     <TableHead>Status</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -193,6 +194,11 @@ export default function InfluencersPage() {
                                         <TableCell className="text-right">{fmt(i.followers)}</TableCell>
                                         <TableCell className="hidden md:table-cell text-right">{Number(i.engagement)}%</TableCell>
                                         <TableCell className="hidden lg:table-cell text-muted-foreground">{[i.cidade, i.estado].filter(Boolean).join(" / ") || "—"}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">
+                                            <Badge variant="secondary" className={i.fonte === "app" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}>
+                                                {i.fonte === "app" ? "App" : "Interna"}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell><Badge className={STATUS_META[i.status].className} variant="secondary">{STATUS_META[i.status].label}</Badge></TableCell>
                                     </TableRow>
                                 ))}

@@ -81,7 +81,7 @@ export default function AgencyDashboardHome() {
                 <Link href="/app/clientes"><KPICard title="Clientes" value={String(stats.clientes)} description="contas ativas" icon={<Building2 className="h-4 w-4 sm:h-5 sm:w-5" />} trend="neutral" /></Link>
                 <Link href="/app/campanhas"><KPICard title="Campanhas Ativas" value={String(stats.campanhasAtivas)} description="em andamento" icon={<Megaphone className="h-4 w-4 sm:h-5 sm:w-5" />} trend="up" /></Link>
                 <Link href="/app/tarefas"><KPICard title="Tarefas Pendentes" value={String(stats.tarefasPendentes)} description="a concluir" icon={<ClipboardList className="h-4 w-4 sm:h-5 sm:w-5" />} trend="neutral" /></Link>
-                <Link href="/app/influenciadores"><KPICard title="Influenciadores" value={String(stats.influencers)} description="na base" icon={<Users className="h-4 w-4 sm:h-5 sm:w-5" />} trend="up" /></Link>
+                <Link href="/app/criadores"><KPICard title="Criadores" value={String(stats.influencers)} description="na base" icon={<Users className="h-4 w-4 sm:h-5 sm:w-5" />} trend="up" /></Link>
             </div>
 
             <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-12">
@@ -89,12 +89,12 @@ export default function AgencyDashboardHome() {
                     <CardHeader className="border-b p-4 sm:p-6">
                         <div>
                             <CardTitle className="font-semibold tracking-tight text-base sm:text-lg text-foreground">Densidade Regional</CardTitle>
-                            <CardDescription className="text-xs sm:text-sm mt-1">Influenciadores por estado</CardDescription>
+                            <CardDescription className="text-xs sm:text-sm mt-1">Criadores por estado</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 sm:p-6 lg:p-8">
                         {stats.regional.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-8 text-center">Cadastre influenciadores com estado para ver a distribuição.</p>
+                            <p className="text-sm text-muted-foreground py-8 text-center">Cadastre criadores com estado para ver a distribuição.</p>
                         ) : (
                             <div className="space-y-5">
                                 {stats.regional.map((item) => (

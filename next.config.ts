@@ -15,7 +15,7 @@ const routeMap: [string, string][] = [
   ["/messages", "/app/mensagens"],
   ["/media-kits", "/app/midia-kits"],
   ["/creators", "/app/descobrir"],
-  ["/influencers", "/app/influenciadores"],
+  ["/influencers", "/app/criadores"],
   ["/analytics", "/app/relatorios"],
 
   // Hub — PT na raiz (antes do prefixo /app) -> /app
@@ -23,7 +23,8 @@ const routeMap: [string, string][] = [
   ["/clientes", "/app/clientes"],
   ["/campanhas", "/app/campanhas"],
   ["/tarefas", "/app/tarefas"],
-  ["/influenciadores", "/app/influenciadores"],
+  ["/influenciadores", "/app/criadores"],
+  ["/app/influenciadores", "/app/criadores"],
   ["/descobrir", "/app/descobrir"],
   ["/midia-kits", "/app/midia-kits"],
   ["/contratos", "/app/contratos"],

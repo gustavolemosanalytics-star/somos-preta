@@ -60,6 +60,7 @@ export type Influencer = {
     audience_data: Record<string, unknown> | null
     portfolio: unknown | null
     tags: string[]
+    fonte: "app" | "interna"
     created_at: string
     updated_at: string
 }
