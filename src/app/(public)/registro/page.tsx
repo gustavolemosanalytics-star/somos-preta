@@ -40,9 +40,10 @@ export default function RegistroPage() {
             return
         }
 
-        // Se confirmação de email estiver desligada, já vem sessão.
+        // Novo cadastro entra como 'creator' -> vai para a área do creator.
+        // (um admin promove a staff pela tela de Usuários, se for o caso.)
         if (data.session) {
-            router.push("/dashboard")
+            router.push("/midia-kit/criar")
             router.refresh()
             return
         }

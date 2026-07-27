@@ -36,7 +36,16 @@ export default function LoginPage() {
             return
         }
 
-        router.push("/dashboard")
+        // Roteia por papel: equipe -> hub; demais (creator) -> área do creator
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data: profile } = await supabase
+            .from("somos_preta_profiles")
+            .select("role")
+            .eq("id", user?.id ?? "")
+            .single()
+        const isStaff = !!profile && ["admin", "gestor", "analista"].includes(profile.role)
+
+        router.push(isStaff ? "/dashboard" : "/midia-kit/criar")
         router.refresh()
     }
 

@@ -18,8 +18,8 @@ export default async function DashboardLayout({
     // Sem perfil (não logado ou schema ainda não aplicado) -> login
     if (!profile) redirect("/login")
 
-    // Creators não acessam o hub interno
-    if (!STAFF_ROLES.includes(profile.role)) redirect("/")
+    // Creators não acessam o hub interno -> vão para a própria área
+    if (!STAFF_ROLES.includes(profile.role)) redirect("/midia-kit/criar")
 
     const navUser = {
         name: profile.nome ?? "Usuário",
