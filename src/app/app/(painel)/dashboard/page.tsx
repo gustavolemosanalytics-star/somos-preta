@@ -8,6 +8,9 @@ import { Users, Megaphone, ClipboardList, Building2, Loader2, MapPin, TrendingUp
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { UFS } from "@/lib/constants/uf"
+
+const VALID_UFS = new Set(UFS.map((uf) => uf.sigla))
 
 type Stats = {
     clientes: number
@@ -39,8 +42,9 @@ export default function AgencyDashboardHome() {
 
             const estados = new Map<string, number>()
             for (const row of (infl.data as { estado: string | null }[]) ?? []) {
-                if (!row.estado) continue
-                estados.set(row.estado, (estados.get(row.estado) ?? 0) + 1)
+                const uf = row.estado?.trim().toUpperCase()
+                if (!uf || !VALID_UFS.has(uf)) continue
+                estados.set(uf, (estados.get(uf) ?? 0) + 1)
             }
             const totalEstados = [...estados.values()].reduce((a, b) => a + b, 0)
             const regional = [...estados.entries()]
