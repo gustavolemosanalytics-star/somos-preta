@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 const navLinks = [
-    { href: "/midia-kit", label: "Mídia Kit" },
     { href: "/blog", label: "Blog" },
 ]
 
@@ -59,7 +58,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                         <span className="font-semibold tracking-tight">Somos Preta</span>
                     </div>
                     <div className="flex gap-6 text-sm text-muted-foreground">
-                        <Link href="/midia-kit" className="hover:text-foreground transition-colors">Mídia Kit</Link>
                         <Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link>
                     </div>
                     <p className="text-xs text-muted-foreground">&copy; 2026 Somos Preta</p>

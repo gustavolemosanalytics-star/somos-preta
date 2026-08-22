@@ -5,13 +5,11 @@ import { NextResponse, type NextRequest } from "next/server"
 const PUBLIC_PATHS = [
     "/",
     "/blog",
-    "/kit",
-    "/midia-kit",
     "/client-portal",
     "/app/login",
     "/app/criar-conta",
-    "/criador/login",
-    "/criador/criar-conta",
+    "/app/esqueci-senha",
+    "/app/redefinir-senha",
 ]
 
 function isPublic(pathname: string) {
@@ -57,10 +55,10 @@ export async function updateSession(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname
 
-    // Não logado tentando acessar rota protegida -> login apropriado
+    // Não logado tentando acessar rota protegida -> login do hub
     if (!user && !isPublic(pathname)) {
         const redirectUrl = request.nextUrl.clone()
-        redirectUrl.pathname = pathname.startsWith("/criador") ? "/criador/login" : "/app/login"
+        redirectUrl.pathname = "/app/login"
         return NextResponse.redirect(redirectUrl)
     }
 

@@ -43,7 +43,7 @@ export default async function DashboardLayout({
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator className="hidden md:block" />
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage className="truncate max-w-[150px] sm:max-w-none">Overview</BreadcrumbPage>
+                                    <BreadcrumbPage className="truncate max-w-[150px] sm:max-w-none">Visão Geral</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>

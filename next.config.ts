@@ -1,19 +1,13 @@
 import type { NextConfig } from "next";
 
-// Redireciona URLs antigas para a nova estrutura (hub sob /app, creator sob /criador),
+// Redireciona URLs antigas para a nova estrutura (hub sob /app),
 // preservando sub-caminhos. Config redirects rodam ANTES do middleware.
-// Ordem importa: rotas mais específicas (ex.: /login/midia-kit) vêm antes das genéricas.
+// Ordem importa: rotas mais específicas vêm antes das genéricas.
 const routeMap: [string, string][] = [
-  // Creator (subpaths de /login e /midia-kit) — precisam vir antes de /login
-  ["/login/midia-kit", "/criador/login"],
-  ["/midia-kit/registro", "/criador/criar-conta"],
-  ["/midia-kit/criar", "/criador/login"],
-
   // Hub — EN antigo -> /app
   ["/campaigns", "/app/campanhas"],
   ["/contracts", "/app/contratos"],
   ["/messages", "/app/mensagens"],
-  ["/media-kits", "/app/midia-kits"],
   ["/creators", "/app/descobrir"],
   ["/influencers", "/app/criadores"],
   ["/analytics", "/app/relatorios"],
@@ -26,7 +20,6 @@ const routeMap: [string, string][] = [
   ["/influenciadores", "/app/criadores"],
   ["/app/influenciadores", "/app/criadores"],
   ["/descobrir", "/app/descobrir"],
-  ["/midia-kits", "/app/midia-kits"],
   ["/contratos", "/app/contratos"],
   ["/mensagens", "/app/mensagens"],
   ["/relatorios", "/app/relatorios"],
@@ -36,12 +29,30 @@ const routeMap: [string, string][] = [
   ["/registro", "/app/criar-conta"],
 ];
 
+// URLs antigas do produto "Mídia Kit" (removido). Mantidas como redirect
+// simples para a home em vez de 404, cobrindo links/bookmarks externos
+// antigos. Precisam vir ANTES do routeMap: sem isso, o wildcard genérico
+// de "/login" (via routeMap) capturaria "/login/midia-kit" primeiro.
+const legacyMidiaKitPaths = [
+  "/midia-kit",
+  "/login/midia-kit",
+  "/midia-kit/registro",
+  "/midia-kit/criar",
+];
+
 const nextConfig: NextConfig = {
   async redirects() {
-    return routeMap.flatMap(([from, to]) => [
-      { source: from, destination: to, permanent: false },
-      { source: `${from}/:path*`, destination: `${to}/:path*`, permanent: false },
-    ]);
+    return [
+      ...legacyMidiaKitPaths.map((source) => ({
+        source,
+        destination: "/",
+        permanent: false,
+      })),
+      ...routeMap.flatMap(([from, to]) => [
+        { source: from, destination: to, permanent: false },
+        { source: `${from}/:path*`, destination: `${to}/:path*`, permanent: false },
+      ]),
+    ];
   },
 };
 

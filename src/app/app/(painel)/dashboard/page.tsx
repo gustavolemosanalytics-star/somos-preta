@@ -7,6 +7,7 @@ import { KPICard } from "@/components/dashboard/kpi-card"
 import { Users, Megaphone, ClipboardList, Building2, Loader2, MapPin, TrendingUp } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 type Stats = {
     clientes: number
@@ -41,9 +42,10 @@ export default function AgencyDashboardHome() {
                 if (!row.estado) continue
                 estados.set(row.estado, (estados.get(row.estado) ?? 0) + 1)
             }
-            const ordenados = [...estados.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4)
-            const max = ordenados[0]?.[1] ?? 1
-            const regional = ordenados.map(([estado, count]) => ({ estado, count, pct: Math.round((count / max) * 100) }))
+            const totalEstados = [...estados.values()].reduce((a, b) => a + b, 0)
+            const regional = [...estados.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .map(([estado, count]) => ({ estado, count, pct: totalEstados > 0 ? (count / totalEstados) * 100 : 0 }))
 
             const recentes = ((recentesRes.data as unknown as { id: string; nome: string; status: string; cliente: { nome: string } | null }[]) ?? [])
                 .map((c) => ({ id: c.id, nome: c.nome, status: c.status, cliente: c.cliente?.nome ?? "—" }))
@@ -89,26 +91,32 @@ export default function AgencyDashboardHome() {
                     <CardHeader className="border-b p-4 sm:p-6">
                         <div>
                             <CardTitle className="font-semibold tracking-tight text-base sm:text-lg text-foreground">Densidade Regional</CardTitle>
-                            <CardDescription className="text-xs sm:text-sm mt-1">Criadores por estado</CardDescription>
+                            <CardDescription className="text-xs sm:text-sm mt-1">
+                                Criadores por estado · {stats.regional.reduce((sum, item) => sum + item.count, 0).toLocaleString("pt-BR")} no total
+                            </CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 sm:p-6 lg:p-8">
                         {stats.regional.length === 0 ? (
                             <p className="text-sm text-muted-foreground py-8 text-center">Cadastre criadores com estado para ver a distribuição.</p>
                         ) : (
-                            <div className="space-y-5">
-                                {stats.regional.map((item) => (
-                                    <div key={item.estado} className="space-y-2 group">
-                                        <div className="flex justify-between text-xs sm:text-sm font-medium uppercase tracking-tight">
-                                            <span className="group-hover:text-primary transition-colors">{item.estado}</span>
-                                            <span className="text-primary">{item.count} creators</span>
+                            <ScrollArea className="h-[360px] pr-3 sm:pr-4">
+                                <div className="space-y-5">
+                                    {stats.regional.map((item) => (
+                                        <div key={item.estado} className="space-y-2 group">
+                                            <div className="flex justify-between text-xs sm:text-sm font-medium uppercase tracking-tight">
+                                                <span className="group-hover:text-primary transition-colors">{item.estado}</span>
+                                                <span className="text-primary">
+                                                    {item.count} creators · {item.pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+                                                </span>
+                                            </div>
+                                            <div className="relative h-2.5 bg-muted/30 rounded-full overflow-hidden">
+                                                <div className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-700" style={{ width: `${item.pct}%` }} />
+                                            </div>
                                         </div>
-                                        <div className="relative h-2.5 bg-muted/30 rounded-full overflow-hidden">
-                                            <div className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-700" style={{ width: `${item.pct}%` }} />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
                         )}
                     </CardContent>
                 </Card>

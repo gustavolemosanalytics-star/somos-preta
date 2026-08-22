@@ -1,10 +1,8 @@
 "use client"
 
-import Link from "next/link"
 import dynamic from "next/dynamic"
-import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
-import { ArrowRight, IdCard, Users, Megaphone, MapPin } from "lucide-react"
+import { Users, Megaphone, MapPin } from "lucide-react"
 
 const Hero3D = dynamic(() => import("@/components/hero-3d"), { ssr: false })
 
@@ -18,11 +16,6 @@ const pilares = [
         icon: Megaphone,
         title: "Campanhas ponta a ponta",
         description: "Do briefing à entrega: clientes, campanhas e tarefas organizados num só fluxo.",
-    },
-    {
-        icon: IdCard,
-        title: "Mídia kits profissionais",
-        description: "O creator monta o próprio mídia kit e recebe uma página pronta para fechar contrato.",
     },
 ]
 
@@ -59,15 +52,8 @@ export default function HomePage() {
                                 Agência <span className="text-primary">Somos Preta</span>
                             </h1>
                             <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
-                                Uma plataforma que reúne gestão de influenciadores, campanhas e mídia kits — feita para valorizar o talento regional.
+                                Uma plataforma que reúne gestão de influenciadores e campanhas — feita para valorizar o talento regional.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                                <Link href="/midia-kit">
-                                    <Button size="lg" className="h-12 px-7 rounded-full text-base font-medium w-full sm:w-auto">
-                                        Criar meu mídia kit <ArrowRight className="ml-1.5 h-4 w-4" />
-                                    </Button>
-                                </Link>
-                            </div>
                         </motion.div>
 
                         <div className="relative h-[320px] sm:h-[420px] lg:h-[520px]">
@@ -88,7 +74,7 @@ export default function HomePage() {
                         </h2>
                     </motion.div>
 
-                    <div className="grid md:grid-cols-3 gap-px bg-border/60 rounded-3xl overflow-hidden border border-border/60">
+                    <div className="grid md:grid-cols-2 gap-px bg-border/60 rounded-3xl overflow-hidden border border-border/60">
                         {pilares.map((p, i) => (
                             <motion.div
                                 key={p.title}
@@ -118,27 +104,6 @@ export default function HomePage() {
                             </motion.div>
                         ))}
                     </div>
-                </div>
-            </section>
-
-            {/* CTA */}
-            <section className="border-t border-border/60">
-                <div className="container mx-auto px-4 py-24 lg:py-32">
-                    <motion.div {...fade} className="max-w-2xl mx-auto text-center space-y-7">
-                        <h2 className="text-3xl md:text-5xl font-semibold tracking-tight text-balance">
-                            Pronto para mostrar seu trabalho?
-                        </h2>
-                        <p className="text-lg text-muted-foreground">
-                            Monte seu mídia kit em minutos e receba uma página profissional para compartilhar com as marcas.
-                        </p>
-                        <div>
-                            <Link href="/midia-kit">
-                                <Button size="lg" className="h-12 px-8 rounded-full text-base font-medium">
-                                    Começar agora <ArrowRight className="ml-1.5 h-4 w-4" />
-                                </Button>
-                            </Link>
-                        </div>
-                    </motion.div>
                 </div>
             </section>
         </div>

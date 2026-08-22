@@ -19,7 +19,6 @@ import {
     MapPin,
     Loader2,
     Star,
-    ExternalLink,
     TrendingUp,
     Instagram,
     CheckCircle,
@@ -541,11 +540,6 @@ export default function CreatorsSearchPage() {
                             {influencers?.map((influencer) => (
                                 <Card key={influencer.id} className="overflow-hidden border border-border/60 shadow-sm hover:shadow-md transition-all rounded-2xl group">
                                     <div className="aspect-square bg-muted relative overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button className="w-full bg-white text-primary font-semibold rounded-xl hover:bg-white/90">
-                                                VER MÍDIA KIT <ExternalLink className="ml-2 h-4 w-4" />
-                                            </Button>
-                                        </div>
                                         <div className="w-full h-full flex items-center justify-center text-8xl font-bold opacity-10 text-primary">
                                             {influencer.nome.charAt(0)}
                                         </div>
