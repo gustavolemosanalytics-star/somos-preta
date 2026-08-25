@@ -109,15 +109,17 @@ export default function CreatorProfilePage() {
             </Card>
 
             <Tabs defaultValue="visao-geral">
-                <TabsList className="flex-wrap h-auto">
-                    <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
-                    <TabsTrigger value="relatorio">Relatório</TabsTrigger>
-                    <TabsTrigger value="conteudo">Conteúdo</TabsTrigger>
-                    <TabsTrigger value="campanhas">Campanhas</TabsTrigger>
-                    <TabsTrigger value="comunicacao">Comunicação</TabsTrigger>
-                    <TabsTrigger value="contratos">Contratos</TabsTrigger>
-                    <TabsTrigger value="historico">Histórico</TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto">
+                    <TabsList className="w-max gap-1">
+                        <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
+                        <TabsTrigger value="relatorio">Relatório</TabsTrigger>
+                        <TabsTrigger value="conteudo">Conteúdo</TabsTrigger>
+                        <TabsTrigger value="campanhas">Campanhas</TabsTrigger>
+                        <TabsTrigger value="comunicacao">Comunicação</TabsTrigger>
+                        <TabsTrigger value="contratos">Contratos</TabsTrigger>
+                        <TabsTrigger value="historico">Histórico</TabsTrigger>
+                    </TabsList>
+                </div>
 
                 <TabsContent value="visao-geral"><VisaoGeralTab influencer={influencer} /></TabsContent>
                 <TabsContent value="relatorio"><RelatorioTab influencer={influencer} /></TabsContent>
@@ -195,7 +197,7 @@ function RelatorioTab({ influencer: i }: { influencer: Influencer }) {
                 </CardContent>
             </Card>
 
-            {audiencia && (
+            {audiencia && (audiencia.genderSplit || audiencia.ageRanges || audiencia.topCities) && (
                 <Card>
                     <CardHeader><CardTitle className="text-sm">Audiência</CardTitle></CardHeader>
                     <CardContent className="grid sm:grid-cols-3 gap-4 text-sm">

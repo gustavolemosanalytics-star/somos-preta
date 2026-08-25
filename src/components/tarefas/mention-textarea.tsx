@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useProfiles } from "@/hooks/use-profiles"
 import { Textarea } from "@/components/ui/textarea"
 import { UserAvatar } from "./user-picker"
@@ -34,6 +34,7 @@ export function MentionTextarea({ value, onChange, placeholder, rows = 3 }: {
 }) {
     const { profiles } = useProfiles()
     const [busca, setBusca] = useState<string | null>(null)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
         const v = e.target.value
@@ -55,20 +56,29 @@ export function MentionTextarea({ value, onChange, placeholder, rows = 3 }: {
         if (!match) { setBusca(null); return }
         const idx = value.lastIndexOf(match[0])
         const prefixo = match[0].startsWith(" ") ? " " : ""
-        const novo = value.slice(0, idx) + prefixo + `@[${nome}](${p.id}) ` + value.slice(idx + match[0].length)
+        const inserido = prefixo + `@[${nome}](${p.id}) `
+        const novo = value.slice(0, idx) + inserido + value.slice(idx + match[0].length)
+        const novaPosicaoCursor = idx + inserido.length
         onChange(novo)
         setBusca(null)
+        requestAnimationFrame(() => {
+            const el = textareaRef.current
+            if (!el) return
+            el.focus()
+            el.setSelectionRange(novaPosicaoCursor, novaPosicaoCursor)
+        })
     }
 
     return (
         <div className="relative">
-            <Textarea rows={rows} placeholder={placeholder} value={value} onChange={handleChange} />
+            <Textarea ref={textareaRef} rows={rows} placeholder={placeholder} value={value} onChange={handleChange} />
             {busca !== null && sugestoes.length > 0 && (
                 <div className="absolute z-20 mt-1 w-64 rounded-md border bg-popover shadow-md py-1">
                     {sugestoes.map((p) => (
                         <button
                             key={p.id}
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => escolher(p)}
                             className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent text-left"
                         >
