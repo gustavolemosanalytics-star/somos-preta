@@ -83,6 +83,10 @@ export default function CampanhaDetalhePage() {
     }
 
     async function mudarStatus(t: Tarefa, status: TarefaStatus) {
+        if (status === "concluida" && t.evidencia_obrigatoria) {
+            toast.error("Esta tarefa exige evidência de conclusão — abra-a para concluir")
+            return
+        }
         setTarefas((prev) => prev.map((x) => x.id === t.id ? { ...x, status } : x))
         const { error } = await supabase.from("somos_preta_tarefas").update({
             status,

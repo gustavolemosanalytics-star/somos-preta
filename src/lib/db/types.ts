@@ -10,6 +10,9 @@ export type TarefaPrioridade = "baixa" | "media" | "alta" | "urgente"
 export type TarefaEventoTipo =
     | "criacao" | "status" | "prioridade" | "prazo" | "responsavel" | "solicitante"
     | "colaborador_adicionado" | "colaborador_removido" | "conclusao" | "reabertura"
+export type TarefaComentarioTipo = "comentario" | "duvida" | "bloqueio" | "atualizacao" | "solicitacao_revisao"
+export type TarefaAnexoTipo = "imagem" | "pdf_documento" | "video" | "link"
+export type NotificacaoTipo = "tarefa_atribuida" | "mencao" | "comentario" | "solicitacao_revisao" | "conclusao"
 export type ContratoStatus = "pendente" | "assinado" | "expirado" | "cancelado"
 export type BlogStatus = "rascunho" | "publicado"
 
@@ -100,10 +103,66 @@ export type Tarefa = {
     data_entrega: string | null
     horario: string | null
     concluida_em: string | null
+    evidencia_obrigatoria: boolean
     ordem: number
     created_by: string | null
     created_at: string
     updated_at: string
+}
+
+export type Subtarefa = {
+    id: string
+    tarefa_id: string
+    titulo: string
+    concluida: boolean
+    responsavel_id: string | null
+    prazo: string | null
+    status: TarefaStatus
+    ordem: number
+    created_by: string | null
+    created_at: string
+    updated_at: string
+}
+
+export type TarefaComentario = {
+    id: string
+    tarefa_id: string
+    subtarefa_id: string | null
+    autor_id: string | null
+    conteudo: string
+    tipo: TarefaComentarioTipo
+    created_at: string
+}
+
+export type TarefaMencao = {
+    id: string
+    comentario_id: string
+    profile_id: string
+    created_at: string
+}
+
+export type TarefaAnexo = {
+    id: string
+    tarefa_id: string
+    subtarefa_id: string | null
+    tipo: TarefaAnexoTipo
+    storage_path: string | null
+    link_externo: string | null
+    nome: string | null
+    observacao: string | null
+    is_evidencia: boolean
+    autor_id: string | null
+    created_at: string
+}
+
+export type Notificacao = {
+    id: string
+    destinatario_id: string
+    tipo: NotificacaoTipo
+    tarefa_id: string | null
+    ator_id: string | null
+    lida: boolean
+    created_at: string
 }
 
 export type TarefaColaborador = {

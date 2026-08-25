@@ -5,10 +5,13 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { useProfiles } from "@/hooks/use-profiles"
-import type { Tarefa, TarefaEvento, TarefaStatus, TarefaPrioridade } from "@/lib/db/types"
+import type { Tarefa, TarefaEvento, TarefaStatus, TarefaPrioridade, TarefaAnexo } from "@/lib/db/types"
 import { TAREFA_STATUS, TAREFA_STATUS_ORDEM, TAREFA_PRIORIDADE, tarefaPrazoBadge } from "@/lib/constants/tarefas"
 import { UserPicker, UserMultiPicker } from "@/components/tarefas/user-picker"
 import { Timeline } from "@/components/tarefas/timeline"
+import { SubtarefasSection } from "@/components/tarefas/subtarefas-section"
+import { AnexosSection } from "@/components/tarefas/anexos-section"
+import { ComentariosSection } from "@/components/tarefas/comentarios-section"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,16 +20,70 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog"
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Building2, ClipboardList, History, Loader2, Megaphone, Trash2, Users } from "lucide-react"
+import { ArrowLeft, Building2, ClipboardList, History, Loader2, Megaphone, Paperclip, Trash2, Users } from "lucide-react"
 import { toast } from "sonner"
 
 type TarefaDetalhe = Tarefa & {
     campanha: { id: string; nome: string; cliente: { id: string; nome: string } | null } | null
     influencer: { id: string; nome: string } | null
+}
+
+function ConcluirDialog({ tarefaId, obrigatoria, open, onOpenChange, onConfirmar }: {
+    tarefaId: string
+    obrigatoria: boolean
+    open: boolean
+    onOpenChange: (o: boolean) => void
+    onConfirmar: (observacao: string) => Promise<void>
+}) {
+    const [observacao, setObservacao] = useState("")
+    const [evidencias, setEvidencias] = useState<TarefaAnexo[]>([])
+    const [salvando, setSalvando] = useState(false)
+
+    async function confirmar() {
+        if (obrigatoria && evidencias.length === 0) {
+            toast.error("Anexe uma evidência para concluir esta tarefa")
+            return
+        }
+        setSalvando(true)
+        await onConfirmar(observacao)
+        setSalvando(false)
+        setObservacao("")
+        onOpenChange(false)
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Concluir tarefa</DialogTitle>
+                    <DialogDescription>
+                        {obrigatoria ? "Esta tarefa exige evidência de conclusão." : "Adicione uma evidência ou observação, se quiser."}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                    <AnexosSection tarefaId={tarefaId} apenasEvidencia onChange={setEvidencias} />
+                    <div className="space-y-1.5">
+                        <Label>Observação final</Label>
+                        <Textarea rows={3} placeholder="Como foi a entrega?" value={observacao} onChange={(e) => setObservacao(e.target.value)} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                    <Button onClick={confirmar} disabled={salvando}>
+                        {salvando && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Concluir
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
 }
 
 export default function TarefaDetalhePage() {
@@ -41,6 +98,7 @@ export default function TarefaDetalhePage() {
     const [loading, setLoading] = useState(true)
     const [titulo, setTitulo] = useState("")
     const [descricao, setDescricao] = useState("")
+    const [concluirOpen, setConcluirOpen] = useState(false)
 
     async function load() {
         const [{ data: t }, { data: colabs }, { data: evts }] = await Promise.all([
@@ -93,12 +151,32 @@ export default function TarefaDetalhePage() {
         await load()
     }
 
-    async function toggleConcluida(checked: boolean) {
-        if (!tarefa) return
-        await atualizar({
-            status: checked ? "concluida" : "a_fazer",
-            concluida_em: checked ? new Date().toISOString() : null,
-        })
+    function pedirConclusao() {
+        setConcluirOpen(true)
+    }
+
+    async function confirmarConclusao(observacao: string) {
+        const { data: { user } } = await supabase.auth.getUser()
+        await supabase.from("somos_preta_tarefas").update({
+            status: "concluida",
+            concluida_em: new Date().toISOString(),
+        }).eq("id", tarefaId)
+        if (observacao.trim()) {
+            await supabase.from("somos_preta_tarefa_comentarios").insert({
+                tarefa_id: tarefaId, autor_id: user?.id ?? null, conteudo: observacao.trim(), tipo: "atualizacao",
+            })
+        }
+        toast.success("Tarefa concluída")
+        await load()
+    }
+
+    async function reabrir() {
+        await atualizar({ status: "a_fazer", concluida_em: null })
+    }
+
+    async function mudarStatus(status: TarefaStatus) {
+        if (status === "concluida") { pedirConclusao(); return }
+        await atualizar({ status, concluida_em: null })
     }
 
     async function excluir() {
@@ -149,12 +227,20 @@ export default function TarefaDetalhePage() {
                 </AlertDialog>
             </div>
 
+            <ConcluirDialog
+                tarefaId={tarefaId}
+                obrigatoria={tarefa.evidencia_obrigatoria}
+                open={concluirOpen}
+                onOpenChange={setConcluirOpen}
+                onConfirmar={confirmarConclusao}
+            />
+
             <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
                 <div className="space-y-6 min-w-0">
                     <div className="flex items-start gap-3">
                         <Checkbox
                             checked={tarefa.status === "concluida"}
-                            onCheckedChange={(v) => toggleConcluida(v === true)}
+                            onCheckedChange={(v) => (v === true ? pedirConclusao() : reabrir())}
                             className="mt-1.5 h-5 w-5"
                             aria-label="Marcar como concluída"
                         />
@@ -170,27 +256,45 @@ export default function TarefaDetalhePage() {
                         <Badge className={TAREFA_STATUS[tarefa.status].className} variant="secondary">{TAREFA_STATUS[tarefa.status].label}</Badge>
                         <span className={`text-sm font-medium ${TAREFA_PRIORIDADE[tarefa.prioridade].className}`}>{TAREFA_PRIORIDADE[tarefa.prioridade].label}</span>
                         {prazo && <Badge className={prazo.className} variant="secondary">{prazo.label}</Badge>}
+                        {tarefa.evidencia_obrigatoria && <Badge variant="outline" className="text-muted-foreground">Evidência obrigatória</Badge>}
                     </div>
 
-                    <div className="space-y-1.5">
-                        <Label>Descrição</Label>
-                        <Textarea
-                            rows={4}
-                            placeholder="Sem descrição"
-                            value={descricao}
-                            onChange={(e) => setDescricao(e.target.value)}
-                            onBlur={salvarDescricao}
-                        />
-                    </div>
+                    <Tabs defaultValue="detalhes">
+                        <TabsList>
+                            <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
+                            <TabsTrigger value="subtarefas">Subtarefas</TabsTrigger>
+                            <TabsTrigger value="anexos"><Paperclip className="h-3.5 w-3.5" /> Anexos</TabsTrigger>
+                            <TabsTrigger value="atualizacoes">Atualizações</TabsTrigger>
+                            <TabsTrigger value="historico"><History className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
+                        </TabsList>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2"><History className="h-4 w-4 text-primary" /> Histórico</CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                        <TabsContent value="detalhes" className="space-y-1.5">
+                            <Label>Descrição</Label>
+                            <Textarea
+                                rows={5}
+                                placeholder="Sem descrição"
+                                value={descricao}
+                                onChange={(e) => setDescricao(e.target.value)}
+                                onBlur={salvarDescricao}
+                            />
+                        </TabsContent>
+
+                        <TabsContent value="subtarefas">
+                            <SubtarefasSection tarefaId={tarefaId} />
+                        </TabsContent>
+
+                        <TabsContent value="anexos">
+                            <AnexosSection tarefaId={tarefaId} />
+                        </TabsContent>
+
+                        <TabsContent value="atualizacoes">
+                            <ComentariosSection tarefaId={tarefaId} />
+                        </TabsContent>
+
+                        <TabsContent value="historico">
                             <Timeline eventos={eventos} profiles={profiles} />
-                        </CardContent>
-                    </Card>
+                        </TabsContent>
+                    </Tabs>
                 </div>
 
                 <div className="space-y-4">
@@ -198,7 +302,7 @@ export default function TarefaDetalhePage() {
                         <CardContent className="pt-6 space-y-4">
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">Status</Label>
-                                <Select value={tarefa.status} onValueChange={(v) => atualizar({ status: v as TarefaStatus, concluida_em: v === "concluida" ? new Date().toISOString() : null })}>
+                                <Select value={tarefa.status} onValueChange={(v) => mudarStatus(v as TarefaStatus)}>
                                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                     <SelectContent>{TAREFA_STATUS_ORDEM.map((s) => <SelectItem key={s} value={s}>{TAREFA_STATUS[s].label}</SelectItem>)}</SelectContent>
                                 </Select>
@@ -235,6 +339,14 @@ export default function TarefaDetalhePage() {
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">Horário</Label>
                                 <Input type="time" value={tarefa.horario ?? ""} onChange={(e) => atualizar({ horario: e.target.value || null })} />
+                            </div>
+                            <div className="flex items-center justify-between pt-1">
+                                <Label htmlFor="evid-obrig" className="text-xs text-muted-foreground">Exigir evidência para concluir</Label>
+                                <Checkbox
+                                    id="evid-obrig"
+                                    checked={tarefa.evidencia_obrigatoria}
+                                    onCheckedChange={(v) => atualizar({ evidencia_obrigatoria: v === true })}
+                                />
                             </div>
                         </CardContent>
                     </Card>
