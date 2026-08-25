@@ -7,6 +7,7 @@ import { UserPicker } from "./user-picker"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 import { Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -58,13 +59,17 @@ export function SubtarefasSection({ tarefaId }: { tarefaId: string }) {
     }
 
     const concluidas = subtarefas.filter((s) => s.concluida).length
+    const progresso = subtarefas.length > 0 ? Math.round((concluidas / subtarefas.length) * 100) : 0
 
     return (
         <div className="space-y-3">
             {subtarefas.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                    {concluidas} de {subtarefas.length} concluídas · {Math.round((concluidas / subtarefas.length) * 100)}%
-                </p>
+                <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">
+                        {concluidas} de {subtarefas.length} concluídas · {progresso}%
+                    </p>
+                    <Progress value={progresso} className="h-1.5" />
+                </div>
             )}
             <ul className="space-y-2">
                 {subtarefas.map((s) => (

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { TarefaComentario, TarefaComentarioTipo } from "@/lib/db/types"
 import { useProfiles } from "@/hooks/use-profiles"
@@ -8,6 +8,7 @@ import { MentionTextarea, TextoComMencoes, extrairMencoes } from "./mention-text
 import { UserAvatar } from "./user-picker"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { Send } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -28,6 +29,7 @@ export function ComentariosSection({ tarefaId }: { tarefaId: string }) {
     const [texto, setTexto] = useState("")
     const [tipo, setTipo] = useState<TarefaComentarioTipo>("comentario")
     const [enviando, setEnviando] = useState(false)
+    const [filtroTipo, setFiltroTipo] = useState<TarefaComentarioTipo | "todos">("todos")
 
     async function load() {
         const { data } = await supabase
@@ -67,10 +69,39 @@ export function ComentariosSection({ tarefaId }: { tarefaId: string }) {
 
     const profilesById = new Map(profiles.map((p) => [p.id, p]))
 
+    const contagemPorTipo = useMemo(() => {
+        const c: Record<string, number> = {}
+        comentarios.forEach((com) => { c[com.tipo] = (c[com.tipo] ?? 0) + 1 })
+        return c
+    }, [comentarios])
+
+    const comentariosFiltrados = filtroTipo === "todos" ? comentarios : comentarios.filter((c) => c.tipo === filtroTipo)
+
     return (
         <div className="space-y-4">
+            {comentarios.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                    <Badge
+                        variant={filtroTipo === "todos" ? "default" : "outline"}
+                        className="cursor-pointer"
+                        onClick={() => setFiltroTipo("todos")}
+                    >
+                        Todos ({comentarios.length})
+                    </Badge>
+                    {(Object.keys(TIPO_LABEL) as TarefaComentarioTipo[]).filter((t) => contagemPorTipo[t]).map((t) => (
+                        <Badge
+                            key={t}
+                            variant={filtroTipo === t ? "default" : "outline"}
+                            className="cursor-pointer"
+                            onClick={() => setFiltroTipo(t)}
+                        >
+                            {TIPO_LABEL[t]} ({contagemPorTipo[t]})
+                        </Badge>
+                    ))}
+                </div>
+            )}
             <ul className="space-y-3">
-                {comentarios.map((c) => {
+                {comentariosFiltrados.map((c) => {
                     const autor = c.autor_id ? profilesById.get(c.autor_id) : null
                     return (
                         <li key={c.id} className="flex gap-2.5">
@@ -92,8 +123,10 @@ export function ComentariosSection({ tarefaId }: { tarefaId: string }) {
                         </li>
                     )
                 })}
-                {comentarios.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">Nenhuma atualização ainda.</p>
+                {comentariosFiltrados.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                        {comentarios.length === 0 ? "Nenhuma atualização ainda." : "Nenhuma atualização deste tipo."}
+                    </p>
                 )}
             </ul>
 

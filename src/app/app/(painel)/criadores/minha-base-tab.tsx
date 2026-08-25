@@ -5,6 +5,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import type { Influencer, InfluencerStatus } from "@/lib/db/types"
 import { useCreatorSelection } from "@/lib/stores/creator-selection"
+import { ORDENACAO_OPCOES, ordenarInfluencers, type OrdenacaoValor } from "@/lib/constants/criadores"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,7 +26,7 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Users, Plus, Loader2, Search, Eye, Pencil, Trash2, Star, Scale } from "lucide-react"
+import { Users, Plus, Loader2, Search, Eye, Pencil, Trash2, Star, Scale, TrendingUp, Sparkles, MapPin } from "lucide-react"
 import { toast } from "sonner"
 
 const STATUS_META: Record<InfluencerStatus, { label: string; className: string }> = {
@@ -61,6 +62,7 @@ export function MinhaBaseTab() {
     const [favoritos, setFavoritos] = useState<Set<string>>(new Set())
     const [loading, setLoading] = useState(true)
     const [busca, setBusca] = useState("")
+    const [ordenacao, setOrdenacao] = useState<OrdenacaoValor>("seguidores")
     const [open, setOpen] = useState(false)
     const [saving, setSaving] = useState(false)
     const { selecionados, toggle, limpar } = useCreatorSelection()
@@ -91,14 +93,26 @@ export function MinhaBaseTab() {
 
     const filtrados = useMemo(() => {
         const q = busca.trim().toLowerCase()
-        if (!q) return influencers
-        return influencers.filter((i) =>
+        const base = !q ? influencers : influencers.filter((i) =>
             i.nome.toLowerCase().includes(q) ||
             (i.instagram ?? "").toLowerCase().includes(q) ||
             (i.estado ?? "").toLowerCase().includes(q) ||
             (i.nicho ?? []).some((n) => n.toLowerCase().includes(q))
         )
-    }, [influencers, busca])
+        return ordenarInfluencers(base, ordenacao)
+    }, [influencers, busca, ordenacao])
+
+    const insights = useMemo(() => {
+        const total = influencers.length
+        const erMedio = total > 0 ? influencers.reduce((acc, i) => acc + Number(i.engagement), 0) / total : 0
+        const trintaDiasAtras = new Date(); trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30)
+        const novos = influencers.filter((i) => new Date(i.created_at) >= trintaDiasAtras).length
+        const maiorCrescimento = [...influencers].sort((a, b) => b.growth_rate - a.growth_rate).slice(0, 3)
+        const porEstado = new Map<string, number>()
+        influencers.forEach((i) => { if (i.estado) porEstado.set(i.estado, (porEstado.get(i.estado) ?? 0) + 1) })
+        const topEstados = Array.from(porEstado.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3)
+        return { total, erMedio, novos, maiorCrescimento, topEstados }
+    }, [influencers])
 
     async function toggleFavorito(id: string) {
         const { data: { user } } = await supabase.auth.getUser()
@@ -139,11 +153,7 @@ export function MinhaBaseTab() {
 
     return (
         <div className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs w-fit">
-                    <Users className="h-3 w-3 mr-1" /> {influencers.length} cadastrados
-                </Badge>
-
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild><Button className="rounded-xl"><Plus className="h-4 w-4" /> Novo</Button></DialogTrigger>
                     <DialogContent className="sm:max-w-lg">
@@ -189,11 +199,42 @@ export function MinhaBaseTab() {
                 </Dialog>
             </div>
 
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Card><CardContent className="py-4">
+                    <p className="text-2xl font-bold flex items-center gap-1.5"><Sparkles className="h-4 w-4 text-primary" /> {insights.total}</p>
+                    <p className="text-xs text-muted-foreground">Total da base</p>
+                </CardContent></Card>
+                <Card><CardContent className="py-4">
+                    <p className="text-2xl font-bold">{insights.erMedio.toFixed(2)}%</p>
+                    <p className="text-xs text-muted-foreground">ER médio</p>
+                </CardContent></Card>
+                <Card><CardContent className="py-4">
+                    <p className="text-2xl font-bold text-green-600">+{insights.novos}</p>
+                    <p className="text-xs text-muted-foreground">Novos (30 dias)</p>
+                </CardContent></Card>
+                <Card><CardContent className="py-4">
+                    <p className="text-sm font-medium flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5 text-primary" /> {insights.maiorCrescimento[0]?.nome ?? "—"}</p>
+                    <p className="text-xs text-muted-foreground">Maior crescimento</p>
+                </CardContent></Card>
+            </div>
+
+            {insights.topEstados.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" /> Top estados:
+                    {insights.topEstados.map(([uf, count]) => <Badge key={uf} variant="outline">{uf} · {count}</Badge>)}
+                </div>
+            )}
+
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="relative max-w-sm flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Buscar por nome, @, cidade ou nicho..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9 rounded-xl" />
                 </div>
+                <Select value={ordenacao} onValueChange={(v) => setOrdenacao(v as OrdenacaoValor)}>
+                    <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{ORDENACAO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                </Select>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{filtrados.length} de {influencers.length} resultados</span>
                 {selecionados.length > 0 && (
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{selecionados.length} selecionado(s)</span>

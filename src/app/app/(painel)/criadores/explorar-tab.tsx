@@ -7,6 +7,7 @@ import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import type { Influencer } from "@/lib/db/types"
 import { UFS } from "@/lib/constants/uf"
+import { ORDENACAO_OPCOES, ordenarInfluencers, type OrdenacaoValor } from "@/lib/constants/criadores"
 import { useCreatorSelection } from "@/lib/stores/creator-selection"
 import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -65,6 +66,7 @@ export function ExplorarTab() {
     const [selectedState, setSelectedState] = useState<string | null>(null)
     const [isMapLoaded, setIsMapLoaded] = useState(false)
     const [filtrosAbertos, setFiltrosAbertos] = useState(false)
+    const [ordenacao, setOrdenacao] = useState<OrdenacaoValor>("seguidores")
     const [page, setPage] = useState(0)
     const pageSize = 24
     const { selecionados, toggle, limpar } = useCreatorSelection()
@@ -115,9 +117,11 @@ export function ExplorarTab() {
 
     const filtradosPorTrabalho = useMemo(() => {
         if (!influencers) return []
-        if (filtros.jaTrabalhado === "todos" || !trabalhadosIds) return influencers
-        return influencers.filter((i) => filtros.jaTrabalhado === "sim" ? trabalhadosIds.has(i.id) : !trabalhadosIds.has(i.id))
-    }, [influencers, filtros.jaTrabalhado, trabalhadosIds])
+        const base = filtros.jaTrabalhado === "todos" || !trabalhadosIds
+            ? influencers
+            : influencers.filter((i) => filtros.jaTrabalhado === "sim" ? trabalhadosIds.has(i.id) : !trabalhadosIds.has(i.id))
+        return ordenarInfluencers(base, ordenacao)
+    }, [influencers, filtros.jaTrabalhado, trabalhadosIds, ordenacao])
 
     const paginados = useMemo(
         () => filtradosPorTrabalho.slice(0, (page + 1) * pageSize),
@@ -231,6 +235,12 @@ export function ExplorarTab() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
+                {!isSocialQuery && (
+                    <Select value={ordenacao} onValueChange={(v) => setOrdenacao(v as OrdenacaoValor)}>
+                        <SelectTrigger className="h-12 w-full md:w-[180px] rounded-xl"><SelectValue /></SelectTrigger>
+                        <SelectContent>{ORDENACAO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                )}
                 <Popover open={filtrosAbertos} onOpenChange={setFiltrosAbertos}>
                     <PopoverTrigger asChild>
                         <Button className="h-12 px-8 rounded-full" variant="outline"><Filter className="mr-2 h-4 w-4" /> Filtros Avançados</Button>

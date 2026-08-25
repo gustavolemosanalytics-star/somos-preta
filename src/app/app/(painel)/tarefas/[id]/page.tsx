@@ -28,8 +28,16 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Building2, ClipboardList, History, Loader2, Megaphone, Paperclip, Trash2, Users } from "lucide-react"
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    ArrowLeft, Archive, ArchiveRestore, Building2, ClipboardList, Copy, FolderInput, History,
+    Loader2, Megaphone, MoreHorizontal, Paperclip, Tag, Trash2, Users,
+} from "lucide-react"
 import { toast } from "sonner"
+
+type CampanhaOpcao = { id: string; nome: string }
 
 type TarefaDetalhe = Tarefa & {
     campanha: { id: string; nome: string; cliente: { id: string; nome: string } | null } | null
@@ -98,7 +106,11 @@ export default function TarefaDetalhePage() {
     const [loading, setLoading] = useState(true)
     const [titulo, setTitulo] = useState("")
     const [descricao, setDescricao] = useState("")
+    const [tagsInput, setTagsInput] = useState("")
     const [concluirOpen, setConcluirOpen] = useState(false)
+    const [moverOpen, setMoverOpen] = useState(false)
+    const [campanhas, setCampanhas] = useState<CampanhaOpcao[]>([])
+    const [novaCampanhaId, setNovaCampanhaId] = useState("")
 
     async function load() {
         const [{ data: t }, { data: colabs }, { data: evts }] = await Promise.all([
@@ -112,7 +124,7 @@ export default function TarefaDetalhePage() {
         ])
         const td = t as TarefaDetalhe | null
         setTarefa(td)
-        if (td) { setTitulo(td.titulo); setDescricao(td.descricao ?? "") }
+        if (td) { setTitulo(td.titulo); setDescricao(td.descricao ?? ""); setTagsInput((td.tags ?? []).join(", ")) }
         setColaboradores(((colabs as { profile_id: string }[]) ?? []).map((c) => c.profile_id))
         setEventos((evts as TarefaEvento[]) ?? [])
         setLoading(false)
@@ -186,6 +198,52 @@ export default function TarefaDetalhePage() {
         router.push("/app/tarefas")
     }
 
+    async function salvarTags() {
+        if (!tarefa) return
+        const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean)
+        if (JSON.stringify(tags) === JSON.stringify(tarefa.tags)) return
+        await atualizar({ tags })
+    }
+
+    async function toggleArquivar() {
+        if (!tarefa) return
+        await atualizar({ arquivada: !tarefa.arquivada })
+        toast.success(tarefa.arquivada ? "Tarefa desarquivada" : "Tarefa arquivada")
+    }
+
+    async function duplicar() {
+        if (!tarefa) return
+        const { data: novaTarefa, error } = await supabase.from("somos_preta_tarefas").insert({
+            campanha_id: tarefa.campanha_id,
+            titulo: `${tarefa.titulo} (cópia)`,
+            descricao: tarefa.descricao,
+            prioridade: tarefa.prioridade,
+            status: "backlog",
+            solicitante_id: tarefa.solicitante_id,
+            responsavel: tarefa.responsavel,
+            influencer_id: tarefa.influencer_id,
+            data_entrega: tarefa.data_entrega,
+            tags: tarefa.tags,
+        }).select("id").single()
+        if (error || !novaTarefa) { toast.error("Erro ao duplicar"); return }
+        toast.success("Tarefa duplicada")
+        router.push(`/app/tarefas/${novaTarefa.id}`)
+    }
+
+    async function abrirMover() {
+        const { data } = await supabase.from("somos_preta_campanhas").select("id, nome").order("nome")
+        setCampanhas((data as CampanhaOpcao[]) ?? [])
+        setNovaCampanhaId(tarefa?.campanha_id ?? "")
+        setMoverOpen(true)
+    }
+
+    async function confirmarMover() {
+        if (!novaCampanhaId) return
+        await atualizar({ campanha_id: novaCampanhaId })
+        setMoverOpen(false)
+        toast.success("Tarefa movida")
+    }
+
     if (loading) {
         return <div className="flex items-center justify-center py-24 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
     }
@@ -208,23 +266,39 @@ export default function TarefaDetalhePage() {
                 <Link href="/app/tarefas" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
                     <ArrowLeft className="h-4 w-4" /> Tarefas
                 </Link>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-red-600">
-                            <Trash2 className="h-4 w-4" /> Excluir
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
-                            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={excluir} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                <div className="flex items-center gap-1">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-muted-foreground">
+                                <MoreHorizontal className="h-4 w-4" /> Ações
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={duplicar}><Copy className="h-4 w-4" /> Duplicar</DropdownMenuItem>
+                            <DropdownMenuItem onClick={abrirMover}><FolderInput className="h-4 w-4" /> Mover para outra campanha</DropdownMenuItem>
+                            <DropdownMenuItem onClick={toggleArquivar}>
+                                {tarefa.arquivada ? <><ArchiveRestore className="h-4 w-4" /> Desarquivar</> : <><Archive className="h-4 w-4" /> Arquivar</>}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-red-600">
+                                <Trash2 className="h-4 w-4" /> Excluir
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
+                                <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={excluir} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
             </div>
 
             <ConcluirDialog
@@ -234,6 +308,23 @@ export default function TarefaDetalhePage() {
                 onOpenChange={setConcluirOpen}
                 onConfirmar={confirmarConclusao}
             />
+
+            <Dialog open={moverOpen} onOpenChange={setMoverOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Mover tarefa</DialogTitle>
+                        <DialogDescription>Escolha a campanha de destino.</DialogDescription>
+                    </DialogHeader>
+                    <Select value={novaCampanhaId} onValueChange={setNovaCampanhaId}>
+                        <SelectTrigger className="w-full"><SelectValue placeholder="Selecionar campanha" /></SelectTrigger>
+                        <SelectContent>{campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setMoverOpen(false)}>Cancelar</Button>
+                        <Button onClick={confirmarMover} disabled={!novaCampanhaId || novaCampanhaId === tarefa.campanha_id}>Mover</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
                 <div className="space-y-6 min-w-0">
@@ -257,6 +348,10 @@ export default function TarefaDetalhePage() {
                         <span className={`text-sm font-medium ${TAREFA_PRIORIDADE[tarefa.prioridade].className}`}>{TAREFA_PRIORIDADE[tarefa.prioridade].label}</span>
                         {prazo && <Badge className={prazo.className} variant="secondary">{prazo.label}</Badge>}
                         {tarefa.evidencia_obrigatoria && <Badge variant="outline" className="text-muted-foreground">Evidência obrigatória</Badge>}
+                        {tarefa.arquivada && <Badge variant="outline" className="text-muted-foreground"><Archive className="h-3 w-3" /> Arquivada</Badge>}
+                        {tarefa.tags.map((t) => (
+                            <Badge key={t} variant="secondary" className="bg-muted text-muted-foreground"><Tag className="h-3 w-3" /> {t}</Badge>
+                        ))}
                     </div>
 
                     <Tabs defaultValue="detalhes">
@@ -346,6 +441,15 @@ export default function TarefaDetalhePage() {
                                     id="evid-obrig"
                                     checked={tarefa.evidencia_obrigatoria}
                                     onCheckedChange={(v) => atualizar({ evidencia_obrigatoria: v === true })}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-muted-foreground">Tags</Label>
+                                <Input
+                                    placeholder="separadas por vírgula"
+                                    value={tagsInput}
+                                    onChange={(e) => setTagsInput(e.target.value)}
+                                    onBlur={salvarTags}
                                 />
                             </div>
                         </CardContent>

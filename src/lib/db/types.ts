@@ -106,6 +106,8 @@ export type Tarefa = {
     horario: string | null
     concluida_em: string | null
     evidencia_obrigatoria: boolean
+    tags: string[]
+    arquivada: boolean
     ordem: number
     created_by: string | null
     created_at: string
