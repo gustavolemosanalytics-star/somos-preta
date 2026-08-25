@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type { Campanha, Tarefa, TarefaStatus, TarefaPrioridade, CampanhaStatus } from "@/lib/db/types"
+import { TAREFA_STATUS, TAREFA_STATUS_ORDEM, TAREFA_PRIORIDADE as PRIORIDADE, tarefaPrazoBadge } from "@/lib/constants/tarefas"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,18 +26,6 @@ type CampanhaComCliente = Campanha & { cliente: { id: string; nome: string } | n
 const CAMP_STATUS: Record<CampanhaStatus, string> = {
     rascunho: "Rascunho", planejamento: "Planejamento", ativa: "Ativa", concluida: "Concluída", cancelada: "Cancelada",
 }
-const TAREFA_STATUS: Record<TarefaStatus, { label: string; className: string }> = {
-    pendente: { label: "Pendente", className: "bg-muted text-muted-foreground" },
-    em_andamento: { label: "Em andamento", className: "bg-blue-500/15 text-blue-600" },
-    concluida: { label: "Concluída", className: "bg-green-500/15 text-green-600" },
-    bloqueada: { label: "Bloqueada", className: "bg-red-500/15 text-red-600" },
-}
-const PRIORIDADE: Record<TarefaPrioridade, { label: string; className: string }> = {
-    baixa: { label: "Baixa", className: "text-muted-foreground" },
-    media: { label: "Média", className: "text-blue-600" },
-    alta: { label: "Alta", className: "text-orange-600" },
-    urgente: { label: "Urgente", className: "text-red-600" },
-}
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 export default function CampanhaDetalhePage() {
@@ -52,7 +41,7 @@ export default function CampanhaDetalhePage() {
 
     const [form, setForm] = useState({
         titulo: "", descricao: "", prioridade: "media" as TarefaPrioridade,
-        status: "pendente" as TarefaStatus, data_entrega: "",
+        status: "backlog" as TarefaStatus, data_entrega: "",
     })
 
     async function load() {
@@ -89,7 +78,7 @@ export default function CampanhaDetalhePage() {
         if (error) { toast.error("Não foi possível criar a tarefa"); return }
         toast.success("Tarefa criada")
         setOpen(false)
-        setForm({ titulo: "", descricao: "", prioridade: "media", status: "pendente", data_entrega: "" })
+        setForm({ titulo: "", descricao: "", prioridade: "media", status: "backlog", data_entrega: "" })
         load()
     }
 
@@ -192,25 +181,31 @@ export default function CampanhaDetalhePage() {
                 </CardContent></Card>
             ) : (
                 <div className="space-y-2">
-                    {tarefas.map((t) => (
-                        <Card key={t.id}>
-                            <CardContent className="flex items-center gap-3 py-3">
-                                <div className="flex-1 min-w-0">
-                                    <p className={`font-medium truncate ${t.status === "concluida" ? "line-through text-muted-foreground" : ""}`}>{t.titulo}</p>
-                                    <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground mt-0.5">
-                                        <span className={PRIORIDADE[t.prioridade].className}>{PRIORIDADE[t.prioridade].label}</span>
-                                        {t.data_entrega && <span>• entrega {t.data_entrega}</span>}
+                    {tarefas.map((t) => {
+                        const prazo = tarefaPrazoBadge(t)
+                        return (
+                            <Card key={t.id}>
+                                <CardContent className="flex items-center gap-3 py-3">
+                                    <div className="flex-1 min-w-0">
+                                        <Link href={`/app/tarefas/${t.id}`} className="hover:text-primary">
+                                            <p className={`font-medium truncate ${t.status === "concluida" ? "line-through text-muted-foreground" : ""}`}>{t.titulo}</p>
+                                        </Link>
+                                        <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground mt-0.5">
+                                            <span className={PRIORIDADE[t.prioridade].className}>{PRIORIDADE[t.prioridade].label}</span>
+                                            {t.data_entrega && <span>• entrega {t.data_entrega}</span>}
+                                            {prazo && <Badge className={prazo.className} variant="secondary">{prazo.label}</Badge>}
+                                        </div>
                                     </div>
-                                </div>
-                                <Select value={t.status} onValueChange={(v) => mudarStatus(t, v as TarefaStatus)}>
-                                    <SelectTrigger className="w-[150px] h-8">
-                                        <Badge className={TAREFA_STATUS[t.status].className} variant="secondary">{TAREFA_STATUS[t.status].label}</Badge>
-                                    </SelectTrigger>
-                                    <SelectContent>{Object.entries(TAREFA_STATUS).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                    <Select value={t.status} onValueChange={(v) => mudarStatus(t, v as TarefaStatus)}>
+                                        <SelectTrigger className="w-[180px] h-8">
+                                            <Badge className={TAREFA_STATUS[t.status].className} variant="secondary">{TAREFA_STATUS[t.status].label}</Badge>
+                                        </SelectTrigger>
+                                        <SelectContent>{TAREFA_STATUS_ORDEM.map((s) => <SelectItem key={s} value={s}>{TAREFA_STATUS[s].label}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
                 </div>
             )}
         </div>

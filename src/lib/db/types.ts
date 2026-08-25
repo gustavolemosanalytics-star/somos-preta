@@ -3,8 +3,13 @@
 export type Role = "admin" | "gestor" | "analista" | "creator" | "pendente"
 export type InfluencerStatus = "ativo" | "inativo" | "negociando" | "bloqueado"
 export type CampanhaStatus = "rascunho" | "planejamento" | "ativa" | "concluida" | "cancelada"
-export type TarefaStatus = "pendente" | "em_andamento" | "concluida" | "bloqueada"
+export type TarefaStatus =
+    | "backlog" | "a_fazer" | "em_andamento" | "aguardando_terceiro"
+    | "aguardando_aprovacao" | "bloqueada" | "concluida" | "cancelada"
 export type TarefaPrioridade = "baixa" | "media" | "alta" | "urgente"
+export type TarefaEventoTipo =
+    | "criacao" | "status" | "prioridade" | "prazo" | "responsavel" | "solicitante"
+    | "colaborador_adicionado" | "colaborador_removido" | "conclusao" | "reabertura"
 export type ContratoStatus = "pendente" | "assinado" | "expirado" | "cancelado"
 export type BlogStatus = "rascunho" | "publicado"
 
@@ -89,13 +94,33 @@ export type Tarefa = {
     status: TarefaStatus
     prioridade: TarefaPrioridade
     responsavel: string | null
+    solicitante_id: string | null
     influencer_id: string | null
+    data_inicio: string | null
     data_entrega: string | null
+    horario: string | null
     concluida_em: string | null
     ordem: number
     created_by: string | null
     created_at: string
     updated_at: string
+}
+
+export type TarefaColaborador = {
+    id: string
+    tarefa_id: string
+    profile_id: string
+    created_at: string
+}
+
+export type TarefaEvento = {
+    id: string
+    tarefa_id: string
+    tipo: TarefaEventoTipo
+    autor_id: string | null
+    valor_anterior: string | null
+    valor_novo: string | null
+    created_at: string
 }
 
 export type Contrato = {
