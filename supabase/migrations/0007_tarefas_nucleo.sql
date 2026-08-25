@@ -117,11 +117,11 @@ begin
       insert into somos_preta_tarefa_eventos (tarefa_id, tipo, autor_id, valor_anterior, valor_novo)
       values (
         new.id,
-        case
+        (case
           when new.status = 'concluida' then 'conclusao'
           when old.status = 'concluida' then 'reabertura'
           else 'status'
-        end,
+        end)::somos_preta_tarefa_evento_tipo,
         actor, old.status::text, new.status::text
       );
     end if;
@@ -167,8 +167,14 @@ begin
     values (new.tarefa_id, 'colaborador_adicionado', auth.uid(), new.profile_id::text);
     return new;
   elsif tg_op = 'DELETE' then
-    insert into somos_preta_tarefa_eventos (tarefa_id, tipo, autor_id, valor_anterior)
-    values (old.tarefa_id, 'colaborador_removido', auth.uid(), old.profile_id::text);
+    -- Só registra o evento se a tarefa ainda existir: quando a remoção do
+    -- colaborador é consequência de a própria tarefa estar sendo excluída
+    -- (cascade), o pai já não existe mais nesse ponto e o insert violaria
+    -- a FK de somos_preta_tarefa_eventos.tarefa_id.
+    if exists (select 1 from somos_preta_tarefas where id = old.tarefa_id) then
+      insert into somos_preta_tarefa_eventos (tarefa_id, tipo, autor_id, valor_anterior)
+      values (old.tarefa_id, 'colaborador_removido', auth.uid(), old.profile_id::text);
+    end if;
     return old;
   end if;
   return null;
