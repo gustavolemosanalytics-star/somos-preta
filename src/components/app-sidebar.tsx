@@ -6,7 +6,6 @@ import Link from "next/link"
 import {
     LayoutDashboard,
     Users,
-    UserSearch,
     Megaphone,
     Building2,
     ClipboardList,
@@ -41,7 +40,6 @@ const navItems = [
     { title: "Campanhas", url: "/app/campanhas", icon: Megaphone },
     { title: "Tarefas", url: "/app/tarefas", icon: ClipboardList },
     { title: "Criadores", url: "/app/criadores", icon: Users },
-    { title: "Descobrir", url: "/app/descobrir", icon: UserSearch },
     { title: "Contratos", url: "/app/contratos", icon: FileText },
     { title: "Mensagens", url: "/app/mensagens", icon: MessageSquare },
     { title: "Blog", url: "/app/blog", icon: Newspaper },

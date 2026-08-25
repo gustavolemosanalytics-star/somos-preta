@@ -60,7 +60,9 @@ export type Influencer = {
     avg_comments: number
     avg_shares: number
     growth_rate: number
+    views_medias: number
     nicho: string[]
+    genero: string | null
     estado: string | null
     cidade: string | null
     status: InfluencerStatus
@@ -179,6 +181,36 @@ export type TarefaEvento = {
     autor_id: string | null
     valor_anterior: string | null
     valor_novo: string | null
+    created_at: string
+}
+
+export type PipelineEtapa =
+    | "mapeado" | "em_analise" | "contatado" | "interessado" | "negociacao"
+    | "aprovado_preta" | "enviado_cliente" | "aprovado_cliente" | "contratado" | "publicado"
+
+export type Lista = {
+    id: string
+    nome: string
+    descricao: string | null
+    cliente_id: string | null
+    campanha_id: string | null
+    criado_por: string | null
+    created_at: string
+    updated_at: string
+}
+
+export type ListaCriador = {
+    id: string
+    lista_id: string
+    influencer_id: string
+    etapa: PipelineEtapa
+    added_at: string
+}
+
+export type Favorito = {
+    id: string
+    influencer_id: string
+    profile_id: string
     created_at: string
 }
 
