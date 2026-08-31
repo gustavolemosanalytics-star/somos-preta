@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { Suspense, useEffect, useState } from "react"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { useProfiles } from "@/hooks/use-profiles"
 import type { Tarefa, TarefaEvento, TarefaStatus, TarefaPrioridade, TarefaAnexo } from "@/lib/db/types"
 import { TAREFA_STATUS, TAREFA_STATUS_ORDEM, TAREFA_PRIORIDADE, tarefaPrazoBadge } from "@/lib/constants/tarefas"
 import { UserPicker, UserMultiPicker } from "@/components/tarefas/user-picker"
+import { InfluencerPicker } from "@/components/tarefas/influencer-picker"
 import { Timeline } from "@/components/tarefas/timeline"
 import { SubtarefasSection } from "@/components/tarefas/subtarefas-section"
 import { AnexosSection } from "@/components/tarefas/anexos-section"
@@ -19,7 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownSelect } from "@/components/ui/dropdown-select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -30,9 +31,10 @@ import {
 } from "@/components/ui/alert-dialog"
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+    DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu"
 import {
-    ArrowLeft, Archive, ArchiveRestore, Building2, ClipboardList, Copy, FolderInput, History,
+    ArrowLeft, ArrowRightLeft, Archive, ArchiveRestore, Building2, ClipboardList, Copy, FolderInput, History,
     Loader2, Megaphone, MoreHorizontal, Paperclip, Tag, Trash2, Users,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -94,11 +96,25 @@ function ConcluirDialog({ tarefaId, obrigatoria, open, onOpenChange, onConfirmar
     )
 }
 
+const TABS_VALIDAS = ["detalhes", "subtarefas", "anexos", "atualizacoes", "historico"]
+
 export default function TarefaDetalhePage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center py-24 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>}>
+            <TarefaDetalheConteudo />
+        </Suspense>
+    )
+}
+
+function TarefaDetalheConteudo() {
     const { id: tarefaId } = useParams<{ id: string }>()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [supabase] = useState(() => createClient())
     const { profiles } = useProfiles()
+
+    const tabParam = searchParams.get("tab")
+    const tabInicial = tabParam && TABS_VALIDAS.includes(tabParam) ? tabParam : "detalhes"
 
     const [tarefa, setTarefa] = useState<TarefaDetalhe | null>(null)
     const [colaboradores, setColaboradores] = useState<string[]>([])
@@ -113,7 +129,7 @@ export default function TarefaDetalhePage() {
     const [novaCampanhaId, setNovaCampanhaId] = useState("")
 
     async function load() {
-        const [{ data: t }, { data: colabs }, { data: evts }] = await Promise.all([
+        const [{ data: t }, { data: colabs }, { data: evts }, { data: camps }] = await Promise.all([
             supabase
                 .from("somos_preta_tarefas")
                 .select("*, campanha:somos_preta_campanhas(id, nome, cliente:somos_preta_clientes(id, nome)), influencer:somos_preta_influencers(id, nome)")
@@ -121,12 +137,14 @@ export default function TarefaDetalhePage() {
                 .single(),
             supabase.from("somos_preta_tarefa_colaboradores").select("profile_id").eq("tarefa_id", tarefaId),
             supabase.from("somos_preta_tarefa_eventos").select("*").eq("tarefa_id", tarefaId).order("created_at", { ascending: false }),
+            supabase.from("somos_preta_campanhas").select("id, nome").order("nome"),
         ])
         const td = t as TarefaDetalhe | null
         setTarefa(td)
         if (td) { setTitulo(td.titulo); setDescricao(td.descricao ?? ""); setTagsInput((td.tags ?? []).join(", ")) }
         setColaboradores(((colabs as { profile_id: string }[]) ?? []).map((c) => c.profile_id))
         setEventos((evts as TarefaEvento[]) ?? [])
+        setCampanhas((camps as CampanhaOpcao[]) ?? [])
         setLoading(false)
     }
 
@@ -230,9 +248,7 @@ export default function TarefaDetalhePage() {
         router.push(`/app/tarefas/${novaTarefa.id}`)
     }
 
-    async function abrirMover() {
-        const { data } = await supabase.from("somos_preta_campanhas").select("id, nome").order("nome")
-        setCampanhas((data as CampanhaOpcao[]) ?? [])
+    function abrirMover() {
         setNovaCampanhaId(tarefa?.campanha_id ?? "")
         setMoverOpen(true)
     }
@@ -275,6 +291,16 @@ export default function TarefaDetalhePage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={duplicar}><Copy className="h-4 w-4" /> Duplicar</DropdownMenuItem>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger><ArrowRightLeft className="h-4 w-4" /> Mudar status</DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    {TAREFA_STATUS_ORDEM.map((s) => (
+                                        <DropdownMenuItem key={s} disabled={s === tarefa.status} onClick={() => mudarStatus(s)}>
+                                            {TAREFA_STATUS[s].label}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
                             <DropdownMenuItem onClick={abrirMover}><FolderInput className="h-4 w-4" /> Mover para outra campanha</DropdownMenuItem>
                             <DropdownMenuItem onClick={toggleArquivar}>
                                 {tarefa.arquivada ? <><ArchiveRestore className="h-4 w-4" /> Desarquivar</> : <><Archive className="h-4 w-4" /> Arquivar</>}
@@ -315,10 +341,12 @@ export default function TarefaDetalhePage() {
                         <DialogTitle>Mover tarefa</DialogTitle>
                         <DialogDescription>Escolha a campanha de destino.</DialogDescription>
                     </DialogHeader>
-                    <Select value={novaCampanhaId} onValueChange={setNovaCampanhaId}>
-                        <SelectTrigger className="w-full"><SelectValue placeholder="Selecionar campanha" /></SelectTrigger>
-                        <SelectContent>{campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <DropdownSelect
+                        value={novaCampanhaId}
+                        onValueChange={setNovaCampanhaId}
+                        options={campanhas.map((c) => ({ value: c.id, label: c.nome }))}
+                        placeholder="Selecionar campanha"
+                    />
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setMoverOpen(false)}>Cancelar</Button>
                         <Button onClick={confirmarMover} disabled={!novaCampanhaId || novaCampanhaId === tarefa.campanha_id}>Mover</Button>
@@ -354,7 +382,7 @@ export default function TarefaDetalhePage() {
                         ))}
                     </div>
 
-                    <Tabs defaultValue="detalhes">
+                    <Tabs defaultValue={tabInicial}>
                         <TabsList>
                             <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
                             <TabsTrigger value="subtarefas">Subtarefas</TabsTrigger>
@@ -387,7 +415,7 @@ export default function TarefaDetalhePage() {
                         </TabsContent>
 
                         <TabsContent value="historico">
-                            <Timeline eventos={eventos} profiles={profiles} />
+                            <Timeline eventos={eventos} profiles={profiles} campanhas={campanhas} />
                         </TabsContent>
                     </Tabs>
                 </div>
@@ -397,17 +425,19 @@ export default function TarefaDetalhePage() {
                         <CardContent className="pt-6 space-y-4">
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">Status</Label>
-                                <Select value={tarefa.status} onValueChange={(v) => mudarStatus(v as TarefaStatus)}>
-                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                                    <SelectContent>{TAREFA_STATUS_ORDEM.map((s) => <SelectItem key={s} value={s}>{TAREFA_STATUS[s].label}</SelectItem>)}</SelectContent>
-                                </Select>
+                                <DropdownSelect
+                                    value={tarefa.status}
+                                    onValueChange={(v) => mudarStatus(v as TarefaStatus)}
+                                    options={TAREFA_STATUS_ORDEM.map((s) => ({ value: s, label: TAREFA_STATUS[s].label }))}
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">Prioridade</Label>
-                                <Select value={tarefa.prioridade} onValueChange={(v) => atualizar({ prioridade: v as TarefaPrioridade })}>
-                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                                    <SelectContent>{Object.entries(TAREFA_PRIORIDADE).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}</SelectContent>
-                                </Select>
+                                <DropdownSelect
+                                    value={tarefa.prioridade}
+                                    onValueChange={(v) => atualizar({ prioridade: v as TarefaPrioridade })}
+                                    options={Object.entries(TAREFA_PRIORIDADE).map(([k, m]) => ({ value: k, label: m.label }))}
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">Solicitante</Label>
@@ -420,6 +450,14 @@ export default function TarefaDetalhePage() {
                             <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3.5 w-3.5" /> Colaboradores</Label>
                                 <UserMultiPicker values={colaboradores} onChange={alterarColaboradores} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-muted-foreground">Criador</Label>
+                                <InfluencerPicker
+                                    value={tarefa.influencer_id}
+                                    onChange={(v) => atualizar({ influencer_id: v })}
+                                    placeholder="Vincular um criador (opcional)"
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">

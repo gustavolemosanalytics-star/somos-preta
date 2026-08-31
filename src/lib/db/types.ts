@@ -10,6 +10,7 @@ export type TarefaPrioridade = "baixa" | "media" | "alta" | "urgente"
 export type TarefaEventoTipo =
     | "criacao" | "status" | "prioridade" | "prazo" | "responsavel" | "solicitante"
     | "colaborador_adicionado" | "colaborador_removido" | "conclusao" | "reabertura"
+    | "titulo" | "descricao" | "tags" | "campanha" | "arquivamento" | "evidencia_obrigatoria"
 export type TarefaComentarioTipo = "comentario" | "duvida" | "bloqueio" | "atualizacao" | "solicitacao_revisao"
 export type TarefaAnexoTipo = "imagem" | "pdf_documento" | "video" | "link"
 export type NotificacaoTipo = "tarefa_atribuida" | "mencao" | "comentario" | "solicitacao_revisao" | "conclusao"

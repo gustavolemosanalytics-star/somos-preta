@@ -34,6 +34,12 @@ export const TAREFA_EVENTO_LABEL: Record<TarefaEventoTipo, string> = {
     colaborador_removido: "removeu um colaborador",
     conclusao: "concluiu a tarefa",
     reabertura: "reabriu a tarefa",
+    titulo: "alterou o título",
+    descricao: "alterou a descrição",
+    tags: "alterou as tags",
+    campanha: "moveu a tarefa de campanha",
+    arquivamento: "alterou o arquivamento",
+    evidencia_obrigatoria: "alterou a exigência de evidência",
 }
 
 const TAREFA_STATUS_FINALIZADOS: TarefaStatus[] = ["concluida", "cancelada"]

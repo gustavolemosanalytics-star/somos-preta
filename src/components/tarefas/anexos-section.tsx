@@ -75,8 +75,16 @@ export function AnexosSection({ tarefaId, apenasEvidencia, onChange }: {
                 <FileUploader tarefaId={tarefaId} isEvidencia={apenasEvidencia} onUploaded={load} />
                 {linkAberto ? (
                     <div className="flex items-center gap-1.5">
-                        <Input className="h-8 w-48" placeholder="https://..." value={link} onChange={(e) => setLink(e.target.value)} />
+                        <Input
+                            className="h-8 w-48"
+                            placeholder="https://..."
+                            value={link}
+                            onChange={(e) => setLink(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Escape") { setLinkAberto(false); setLink("") } }}
+                            autoFocus
+                        />
                         <Button size="sm" variant="outline" onClick={adicionarLink}>Adicionar</Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setLinkAberto(false); setLink("") }} aria-label="Cancelar" title="Cancelar">Cancelar</Button>
                     </div>
                 ) : (
                     <Button type="button" variant="outline" size="sm" onClick={() => setLinkAberto(true)}>
@@ -96,7 +104,7 @@ export function AnexosSection({ tarefaId, apenasEvidencia, onChange }: {
                                     {a.nome ?? a.link_externo}
                                 </a>
                                 {a.is_evidencia && <span className="text-[10px] uppercase text-green-600 font-medium shrink-0">Evidência</span>}
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-600 shrink-0" onClick={() => excluir(a.id)}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-600 shrink-0" onClick={() => excluir(a.id)} aria-label="Excluir anexo" title="Excluir anexo">
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                             </li>

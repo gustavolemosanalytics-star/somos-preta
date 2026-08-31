@@ -7,14 +7,13 @@ import { useProfiles } from "@/hooks/use-profiles"
 import type { Tarefa, TarefaStatus, TarefaPrioridade } from "@/lib/db/types"
 import { TAREFA_STATUS, TAREFA_STATUS_ORDEM, TAREFA_PRIORIDADE, tarefaPrazoBadge } from "@/lib/constants/tarefas"
 import { UserAvatar, UserPicker, UserMultiPicker } from "@/components/tarefas/user-picker"
+import { InfluencerPicker } from "@/components/tarefas/influencer-picker"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Switch } from "@/components/ui/switch"
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select"
+import { DropdownSelect } from "@/components/ui/dropdown-select"
 import {
     Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription,
 } from "@/components/ui/dialog"
@@ -25,13 +24,15 @@ import {
 } from "@/components/ui/alert-dialog"
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+    DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
-    Archive, ArchiveRestore, ClipboardList, Copy, FolderInput, Kanban, List, Loader2,
-    MoreHorizontal, Plus, Search, Tag, Trash2,
+    Archive, ArchiveRestore, ClipboardList, Copy, Filter, FolderInput, Kanban, List, Loader2,
+    MoreHorizontal, Plus, Search, Tag, Trash2, X, ArrowRightLeft,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -44,7 +45,7 @@ const FILTROS: { value: TarefaStatus | "todas"; label: string }[] = [
     ...TAREFA_STATUS_ORDEM.map((s) => ({ value: s, label: TAREFA_STATUS[s].label })),
 ]
 
-function CardTarefa({ t, profilesById, progresso, onExcluir, onDuplicar, onMover, onArquivar }: {
+function CardTarefa({ t, profilesById, progresso, onExcluir, onDuplicar, onMover, onArquivar, onMudarStatus }: {
     t: TarefaComCampanha
     profilesById: Map<string, { nome: string | null; avatar_url: string | null }>
     progresso?: ProgressoSubtarefas
@@ -52,6 +53,7 @@ function CardTarefa({ t, profilesById, progresso, onExcluir, onDuplicar, onMover
     onDuplicar: (t: TarefaComCampanha) => void
     onMover: (t: TarefaComCampanha) => void
     onArquivar: (t: TarefaComCampanha) => void
+    onMudarStatus: (t: TarefaComCampanha, status: TarefaStatus) => void
 }) {
     const prazo = tarefaPrazoBadge(t)
     const responsavel = t.responsavel ? profilesById.get(t.responsavel) : null
@@ -69,13 +71,31 @@ function CardTarefa({ t, profilesById, progresso, onExcluir, onDuplicar, onMover
                     <div className="flex items-center shrink-0">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" aria-label="Mais ações" title="Mais ações">
                                     <MoreHorizontal className="h-3.5 w-3.5" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => onDuplicar(t)}><Copy className="h-4 w-4" /> Duplicar</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onMover(t)}><FolderInput className="h-4 w-4" /> Mover</DropdownMenuItem>
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger><ArrowRightLeft className="h-4 w-4" /> Mudar status</DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent>
+                                        {TAREFA_STATUS_ORDEM.map((s) => {
+                                            const bloqueado = s === "concluida" && t.evidencia_obrigatoria
+                                            return (
+                                                <DropdownMenuItem
+                                                    key={s}
+                                                    disabled={s === t.status || bloqueado}
+                                                    onClick={() => onMudarStatus(t, s)}
+                                                    title={bloqueado ? "Esta tarefa exige evidência — conclua pela página da tarefa" : undefined}
+                                                >
+                                                    {TAREFA_STATUS[s].label}
+                                                </DropdownMenuItem>
+                                            )
+                                        })}
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+                                <DropdownMenuItem onClick={() => onMover(t)}><FolderInput className="h-4 w-4" /> Mover para campanha</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => onArquivar(t)}>
                                     {t.arquivada ? <><ArchiveRestore className="h-4 w-4" /> Desarquivar</> : <><Archive className="h-4 w-4" /> Arquivar</>}
                                 </DropdownMenuItem>
@@ -83,7 +103,7 @@ function CardTarefa({ t, profilesById, progresso, onExcluir, onDuplicar, onMover
                         </DropdownMenu>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-600">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-600" aria-label="Excluir tarefa" title="Excluir tarefa">
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                             </AlertDialogTrigger>
@@ -144,6 +164,13 @@ export default function TarefasPage() {
     const [moverAlvo, setMoverAlvo] = useState<TarefaComCampanha | null>(null)
     const [novaCampanhaId, setNovaCampanhaId] = useState("")
 
+    const [filtrosOpen, setFiltrosOpen] = useState(false)
+    const [filtroResponsavel, setFiltroResponsavel] = useState<string | null>(null)
+    const [filtroCampanhaId, setFiltroCampanhaId] = useState("todas")
+    const [filtroPrioridade, setFiltroPrioridade] = useState<TarefaPrioridade | "todas">("todas")
+    const [filtroPrazo, setFiltroPrazo] = useState<"todas" | "atrasadas" | "hoje" | "futuras" | "sem_prazo">("todas")
+    const [filtroTags, setFiltroTags] = useState<string[]>([])
+
     const [open, setOpen] = useState(false)
     const [saving, setSaving] = useState(false)
     const [form, setForm] = useState({
@@ -151,6 +178,7 @@ export default function TarefasPage() {
         solicitante_id: null as string | null,
         responsavel: null as string | null,
         colaboradores: [] as string[],
+        influencer_id: null as string | null,
         prioridade: "media" as TarefaPrioridade,
         data_inicio: "", data_entrega: "", horario: "",
     })
@@ -187,7 +215,7 @@ export default function TarefasPage() {
     function abrirCriar() {
         setForm({
             campanha_id: "", titulo: "", descricao: "",
-            solicitante_id: currentUserId, responsavel: null, colaboradores: [],
+            solicitante_id: currentUserId, responsavel: null, colaboradores: [], influencer_id: null,
             prioridade: "media", data_inicio: "", data_entrega: "", horario: "",
         })
         setOpen(true)
@@ -202,6 +230,7 @@ export default function TarefasPage() {
             descricao: form.descricao || null,
             solicitante_id: form.solicitante_id,
             responsavel: form.responsavel,
+            influencer_id: form.influencer_id,
             prioridade: form.prioridade,
             status: "backlog",
             data_inicio: form.data_inicio || null,
@@ -270,14 +299,61 @@ export default function TarefasPage() {
         load()
     }
 
+    async function mudarStatusRapido(t: TarefaComCampanha, status: TarefaStatus) {
+        if (status === t.status) return
+        if (status === "concluida" && t.evidencia_obrigatoria) {
+            toast.error("Esta tarefa exige evidência de conclusão — abra a tarefa para concluir")
+            return
+        }
+        const { error } = await supabase.from("somos_preta_tarefas").update({
+            status, concluida_em: status === "concluida" ? new Date().toISOString() : null,
+        }).eq("id", t.id)
+        if (error) { toast.error("Erro ao mudar status"); return }
+        toast.success("Status atualizado")
+        load()
+    }
+
+    function limparFiltros() {
+        setFiltroResponsavel(null)
+        setFiltroCampanhaId("todas")
+        setFiltroPrioridade("todas")
+        setFiltroPrazo("todas")
+        setFiltroTags([])
+    }
+
+    const filtrosAtivosCount = [
+        filtroResponsavel !== null,
+        filtroCampanhaId !== "todas",
+        filtroPrioridade !== "todas",
+        filtroPrazo !== "todas",
+        filtroTags.length > 0,
+    ].filter(Boolean).length
+
+    const todasTags = useMemo(
+        () => Array.from(new Set(tarefas.flatMap((t) => t.tags))).sort(),
+        [tarefas]
+    )
+
     const visiveis = useMemo(() => {
         const q = busca.trim().toLowerCase()
+        const hoje = new Date().toISOString().slice(0, 10)
         return tarefas.filter((t) => {
             if (!mostrarArquivadas && t.arquivada) return false
             if (q && !t.titulo.toLowerCase().includes(q)) return false
+            if (filtroResponsavel && t.responsavel !== filtroResponsavel) return false
+            if (filtroCampanhaId !== "todas" && t.campanha_id !== filtroCampanhaId) return false
+            if (filtroPrioridade !== "todas" && t.prioridade !== filtroPrioridade) return false
+            if (filtroPrazo !== "todas") {
+                const badge = tarefaPrazoBadge(t)
+                if (filtroPrazo === "atrasadas" && badge?.label !== "Atrasada") return false
+                if (filtroPrazo === "hoje" && badge?.label !== "Vence hoje") return false
+                if (filtroPrazo === "sem_prazo" && t.data_entrega) return false
+                if (filtroPrazo === "futuras" && !(t.data_entrega && t.data_entrega > hoje)) return false
+            }
+            if (filtroTags.length > 0 && !filtroTags.every((tag) => t.tags.includes(tag))) return false
             return true
         })
-    }, [tarefas, busca, mostrarArquivadas])
+    }, [tarefas, busca, mostrarArquivadas, filtroResponsavel, filtroCampanhaId, filtroPrioridade, filtroPrazo, filtroTags])
 
     const filtradas = useMemo(
         () => (filtro === "todas" ? visiveis : visiveis.filter((t) => t.status === filtro)),
@@ -318,10 +394,12 @@ export default function TarefasPage() {
                             <div className="space-y-4 py-2">
                                 <div className="space-y-1.5">
                                     <Label>Campanha *</Label>
-                                    <Select value={form.campanha_id} onValueChange={(v) => setForm({ ...form, campanha_id: v })}>
-                                        <SelectTrigger className="w-full"><SelectValue placeholder="Selecionar campanha" /></SelectTrigger>
-                                        <SelectContent>{campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-                                    </Select>
+                                    <DropdownSelect
+                                        value={form.campanha_id}
+                                        onValueChange={(v) => setForm({ ...form, campanha_id: v })}
+                                        options={campanhas.map((c) => ({ value: c.id, label: c.nome }))}
+                                        placeholder="Selecionar campanha"
+                                    />
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label htmlFor="titulo">Título *</Label>
@@ -345,13 +423,18 @@ export default function TarefasPage() {
                                     <Label>Colaboradores</Label>
                                     <UserMultiPicker values={form.colaboradores} onChange={(v) => setForm({ ...form, colaboradores: v })} />
                                 </div>
+                                <div className="space-y-1.5">
+                                    <Label>Criador</Label>
+                                    <InfluencerPicker value={form.influencer_id} onChange={(v) => setForm({ ...form, influencer_id: v })} placeholder="Vincular um criador (opcional)" />
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
                                         <Label>Prioridade</Label>
-                                        <Select value={form.prioridade} onValueChange={(v) => setForm({ ...form, prioridade: v as TarefaPrioridade })}>
-                                            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                                            <SelectContent>{Object.entries(TAREFA_PRIORIDADE).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}</SelectContent>
-                                        </Select>
+                                        <DropdownSelect
+                                            value={form.prioridade}
+                                            onValueChange={(v) => setForm({ ...form, prioridade: v as TarefaPrioridade })}
+                                            options={Object.entries(TAREFA_PRIORIDADE).map(([k, m]) => ({ value: k, label: m.label }))}
+                                        />
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label htmlFor="horario">Horário</Label>
@@ -382,7 +465,7 @@ export default function TarefasPage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Card><CardContent className="py-4">
-                    <p className="text-2xl font-bold">{tarefas.length}</p>
+                    <p className="text-2xl font-bold">{visiveis.length}</p>
                     <p className="text-xs text-muted-foreground">Total</p>
                 </CardContent></Card>
                 <Card><CardContent className="py-4">
@@ -404,6 +487,72 @@ export default function TarefasPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Buscar por título..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9 rounded-xl" />
                 </div>
+                <Popover open={filtrosOpen} onOpenChange={setFiltrosOpen}>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="rounded-xl">
+                            <Filter className="h-4 w-4" /> Filtros
+                            {filtrosAtivosCount > 0 && <Badge className="ml-1 h-5 min-w-5 px-1 justify-center">{filtrosAtivosCount}</Badge>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] space-y-3" align="start">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Responsável</Label>
+                            <UserPicker value={filtroResponsavel} onChange={setFiltroResponsavel} placeholder="Qualquer um" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Campanha</Label>
+                            <DropdownSelect
+                                value={filtroCampanhaId}
+                                onValueChange={setFiltroCampanhaId}
+                                options={[{ value: "todas", label: "Todas" }, ...campanhas.map((c) => ({ value: c.id, label: c.nome }))]}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Prioridade</Label>
+                            <DropdownSelect
+                                value={filtroPrioridade}
+                                onValueChange={(v) => setFiltroPrioridade(v as TarefaPrioridade | "todas")}
+                                options={[{ value: "todas", label: "Todas" }, ...Object.entries(TAREFA_PRIORIDADE).map(([k, m]) => ({ value: k, label: m.label }))]}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Prazo</Label>
+                            <DropdownSelect
+                                value={filtroPrazo}
+                                onValueChange={(v) => setFiltroPrazo(v as typeof filtroPrazo)}
+                                options={[
+                                    { value: "todas", label: "Todas" },
+                                    { value: "atrasadas", label: "Atrasadas" },
+                                    { value: "hoje", label: "Vence hoje" },
+                                    { value: "futuras", label: "Futuras" },
+                                    { value: "sem_prazo", label: "Sem prazo" },
+                                ]}
+                            />
+                        </div>
+                        {todasTags.length > 0 && (
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-muted-foreground">Tags</Label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {todasTags.map((tag) => (
+                                        <Badge
+                                            key={tag}
+                                            variant={filtroTags.includes(tag) ? "default" : "outline"}
+                                            className="cursor-pointer"
+                                            onClick={() => setFiltroTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag])}
+                                        >
+                                            <Tag className="h-2.5 w-2.5" /> {tag}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {filtrosAtivosCount > 0 && (
+                            <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={limparFiltros}>
+                                <X className="h-4 w-4" /> Limpar filtros
+                            </Button>
+                        )}
+                    </PopoverContent>
+                </Popover>
                 <label className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Switch checked={mostrarArquivadas} onCheckedChange={setMostrarArquivadas} /> Mostrar arquivadas
                 </label>
@@ -415,10 +564,12 @@ export default function TarefasPage() {
                         <DialogTitle>Mover tarefa</DialogTitle>
                         <DialogDescription>Escolha a campanha de destino para &quot;{moverAlvo?.titulo}&quot;.</DialogDescription>
                     </DialogHeader>
-                    <Select value={novaCampanhaId} onValueChange={setNovaCampanhaId}>
-                        <SelectTrigger className="w-full"><SelectValue placeholder="Selecionar campanha" /></SelectTrigger>
-                        <SelectContent>{campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <DropdownSelect
+                        value={novaCampanhaId}
+                        onValueChange={setNovaCampanhaId}
+                        options={campanhas.map((c) => ({ value: c.id, label: c.nome }))}
+                        placeholder="Selecionar campanha"
+                    />
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setMoverAlvo(null)}>Cancelar</Button>
                         <Button onClick={confirmarMover} disabled={!novaCampanhaId || novaCampanhaId === moverAlvo?.campanha_id}>Mover</Button>
@@ -454,6 +605,7 @@ export default function TarefasPage() {
                                             onDuplicar={duplicar}
                                             onMover={abrirMover}
                                             onArquivar={arquivar}
+                                            onMudarStatus={mudarStatusRapido}
                                         />
                                     ))}
                                 </div>
@@ -473,7 +625,13 @@ export default function TarefasPage() {
                     {filtradas.length === 0 ? (
                         <Card><CardContent className="py-14 text-center text-muted-foreground">
                             <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                            <p className="font-medium">Nenhuma tarefa neste status</p>
+                            <p className="font-medium">
+                                {busca.trim()
+                                    ? `Nenhuma tarefa encontrada para "${busca.trim()}"`
+                                    : filtrosAtivosCount > 0
+                                        ? "Nenhuma tarefa encontrada para esses filtros"
+                                        : "Nenhuma tarefa neste status"}
+                            </p>
                         </CardContent></Card>
                     ) : (
                         <div className="space-y-2">
@@ -500,13 +658,31 @@ export default function TarefasPage() {
                                             <Badge className={TAREFA_STATUS[t.status].className} variant="secondary">{TAREFA_STATUS[t.status].label}</Badge>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label="Mais ações" title="Mais ações">
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem onClick={() => duplicar(t)}><Copy className="h-4 w-4" /> Duplicar</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => abrirMover(t)}><FolderInput className="h-4 w-4" /> Mover</DropdownMenuItem>
+                                                    <DropdownMenuSub>
+                                                        <DropdownMenuSubTrigger><ArrowRightLeft className="h-4 w-4" /> Mudar status</DropdownMenuSubTrigger>
+                                                        <DropdownMenuSubContent>
+                                                            {TAREFA_STATUS_ORDEM.map((s) => {
+                                                                const bloqueado = s === "concluida" && t.evidencia_obrigatoria
+                                                                return (
+                                                                    <DropdownMenuItem
+                                                                        key={s}
+                                                                        disabled={s === t.status || bloqueado}
+                                                                        onClick={() => mudarStatusRapido(t, s)}
+                                                                        title={bloqueado ? "Esta tarefa exige evidência — conclua pela página da tarefa" : undefined}
+                                                                    >
+                                                                        {TAREFA_STATUS[s].label}
+                                                                    </DropdownMenuItem>
+                                                                )
+                                                            })}
+                                                        </DropdownMenuSubContent>
+                                                    </DropdownMenuSub>
+                                                    <DropdownMenuItem onClick={() => abrirMover(t)}><FolderInput className="h-4 w-4" /> Mover para campanha</DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => arquivar(t)}>
                                                         {t.arquivada ? <><ArchiveRestore className="h-4 w-4" /> Desarquivar</> : <><Archive className="h-4 w-4" /> Arquivar</>}
                                                     </DropdownMenuItem>
@@ -514,7 +690,7 @@ export default function TarefasPage() {
                                             </DropdownMenu>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600" aria-label="Excluir tarefa" title="Excluir tarefa">
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>

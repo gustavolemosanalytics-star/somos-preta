@@ -112,7 +112,10 @@ export function DashboardHeader() {
                         )}
                         {notificacoes.map((n) => {
                             const atorNome = n.ator?.nome ?? n.ator?.email ?? "Alguém"
-                            const href = n.tarefa ? `/app/tarefas/${n.tarefa.id}` : "/app/tarefas"
+                            const abrirEmAtualizacoes = n.tipo === "mencao" || n.tipo === "comentario" || n.tipo === "solicitacao_revisao"
+                            const href = n.tarefa
+                                ? `/app/tarefas/${n.tarefa.id}${abrirEmAtualizacoes ? "?tab=atualizacoes" : ""}`
+                                : "/app/tarefas"
                             return (
                                 <DropdownMenuItem key={n.id} asChild className="p-0">
                                     <Link

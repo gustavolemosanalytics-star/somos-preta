@@ -87,7 +87,7 @@ export function SubtarefasSection({ tarefaId }: { tarefaId: string }) {
                         <div className="w-[160px]">
                             <UserPicker value={s.responsavel_id} onChange={(v) => atualizar(s, { responsavel_id: v })} placeholder="Responsável" allowClear />
                         </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-600" onClick={() => excluir(s.id)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-600" onClick={() => excluir(s.id)} aria-label="Excluir subtarefa" title="Excluir subtarefa">
                             <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                     </li>
