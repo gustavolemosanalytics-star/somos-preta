@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 
 const navLinks = [
     { href: "/blog", label: "Blog" },
+    { href: "/criador/criar-conta", label: "Sou criador" },
 ]
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {

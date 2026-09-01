@@ -1,8 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import dynamic from "next/dynamic"
 import { motion } from "framer-motion"
-import { Users, Megaphone, MapPin } from "lucide-react"
+import { Users, Megaphone, MapPin, Sparkles } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 const Hero3D = dynamic(() => import("@/components/hero-3d"), { ssr: false })
 
@@ -90,6 +92,26 @@ export default function HomePage() {
                             </motion.div>
                         ))}
                     </div>
+                </div>
+            </section>
+
+            {/* Media Kit */}
+            <section className="border-t border-border/60">
+                <div className="container mx-auto px-4 py-20 lg:py-28">
+                    <motion.div {...fade} className="max-w-2xl mx-auto text-center space-y-6">
+                        <span className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                            <Sparkles className="h-4 w-4 text-primary" /> Para criadores
+                        </span>
+                        <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
+                            Crie seu Media Kit online
+                        </h2>
+                        <p className="text-lg text-muted-foreground leading-relaxed">
+                            Aproveite os dados que você já tem na PRETA — redes sociais e portfólio — e monte um Media Kit pronto para compartilhar com marcas.
+                        </p>
+                        <Button asChild size="lg" className="rounded-full px-8 h-12 text-base">
+                            <Link href="/criador/criar-conta">Criar meu Media Kit</Link>
+                        </Button>
+                    </motion.div>
                 </div>
             </section>
 

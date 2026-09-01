@@ -5,7 +5,7 @@ export type Profile = {
     nome: string | null
     email: string | null
     avatar_url: string | null
-    role: "admin" | "gestor" | "analista" | "creator"
+    role: "admin" | "gestor" | "analista" | "creator" | "pendente"
 }
 
 const STAFF_ROLES = ["admin", "gestor", "analista"]

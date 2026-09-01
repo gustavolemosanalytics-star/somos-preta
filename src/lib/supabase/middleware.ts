@@ -10,6 +10,10 @@ const PUBLIC_PATHS = [
     "/app/criar-conta",
     "/app/esqueci-senha",
     "/app/redefinir-senha",
+    "/criador/login",
+    "/criador/criar-conta",
+    "/kit",
+    "/engajamento",
 ]
 
 function isPublic(pathname: string) {
@@ -66,6 +70,13 @@ export async function updateSession(request: NextRequest) {
     if (user && (pathname === "/app/login" || pathname === "/app/criar-conta")) {
         const redirectUrl = request.nextUrl.clone()
         redirectUrl.pathname = "/app/dashboard"
+        return NextResponse.redirect(redirectUrl)
+    }
+
+    // Logado tentando acessar as telas de auth do creator -> área do creator (o layout roteia por papel)
+    if (user && (pathname === "/criador/login" || pathname === "/criador/criar-conta")) {
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = "/criador"
         return NextResponse.redirect(redirectUrl)
     }
 
