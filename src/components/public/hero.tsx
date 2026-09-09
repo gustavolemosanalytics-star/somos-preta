@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { ArrowRight, BarChart3, MapPin, Sparkles, Users } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { SpecularButton } from "./specular-button"
 
 /**
  * Hero da landing — colagem de recortes sobre off-white.
@@ -150,16 +151,24 @@ export function Hero() {
                     </p>
 
                     <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                        <Link
+                        {/* Sobre o terracota preenchido o realce precisa de mais corpo, e a
+                            base acompanha a cor do botão para não virar uma borda cinza. */}
+                        <SpecularButton
                             href="/#quem-somos"
-                            className="group inline-flex h-14 items-center justify-center gap-3 rounded-full bg-brand-terracota px-8 text-base font-semibold text-white transition-colors hover:bg-brand-coral"
+                            lineColor="#FFF3EC"
+                            baseColor="#C2603F"
+                            intensity={2.2}
+                            thickness={2.2}
+                            shineSize={16}
+                            shineFade={38}
+                            className="group inline-flex h-14 items-center justify-center rounded-full bg-brand-terracota px-8 text-base font-semibold text-white hover:bg-brand-coral"
                         >
                             Conheça a Somos Preta
                             <ArrowRight
                                 className="h-4 w-4 transition-transform group-hover:translate-x-1"
                                 aria-hidden
                             />
-                        </Link>
+                        </SpecularButton>
                         <Link
                             href="/criador/criar-conta"
                             className="inline-flex h-14 items-center justify-center rounded-full border border-border px-8 text-base font-semibold transition-colors hover:border-brand-terracota hover:bg-accent"
