@@ -184,24 +184,19 @@ export default function CriadorCriarContaPage() {
                                 className="absolute left-[6%] top-[10%] h-[74%] w-[80%] rounded-[46%_54%_38%_62%/40%_45%_55%_60%] bg-brand-bege/70"
                             />
 
-                            {/* A foto vem recortada, com fundo transparente: fica solta sobre a
-                                mancha, sem moldura, e object-contain preserva a silhueta. O
-                                recorte termina numa linha reta na altura do peito, então a
-                                máscara dissolve a base para não virar um corte seco. */}
-                            <div className="absolute inset-x-0 bottom-0 top-[4%]">
+                            {/* A foto vem recortada, com fundo transparente, então fica solta
+                                sobre a mancha, sem moldura. A base do recorte é uma linha reta
+                                na altura do peito: em vez de dissolvê-la com gradiente — que
+                                sobre a camiseta preta vira um borrão cinza — a figura preenche
+                                a coluna e a borda do bloco faz o corte. */}
+                            <div className="absolute inset-0 overflow-hidden">
                                 <Image
                                     src="/media-kit/criador-principal.webp"
                                     alt="Criador de conteúdo de chapéu bucket, olhando para a câmera"
                                     fill
                                     priority
                                     sizes="(max-width: 1024px) 0px, 36vw"
-                                    className="object-contain object-bottom"
-                                    style={{
-                                        maskImage:
-                                            "linear-gradient(to bottom, #000 82%, transparent 99%)",
-                                        WebkitMaskImage:
-                                            "linear-gradient(to bottom, #000 82%, transparent 99%)",
-                                    }}
+                                    className="object-cover object-top"
                                 />
                             </div>
 
