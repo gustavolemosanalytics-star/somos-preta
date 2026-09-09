@@ -34,11 +34,11 @@ const METRICAS = [
     { valor: "92%", label: "público no N/NE" },
 ]
 
+/** Portfólio de exemplo: três territórios, sem repetir imagem. */
 const GALERIA = [
-    "/media-kit/galeria-1.svg",
-    "/media-kit/galeria-2.svg",
-    "/media-kit/galeria-3.svg",
-    "/media-kit/galeria-4.svg",
+    { src: "/media-kit/territorio-salvador.webp", alt: "Casario histórico de Salvador" },
+    { src: "/media-kit/territorio-manaus.webp", alt: "Encontro das águas, em Manaus" },
+    { src: "/media-kit/territorio-sao-luis.webp", alt: "Azulejaria do centro de São Luís" },
 ]
 
 const fade = {
@@ -177,11 +177,10 @@ function CartaoExemplo() {
             <div className="mt-5 flex flex-col gap-5 sm:flex-row">
                 <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-2xl bg-muted sm:w-[42%]">
                     <Image
-                        src="/media-kit/perfil.svg"
-                        alt="Foto de perfil do Media Kit de exemplo"
+                        src="/media-kit/perfil.webp"
+                        alt="Retrato da criadora no Media Kit de exemplo"
                         fill
                         sizes="(max-width: 640px) 90vw, 18vw"
-                        unoptimized
                         className="object-cover"
                     />
                 </div>
@@ -238,15 +237,14 @@ function CartaoExemplo() {
                 ))}
             </dl>
 
-            <ul className="mt-4 grid grid-cols-4 gap-2">
-                {GALERIA.map((src, i) => (
-                    <li key={src} className="relative aspect-[4/5] overflow-hidden rounded-lg bg-muted">
+            <ul className="mt-4 grid grid-cols-3 gap-2">
+                {GALERIA.map((foto) => (
+                    <li key={foto.src} className="relative aspect-[4/5] overflow-hidden rounded-lg bg-muted">
                         <Image
-                            src={src}
-                            alt={`Conteúdo ${i + 1} do portfólio de exemplo`}
+                            src={foto.src}
+                            alt={foto.alt}
                             fill
-                            sizes="(max-width: 640px) 22vw, 8vw"
-                            unoptimized
+                            sizes="(max-width: 640px) 30vw, 10vw"
                             className="object-cover"
                         />
                     </li>
