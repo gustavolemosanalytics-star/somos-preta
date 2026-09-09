@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { Monograma } from "@/components/public/marca"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -44,29 +45,32 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0d0d14] p-4">
-            <div className="w-full max-w-sm space-y-8">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-white mb-2">Somos Preta</h1>
-                    <p className="text-white/50 text-sm">Plataforma de Gestão de Creators</p>
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+            <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 space-y-8">
+                <div className="text-center space-y-3">
+                    <Monograma className="h-12 w-12 text-lg mx-auto" />
+                    <div>
+                        <h1 className="text-3xl font-bold text-foreground">Somos Preta</h1>
+                        <p className="text-muted-foreground text-sm">Plataforma de Gestão de Creators</p>
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="email" className="text-white/70">Email</Label>
+                        <Label htmlFor="email">Email</Label>
                         <Input
                             id="email"
                             type="email"
                             placeholder="seu@email.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-primary focus:ring-primary"
+                            className="h-12 rounded-xl focus-visible:border-primary"
                             required
                         />
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="password" className="text-white/70">Senha</Label>
+                            <Label htmlFor="password">Senha</Label>
                             <Link href="/app/esqueci-senha" className="text-primary text-xs font-medium hover:underline">
                                 Esqueci minha senha
                             </Link>
@@ -78,13 +82,13 @@ export default function LoginPage() {
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-primary focus:ring-primary pr-10"
+                                className="h-12 rounded-xl focus-visible:border-primary pr-10"
                                 required
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                             >
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
@@ -92,21 +96,21 @@ export default function LoginPage() {
                     </div>
 
                     {error && (
-                        <div className="text-sm text-red-400 bg-red-500/10 p-3 rounded-xl text-center">
+                        <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-xl text-center">
                             {error}
                         </div>
                     )}
 
                     <Button
                         type="submit"
-                        className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-lg"
+                        className="w-full h-12 rounded-xl font-bold text-lg"
                         disabled={isLoading}
                     >
                         {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Entrar"}
                     </Button>
                 </form>
 
-                <p className="text-center text-white/50 text-sm">
+                <p className="text-center text-muted-foreground text-sm">
                     Não tem conta?{" "}
                     <Link href="/app/criar-conta" className="text-primary font-medium hover:underline">
                         Criar conta

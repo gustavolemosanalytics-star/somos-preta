@@ -103,8 +103,8 @@ export function AnexosSection({ tarefaId, apenasEvidencia, onChange }: {
                                 <a href={href} target="_blank" rel="noopener noreferrer" className="flex-1 truncate hover:text-primary hover:underline">
                                     {a.nome ?? a.link_externo}
                                 </a>
-                                {a.is_evidencia && <span className="text-[10px] uppercase text-green-600 font-medium shrink-0">Evidência</span>}
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-600 shrink-0" onClick={() => excluir(a.id)} aria-label="Excluir anexo" title="Excluir anexo">
+                                {a.is_evidencia && <span className="text-[10px] uppercase text-status-sucesso font-medium shrink-0">Evidência</span>}
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-status-erro shrink-0" onClick={() => excluir(a.id)} aria-label="Excluir anexo" title="Excluir anexo">
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                             </li>

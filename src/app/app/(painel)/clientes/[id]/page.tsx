@@ -22,10 +22,10 @@ import { toast } from "sonner"
 
 const STATUS_META: Record<CampanhaStatus, { label: string; className: string }> = {
     rascunho: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
-    planejamento: { label: "Planejamento", className: "bg-blue-500/15 text-blue-600" },
-    ativa: { label: "Ativa", className: "bg-green-500/15 text-green-600" },
+    planejamento: { label: "Planejamento", className: "bg-status-info/12 text-status-info" },
+    ativa: { label: "Ativa", className: "bg-status-sucesso/12 text-status-sucesso" },
     concluida: { label: "Concluída", className: "bg-primary/15 text-primary" },
-    cancelada: { label: "Cancelada", className: "bg-red-500/15 text-red-600" },
+    cancelada: { label: "Cancelada", className: "bg-status-erro/12 text-status-erro" },
 }
 
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })

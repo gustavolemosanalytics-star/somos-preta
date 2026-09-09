@@ -76,8 +76,8 @@ export default function AnalyticsPage() {
     ]
 
     const tooltipStyle = {
-        borderRadius: "12px", border: "1px solid hsl(var(--border))",
-        backgroundColor: "hsl(var(--popover))", fontSize: "12px", padding: "8px 12px",
+        borderRadius: "12px", border: "1px solid var(--border)",
+        backgroundColor: "var(--popover)", fontSize: "12px", padding: "8px 12px",
     }
 
     return (
@@ -114,10 +114,10 @@ export default function AnalyticsPage() {
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={data.porCliente} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} interval={0} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={brlShort} width={50} />
-                                    <Tooltip contentStyle={tooltipStyle} formatter={(v?: number) => brl(Number(v ?? 0))} cursor={{ fill: "hsl(var(--muted)/0.2)" }} />
-                                    <Bar dataKey="budget" name="Budget" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" barSize={36} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} interval={0} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={brlShort} width={50} />
+                                    <Tooltip contentStyle={tooltipStyle} formatter={(v?: number) => brl(Number(v ?? 0))} cursor={{ fill: "color-mix(in srgb, var(--muted) 20%, transparent)" }} />
+                                    <Bar dataKey="budget" name="Budget" radius={[4, 4, 0, 0]} fill="var(--primary)" barSize={36} />
                                 </BarChart>
                             </ResponsiveContainer>
                         )}
@@ -136,11 +136,11 @@ export default function AnalyticsPage() {
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={data.topInfluencers} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                                     <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={80} tickFormatter={(v: string) => v.length > 12 ? `${v.substring(0, 12)}...` : v} />
-                                    <Tooltip contentStyle={tooltipStyle} formatter={(v?: number) => `${Number(v ?? 0)}%`} cursor={{ fill: "hsl(var(--muted)/0.2)" }} />
+                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={80} tickFormatter={(v: string) => v.length > 12 ? `${v.substring(0, 12)}...` : v} />
+                                    <Tooltip contentStyle={tooltipStyle} formatter={(v?: number) => `${Number(v ?? 0)}%`} cursor={{ fill: "color-mix(in srgb, var(--muted) 20%, transparent)" }} />
                                     <Bar dataKey="engagement" name="Engajamento" radius={[0, 4, 4, 0]} barSize={20}>
                                         {data.topInfluencers.map((_, i) => (
-                                            <Cell key={i} fill={i === 0 ? "hsl(var(--primary))" : "hsl(var(--muted))"} />
+                                            <Cell key={i} fill={i === 0 ? "var(--primary)" : "var(--muted)"} />
                                         ))}
                                     </Bar>
                                 </BarChart>

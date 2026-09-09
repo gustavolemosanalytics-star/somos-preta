@@ -103,7 +103,7 @@ function CardTarefa({ t, profilesById, progresso, onExcluir, onDuplicar, onMover
                         </DropdownMenu>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-600" aria-label="Excluir tarefa" title="Excluir tarefa">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" aria-label="Excluir tarefa" title="Excluir tarefa">
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                             </AlertDialogTrigger>
@@ -116,7 +116,7 @@ function CardTarefa({ t, profilesById, progresso, onExcluir, onDuplicar, onMover
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => onExcluir(t)} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => onExcluir(t)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
@@ -473,11 +473,11 @@ export default function TarefasPage() {
                     <p className="text-xs text-muted-foreground">Em andamento</p>
                 </CardContent></Card>
                 <Card><CardContent className="py-4">
-                    <p className="text-2xl font-bold text-amber-600">{venceHoje}</p>
+                    <p className="text-2xl font-bold text-status-atencao">{venceHoje}</p>
                     <p className="text-xs text-muted-foreground">Vence hoje</p>
                 </CardContent></Card>
                 <Card><CardContent className="py-4">
-                    <p className="text-2xl font-bold text-red-600">{atrasadas}</p>
+                    <p className="text-2xl font-bold text-status-erro">{atrasadas}</p>
                     <p className="text-xs text-muted-foreground">Atrasadas</p>
                 </CardContent></Card>
             </div>
@@ -690,7 +690,7 @@ export default function TarefasPage() {
                                             </DropdownMenu>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600" aria-label="Excluir tarefa" title="Excluir tarefa">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Excluir tarefa" title="Excluir tarefa">
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -703,7 +703,7 @@ export default function TarefasPage() {
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => excluir(t)} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                                                        <AlertDialogAction onClick={() => excluir(t)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>

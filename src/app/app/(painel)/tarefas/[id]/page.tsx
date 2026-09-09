@@ -309,7 +309,7 @@ function TarefaDetalheConteudo() {
                     </DropdownMenu>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-red-600">
+                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
                                 <Trash2 className="h-4 w-4" /> Excluir
                             </Button>
                         </AlertDialogTrigger>
@@ -320,7 +320,7 @@ function TarefaDetalheConteudo() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={excluir} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                                <AlertDialogAction onClick={excluir} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>

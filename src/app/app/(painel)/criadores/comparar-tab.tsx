@@ -94,7 +94,7 @@ export function CompararTab() {
                                             <AvatarFallback>{i.nome.slice(0, 2).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <Link href={`/app/criadores/${i.id}`} className="font-medium hover:text-primary text-xs">{i.nome}</Link>
-                                        <button onClick={() => toggle(i.id)} className="text-muted-foreground hover:text-red-600" aria-label={`Remover ${i.nome}`}>
+                                        <button onClick={() => toggle(i.id)} className="text-muted-foreground hover:text-destructive" aria-label={`Remover ${i.nome}`}>
                                             <X className="h-3 w-3" />
                                         </button>
                                     </div>

@@ -76,7 +76,7 @@ export function FavoritosTab() {
                             {i.estado && <Badge variant="secondary">{i.estado}</Badge>}
                         </div>
                         <Button variant="outline" size="sm" className="w-full" onClick={() => remover(i.id)}>
-                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> Remover dos favoritos
+                            <Star className="h-3.5 w-3.5 fill-brand-coral text-brand-coral" /> Remover dos favoritos
                         </Button>
                     </CardContent>
                 </Card>

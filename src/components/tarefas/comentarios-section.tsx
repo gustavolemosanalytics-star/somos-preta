@@ -133,7 +133,7 @@ export function ComentariosSection({ tarefaId }: { tarefaId: string }) {
                                         </span>
                                     )}
                                     {mencionadoEm.has(c.id) && (
-                                        <span className="inline-flex items-center gap-1 text-[10px] uppercase font-medium text-amber-700 bg-amber-500/10 rounded px-1.5 py-0.5">
+                                        <span className="inline-flex items-center gap-1 text-[10px] uppercase font-medium text-status-atencao bg-status-atencao/12 rounded px-1.5 py-0.5">
                                             <AtSign className="h-2.5 w-2.5" /> Mencionou você
                                         </span>
                                     )}

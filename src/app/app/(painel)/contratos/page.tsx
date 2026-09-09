@@ -27,9 +27,9 @@ import { toast } from "sonner"
 type ContratoRow = Contrato & { influencer: { nome: string } | null; campanha: { nome: string } | null }
 
 const STATUS_META: Record<ContratoStatus, { label: string; className: string }> = {
-    pendente: { label: "Pendente", className: "bg-yellow-500/15 text-yellow-600" },
-    assinado: { label: "Assinado", className: "bg-green-500/15 text-green-600" },
-    expirado: { label: "Expirado", className: "bg-red-500/15 text-red-600" },
+    pendente: { label: "Pendente", className: "bg-status-atencao/12 text-status-atencao" },
+    assinado: { label: "Assinado", className: "bg-status-sucesso/12 text-status-sucesso" },
+    expirado: { label: "Expirado", className: "bg-status-erro/12 text-status-erro" },
     cancelado: { label: "Cancelado", className: "bg-muted text-muted-foreground" },
 }
 
@@ -279,9 +279,9 @@ export default function ContractsPage() {
     }
 
     const stats = [
-        { label: "Assinados", value: contagem.assinado, className: "text-green-600" },
-        { label: "Pendentes", value: contagem.pendente, className: "text-yellow-600" },
-        { label: "Expirados", value: contagem.expirado, className: "text-red-600" },
+        { label: "Assinados", value: contagem.assinado, className: "text-status-sucesso" },
+        { label: "Pendentes", value: contagem.pendente, className: "text-status-atencao" },
+        { label: "Expirados", value: contagem.expirado, className: "text-status-erro" },
         { label: "Total", value: contagem.total, className: "text-primary" },
     ]
 

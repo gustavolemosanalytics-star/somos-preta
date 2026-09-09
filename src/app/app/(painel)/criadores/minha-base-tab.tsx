@@ -30,10 +30,10 @@ import { Users, Plus, Loader2, Search, Eye, Pencil, Trash2, Star, Scale, Trendin
 import { toast } from "sonner"
 
 const STATUS_META: Record<InfluencerStatus, { label: string; className: string }> = {
-    ativo: { label: "Ativo", className: "bg-green-500/15 text-green-600" },
+    ativo: { label: "Ativo", className: "bg-status-sucesso/12 text-status-sucesso" },
     inativo: { label: "Inativo", className: "bg-muted text-muted-foreground" },
-    negociando: { label: "Negociando", className: "bg-blue-500/15 text-blue-600" },
-    bloqueado: { label: "Bloqueado", className: "bg-red-500/15 text-red-600" },
+    negociando: { label: "Negociando", className: "bg-status-progresso/12 text-status-progresso" },
+    bloqueado: { label: "Bloqueado", className: "bg-status-erro/12 text-status-erro" },
 }
 
 const fmt = (n: number) => n.toLocaleString("pt-BR")
@@ -209,7 +209,7 @@ export function MinhaBaseTab() {
                     <p className="text-xs text-muted-foreground">ER médio</p>
                 </CardContent></Card>
                 <Card><CardContent className="py-4">
-                    <p className="text-2xl font-bold text-green-600">+{insights.novos}</p>
+                    <p className="text-2xl font-bold text-status-sucesso">+{insights.novos}</p>
                     <p className="text-xs text-muted-foreground">Novos (30 dias)</p>
                 </CardContent></Card>
                 <Card><CardContent className="py-4">
@@ -300,7 +300,7 @@ export function MinhaBaseTab() {
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-0.5">
                                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleFavorito(i.id)} aria-label="Favoritar">
-                                                    <Star className={`h-4 w-4 ${favoritos.has(i.id) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                                                    <Star className={`h-4 w-4 ${favoritos.has(i.id) ? "fill-brand-coral text-brand-coral" : "text-muted-foreground"}`} />
                                                 </Button>
                                                 <RowActions row={i} supabase={supabase} reload={load} />
                                             </div>
@@ -466,7 +466,7 @@ function RowActions({ row, supabase, reload }: {
 
             <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600" aria-label="Excluir"><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Excluir"><Trash2 className="h-4 w-4" /></Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -477,7 +477,7 @@ function RowActions({ row, supabase, reload }: {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 text-white hover:bg-red-700">Excluir</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

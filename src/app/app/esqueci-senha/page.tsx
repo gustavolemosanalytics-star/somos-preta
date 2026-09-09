@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { Monograma } from "@/components/public/marca"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -37,18 +38,21 @@ export default function EsqueciSenhaPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0d0d14] p-4">
-            <div className="w-full max-w-sm space-y-8">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-white mb-2">Somos Preta</h1>
-                    <p className="text-white/50 text-sm">Recuperar acesso</p>
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+            <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 space-y-8">
+                <div className="text-center space-y-3">
+                    <Monograma className="h-12 w-12 text-lg mx-auto" />
+                    <div>
+                        <h1 className="text-3xl font-bold text-foreground">Somos Preta</h1>
+                        <p className="text-muted-foreground text-sm">Recuperar acesso</p>
+                    </div>
                 </div>
 
                 {done ? (
-                    <div className="text-center space-y-4 bg-white/5 border border-white/10 rounded-2xl p-6">
+                    <div className="text-center space-y-4 rounded-2xl border border-border bg-muted/40 p-6">
                         <CheckCircle2 className="h-12 w-12 text-primary mx-auto" />
-                        <p className="text-white font-medium">Confira seu email</p>
-                        <p className="text-white/50 text-sm">
+                        <p className="text-foreground font-medium">Confira seu email</p>
+                        <p className="text-muted-foreground text-sm">
                             Se houver uma conta associada a <strong>{email}</strong>, enviamos um link
                             para você redefinir sua senha.
                         </p>
@@ -59,21 +63,21 @@ export default function EsqueciSenhaPage() {
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-white/70">Email</Label>
+                            <Label htmlFor="email">Email</Label>
                             <Input
                                 id="email"
                                 type="email"
                                 placeholder="seu@email.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-primary focus:ring-primary"
+                                className="h-12 rounded-xl focus-visible:border-primary"
                                 required
                             />
                         </div>
 
                         <Button
                             type="submit"
-                            className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-lg"
+                            className="w-full h-12 rounded-xl font-bold text-lg"
                             disabled={isLoading}
                         >
                             {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Enviar link de redefinição"}
@@ -82,7 +86,7 @@ export default function EsqueciSenhaPage() {
                 )}
 
                 {!done && (
-                    <p className="text-center text-white/50 text-sm">
+                    <p className="text-center text-muted-foreground text-sm">
                         <Link href="/app/login" className="text-primary font-medium hover:underline inline-flex items-center gap-1">
                             <ArrowLeft className="h-3.5 w-3.5" /> Voltar para o login
                         </Link>

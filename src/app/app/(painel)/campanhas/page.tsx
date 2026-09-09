@@ -26,10 +26,10 @@ type CampanhaComCliente = Campanha & { cliente: { nome: string } | null }
 
 const STATUS_META: Record<CampanhaStatus, { label: string; className: string }> = {
     rascunho: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
-    planejamento: { label: "Planejamento", className: "bg-blue-500/15 text-blue-600" },
-    ativa: { label: "Ativa", className: "bg-green-500/15 text-green-600" },
+    planejamento: { label: "Planejamento", className: "bg-status-info/12 text-status-info" },
+    ativa: { label: "Ativa", className: "bg-status-sucesso/12 text-status-sucesso" },
     concluida: { label: "Concluída", className: "bg-primary/15 text-primary" },
-    cancelada: { label: "Cancelada", className: "bg-red-500/15 text-red-600" },
+    cancelada: { label: "Cancelada", className: "bg-status-erro/12 text-status-erro" },
 }
 
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -277,7 +277,7 @@ export default function CampaignsPage() {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-red-600 hover:text-red-600"
+                                    className="h-7 w-7 text-destructive hover:text-destructive"
                                     aria-label="Excluir campanha"
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleting(c) }}
                                 >
@@ -357,7 +357,7 @@ export default function CampaignsPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 text-white hover:bg-red-700">Excluir</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

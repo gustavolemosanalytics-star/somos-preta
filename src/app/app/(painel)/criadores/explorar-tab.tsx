@@ -195,8 +195,9 @@ export function ExplorarTab() {
                                         const count = creatorsPerState[code] || 0
                                         if (count === 0) return null
                                         const radius = Math.max(10, Math.min(40, count * 3))
+                                        // Terracota da marca em hex literal: o Leaflet pinta o SVG por JS e nao resolve tokens CSS do tema.
                                         return (
-                                            <CircleMarker key={code} center={[coords.lat, coords.lng]} radius={radius} pathOptions={{ color: "#ff6b35", fillColor: "#ff6b35", fillOpacity: 0.6, weight: 2 }}>
+                                            <CircleMarker key={code} center={[coords.lat, coords.lng]} radius={radius} pathOptions={{ color: "#E07A5F", fillColor: "#E07A5F", fillOpacity: 0.6, weight: 2 }}>
                                                 <Popup><div className="text-center"><strong className="text-lg">{coords.name}</strong><br /><span className="text-primary font-bold">{count} creators</span></div></Popup>
                                             </CircleMarker>
                                         )
@@ -309,7 +310,7 @@ export function ExplorarTab() {
                 <>
                     {socialLoading && (
                         <div className="flex flex-col items-center justify-center py-24">
-                            <Loader2 className="h-12 w-12 animate-spin text-pink-500 mb-4" />
+                            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
                             <span className="font-bold tracking-widest text-muted-foreground">BUSCANDO PERFIS...</span>
                         </div>
                     )}
@@ -337,9 +338,9 @@ export function ExplorarTab() {
                                         <p className="text-lg font-semibold text-muted-foreground">@{ttProfile.username}</p>
                                     </div>
                                     <div className="grid grid-cols-3 gap-3">
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Users className="h-4 w-4 mx-auto mb-1 text-pink-500" /><div className="text-xl font-bold">{formatNumber(ttProfile.follower_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><UserPlus className="h-4 w-4 mx-auto mb-1 text-purple-500" /><div className="text-xl font-bold">{formatNumber(ttProfile.following_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Heart className="h-4 w-4 mx-auto mb-1 text-red-500" /><div className="text-xl font-bold">{formatNumber(ttProfile.total_likes)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas Total</div></div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Users className="h-4 w-4 mx-auto mb-1 text-brand-terracota" /><div className="text-xl font-bold">{formatNumber(ttProfile.follower_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div></div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><UserPlus className="h-4 w-4 mx-auto mb-1 text-brand-oliva" /><div className="text-xl font-bold">{formatNumber(ttProfile.following_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div></div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Heart className="h-4 w-4 mx-auto mb-1 text-brand-coral" /><div className="text-xl font-bold">{formatNumber(ttProfile.total_likes)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas Total</div></div>
                                     </div>
                                     <Button className="bg-black text-white rounded-full hover:bg-black/80 w-fit" onClick={() => window.open(`https://tiktok.com/@${ttProfile.username}`, "_blank")}>Ver no TikTok</Button>
                                 </CardContent>
@@ -353,32 +354,32 @@ export function ExplorarTab() {
                                     {igProfile.profile_pic_url ? (
                                         <Image src={igProfile.profile_pic_url} alt={igProfile.full_name || igProfile.username} fill className="object-cover" unoptimized />
                                     ) : (
-                                        <div className="text-9xl font-bold opacity-10 text-pink-500">{(igProfile.full_name || igProfile.username).charAt(0).toUpperCase()}</div>
+                                        <div className="text-9xl font-bold opacity-10 text-primary">{(igProfile.full_name || igProfile.username).charAt(0).toUpperCase()}</div>
                                     )}
-                                    {igProfile.is_private && <Badge className="absolute top-4 right-4 bg-yellow-500/90 text-black"><Lock className="h-3 w-3 mr-1" /> Privado</Badge>}
+                                    {igProfile.is_private && <Badge className="absolute top-4 right-4 bg-status-atencao text-white"><Lock className="h-3 w-3 mr-1" /> Privado</Badge>}
                                 </div>
                                 <CardContent className="p-8 flex flex-col justify-center gap-6">
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-3">
                                             <h2 className="text-3xl font-semibold tracking-tight">{igProfile.full_name || igProfile.username}</h2>
-                                            {igProfile.is_verified && <CheckCircle className="h-6 w-6 text-blue-500 fill-blue-500" />}
+                                            {igProfile.is_verified && <CheckCircle className="h-6 w-6 text-status-info fill-status-info" />}
                                         </div>
                                         <p className="text-lg text-muted-foreground font-semibold flex items-center gap-2"><Instagram className="h-5 w-5 text-primary" /> @{igProfile.username}</p>
                                         {igProfile.biography && <p className="text-muted-foreground leading-relaxed whitespace-pre-line max-w-xl">{igProfile.biography}</p>}
                                     </div>
                                     {(igProfile.category || igProfile.is_business) && (
                                         <div className="flex flex-wrap gap-2">
-                                            {igProfile.is_business && <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20"><Briefcase className="h-3 w-3 mr-1" /> Conta Profissional</Badge>}
+                                            {igProfile.is_business && <Badge className="bg-status-info/12 text-status-info border-status-info/20"><Briefcase className="h-3 w-3 mr-1" /> Conta Profissional</Badge>}
                                             {igProfile.category && <Badge variant="outline" className="text-xs uppercase">{igProfile.category}</Badge>}
                                         </div>
                                     )}
                                     <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Users className="h-4 w-4 mx-auto mb-1 text-pink-500" /><div className="text-xl font-bold">{formatNumber(igProfile.follower_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><UserPlus className="h-4 w-4 mx-auto mb-1 text-purple-500" /><div className="text-xl font-bold">{formatNumber(igProfile.following_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><ImageIcon className="h-4 w-4 mx-auto mb-1 text-orange-500" /><div className="text-xl font-bold">{formatNumber(igProfile.posts_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Publicações</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Heart className="h-4 w-4 mx-auto mb-1 text-red-500" /><div className="text-xl font-bold">{formatNumber(igProfile.avg_likes)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas/Post</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><MessageCircle className="h-4 w-4 mx-auto mb-1 text-blue-500" /><div className="text-xl font-bold">{formatNumber(igProfile.avg_comments)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Comentários/Post</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Zap className="h-4 w-4 mx-auto mb-1 text-yellow-500" /><div className="text-xl font-bold">{igProfile.engagement_rate}%</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Engajamento</div></div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Users className="h-4 w-4 mx-auto mb-1 text-brand-terracota" /><div className="text-xl font-bold">{formatNumber(igProfile.follower_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div></div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><UserPlus className="h-4 w-4 mx-auto mb-1 text-brand-oliva" /><div className="text-xl font-bold">{formatNumber(igProfile.following_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div></div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><ImageIcon className="h-4 w-4 mx-auto mb-1 text-brand-bege" /><div className="text-xl font-bold">{formatNumber(igProfile.posts_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Publicações</div></div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Heart className="h-4 w-4 mx-auto mb-1 text-brand-coral" /><div className="text-xl font-bold">{formatNumber(igProfile.avg_likes)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas/Post</div></div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><MessageCircle className="h-4 w-4 mx-auto mb-1 text-status-info" /><div className="text-xl font-bold">{formatNumber(igProfile.avg_comments)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Comentários/Post</div></div>
+                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Zap className="h-4 w-4 mx-auto mb-1 text-status-sucesso" /><div className="text-xl font-bold">{igProfile.engagement_rate}%</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Engajamento</div></div>
                                     </div>
                                     <div className="flex gap-3">
                                         <Button className="rounded-full" onClick={() => window.open(`https://instagram.com/${igProfile.username}`, "_blank")}><Instagram className="mr-2 h-4 w-4" /> Ver no Instagram</Button>

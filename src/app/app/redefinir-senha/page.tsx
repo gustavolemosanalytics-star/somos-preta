@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { Monograma } from "@/components/public/marca"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -70,24 +71,27 @@ export default function RedefinirSenhaPage() {
 
     if (checkingSession) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0d0d14] p-4">
-                <Loader2 className="h-6 w-6 animate-spin text-white/50" />
+            <div className="min-h-screen flex items-center justify-center bg-background p-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
         )
     }
 
     if (!hasRecoverySession) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0d0d14] p-4">
-                <div className="w-full max-w-sm space-y-8">
-                    <div className="text-center">
-                        <h1 className="text-4xl font-bold text-white mb-2">Somos Preta</h1>
-                        <p className="text-white/50 text-sm">Redefinir senha</p>
+            <div className="min-h-screen flex items-center justify-center bg-background p-4">
+                <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 space-y-8">
+                    <div className="text-center space-y-3">
+                        <Monograma className="h-12 w-12 text-lg mx-auto" />
+                        <div>
+                            <h1 className="text-3xl font-bold text-foreground">Somos Preta</h1>
+                            <p className="text-muted-foreground text-sm">Redefinir senha</p>
+                        </div>
                     </div>
-                    <div className="text-center space-y-4 bg-white/5 border border-white/10 rounded-2xl p-6">
-                        <ShieldAlert className="h-12 w-12 text-red-400 mx-auto" />
-                        <p className="text-white font-medium">Link inválido ou expirado</p>
-                        <p className="text-white/50 text-sm">
+                    <div className="text-center space-y-4 rounded-2xl border border-border bg-muted/40 p-6">
+                        <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
+                        <p className="text-foreground font-medium">Link inválido ou expirado</p>
+                        <p className="text-muted-foreground text-sm">
                             Solicite um novo link para redefinir sua senha.
                         </p>
                         <Link href="/app/esqueci-senha" className="text-primary text-sm font-medium hover:underline inline-block">
@@ -100,16 +104,19 @@ export default function RedefinirSenhaPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0d0d14] p-4">
-            <div className="w-full max-w-sm space-y-8">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-white mb-2">Somos Preta</h1>
-                    <p className="text-white/50 text-sm">Defina sua nova senha</p>
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+            <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 space-y-8">
+                <div className="text-center space-y-3">
+                    <Monograma className="h-12 w-12 text-lg mx-auto" />
+                    <div>
+                        <h1 className="text-3xl font-bold text-foreground">Somos Preta</h1>
+                        <p className="text-muted-foreground text-sm">Defina sua nova senha</p>
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="password" className="text-white/70">Nova senha</Label>
+                        <Label htmlFor="password">Nova senha</Label>
                         <div className="relative">
                             <Input
                                 id="password"
@@ -117,42 +124,42 @@ export default function RedefinirSenhaPage() {
                                 placeholder="mínimo 6 caracteres"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-primary focus:ring-primary pr-10"
+                                className="h-12 rounded-xl focus-visible:border-primary pr-10"
                                 required
                                 minLength={6}
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                             >
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="confirmPassword" className="text-white/70">Confirmar senha</Label>
+                        <Label htmlFor="confirmPassword">Confirmar senha</Label>
                         <Input
                             id="confirmPassword"
                             type={showPassword ? "text" : "password"}
                             placeholder="repita a nova senha"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus:border-primary focus:ring-primary"
+                            className="h-12 rounded-xl focus-visible:border-primary"
                             required
                             minLength={6}
                         />
                     </div>
 
                     {error && (
-                        <div className="text-sm text-red-400 bg-red-500/10 p-3 rounded-xl text-center">
+                        <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-xl text-center">
                             {error}
                         </div>
                     )}
 
                     <Button
                         type="submit"
-                        className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-lg"
+                        className="w-full h-12 rounded-xl font-bold text-lg"
                         disabled={isLoading}
                     >
                         {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Redefinir senha"}

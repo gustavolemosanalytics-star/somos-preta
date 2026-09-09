@@ -16,19 +16,19 @@ export default function SemAcessoPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0d0d14] p-4">
-            <div className="w-full max-w-md text-center space-y-6">
-                <div className="h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center mx-auto">
-                    <ShieldAlert className="h-7 w-7 text-white/70" />
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+            <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center space-y-6">
+                <div className="h-14 w-14 rounded-2xl bg-status-atencao/12 flex items-center justify-center mx-auto">
+                    <ShieldAlert className="h-7 w-7 text-status-atencao" />
                 </div>
                 <div className="space-y-2">
-                    <h1 className="text-2xl font-semibold text-white">Sua conta ainda não tem acesso</h1>
-                    <p className="text-white/50 text-sm leading-relaxed">
+                    <h1 className="text-2xl font-semibold text-foreground">Sua conta ainda não tem acesso</h1>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
                         Um administrador precisa liberar seu acesso e definir seu papel na tela de
-                        <strong className="text-white/70"> Usuários</strong>. Assim que isso for feito, você entra no sistema.
+                        <strong className="text-foreground"> Usuários</strong>. Assim que isso for feito, você entra no sistema.
                     </p>
                 </div>
-                <Button onClick={sair} variant="outline" className="rounded-xl border-white/15 text-white hover:bg-white/5">
+                <Button onClick={sair} variant="outline" className="rounded-xl">
                     Sair
                 </Button>
             </div>

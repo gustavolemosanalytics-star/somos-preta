@@ -35,10 +35,10 @@ const ROLES: { value: Role; label: string }[] = [
 const roleLabel = (r: Role) => ROLES.find((x) => x.value === r)?.label ?? r
 const roleClass: Record<Role, string> = {
     admin: "bg-primary/15 text-primary",
-    gestor: "bg-blue-500/15 text-blue-600",
-    analista: "bg-green-500/15 text-green-600",
+    gestor: "bg-status-info/12 text-status-info",
+    analista: "bg-status-sucesso/12 text-status-sucesso",
     creator: "bg-muted text-muted-foreground",
-    pendente: "bg-amber-500/15 text-amber-600",
+    pendente: "bg-status-atencao/12 text-status-atencao",
 }
 
 export function UsuariosClient({ meId }: { meId: string }) {
@@ -212,7 +212,7 @@ export function UsuariosClient({ meId }: { meId: string }) {
                                                 {!isMe && (
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600">
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
                                                         </AlertDialogTrigger>
@@ -225,7 +225,7 @@ export function UsuariosClient({ meId }: { meId: string }) {
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
                                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDelete(u)} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                                                                <AlertDialogAction onClick={() => handleDelete(u)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
                                                     </AlertDialog>

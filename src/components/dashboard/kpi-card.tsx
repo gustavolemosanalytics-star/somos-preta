@@ -30,8 +30,8 @@ export function KPICard({
                 </div>
                 {description && (
                     <p className="text-[10px] sm:text-xs mt-1.5 sm:mt-2 text-muted-foreground/80 flex items-center gap-1 line-clamp-1">
-                        {trend === "up" && <span className="text-emerald-500 font-bold text-xs sm:text-sm">↑</span>}
-                        {trend === "down" && <span className="text-rose-500 font-bold text-xs sm:text-sm">↓</span>}
+                        {trend === "up" && <span className="text-status-sucesso font-bold text-xs sm:text-sm">↑</span>}
+                        {trend === "down" && <span className="text-status-erro font-bold text-xs sm:text-sm">↓</span>}
                         <span className="truncate">{description}</span>
                     </p>
                 )}

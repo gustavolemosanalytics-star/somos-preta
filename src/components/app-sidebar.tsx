@@ -31,6 +31,7 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar"
 import { NavUser, type NavUserData } from "@/components/nav-user"
+import { Monograma } from "@/components/public/marca"
 import { cn } from "@/lib/utils"
 
 // Navegação — hierarquia principal: Cliente > Campanhas > Tarefas
@@ -67,9 +68,7 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="hover:bg-sidebar-accent/50">
                             <Link href="/app/dashboard" onClick={handleNavClick}>
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                                    <span className="text-xs font-semibold tracking-tight">SP</span>
-                                </div>
+                                <Monograma className="size-8 text-sm" />
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold tracking-tight text-sidebar-foreground">Somos Preta</span>
                                     <span className="truncate text-[10px] text-sidebar-foreground/60 uppercase tracking-wider">Creator Hub</span>

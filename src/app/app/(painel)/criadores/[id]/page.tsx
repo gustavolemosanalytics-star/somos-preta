@@ -103,7 +103,7 @@ export default function CreatorProfilePage() {
                         <div className="text-center"><div className="text-xl font-bold text-primary">{influencer.engagement}%</div><div className="text-[10px] text-muted-foreground uppercase">Engaj.</div></div>
                     </div>
                     <Button variant="outline" size="icon" onClick={toggleFavorito} aria-label="Favoritar">
-                        <Star className={`h-4 w-4 ${favorito ? "fill-amber-400 text-amber-400" : ""}`} />
+                        <Star className={`h-4 w-4 ${favorito ? "fill-brand-coral text-brand-coral" : ""}`} />
                     </Button>
                 </CardContent>
             </Card>

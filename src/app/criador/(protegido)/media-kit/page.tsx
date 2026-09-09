@@ -420,7 +420,7 @@ export default function MediaKitPage() {
                                             </a>
                                         )}
                                     </div>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-600 shrink-0" onClick={() => removerPortfolio(i)} aria-label="Remover item" title="Remover item">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0" onClick={() => removerPortfolio(i)} aria-label="Remover item" title="Remover item">
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </Button>
                                 </li>
@@ -453,7 +453,7 @@ export default function MediaKitPage() {
                                             </p>
                                             {p.descricao && <p className="text-xs text-muted-foreground">{p.descricao}</p>}
                                         </div>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-600 shrink-0" onClick={() => removerPacote(i)} aria-label="Remover pacote" title="Remover pacote">
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0" onClick={() => removerPacote(i)} aria-label="Remover pacote" title="Remover pacote">
                                             <Trash2 className="h-3.5 w-3.5" />
                                         </Button>
                                     </div>

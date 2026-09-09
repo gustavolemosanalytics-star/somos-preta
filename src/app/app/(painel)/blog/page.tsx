@@ -194,7 +194,7 @@ export default function BlogAdminPage() {
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 <Switch checked={p.status === "publicado"} onCheckedChange={() => togglePublish(p)} />
-                                                <Badge variant="secondary" className={p.status === "publicado" ? "bg-green-500/15 text-green-600" : ""}>
+                                                <Badge variant="secondary" className={p.status === "publicado" ? "bg-status-sucesso/12 text-status-sucesso" : ""}>
                                                     {p.status === "publicado" ? "Publicado" : "Rascunho"}
                                                 </Badge>
                                             </div>
@@ -207,7 +207,7 @@ export default function BlogAdminPage() {
                                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader>
@@ -216,7 +216,7 @@ export default function BlogAdminPage() {
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDelete(p)} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                                                            <AlertDialogAction onClick={() => handleDelete(p)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
