@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Inter } from "next/font/google";
+import { Inter, Caveat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
 const inter = Inter({ subsets: ["latin"] });
+
+// Manuscrita usada nas assinaturas editoriais da landing ("Nossa influência move territórios").
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-caveat",
+});
 
 export const metadata: Metadata = {
   title: "Somos Preta - Hub de Creators",
@@ -17,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning className={caveat.variable}>
       <body className={inter.className}>
         <Providers>
           <Suspense fallback={null}>

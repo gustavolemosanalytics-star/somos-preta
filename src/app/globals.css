@@ -52,6 +52,20 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-brand-offwhite: var(--brand-offwhite);
+  --color-brand-areia: var(--brand-areia);
+  --color-brand-bege: var(--brand-bege);
+  --color-brand-terracota: var(--brand-terracota);
+  --color-brand-oliva: var(--brand-oliva);
+  --color-brand-carvao: var(--brand-carvao);
+  --color-brand-coral: var(--brand-coral);
+  --color-status-sucesso: var(--status-sucesso);
+  --color-status-atencao: var(--status-atencao);
+  --color-status-erro: var(--status-erro);
+  --color-status-info: var(--status-info);
+  --color-status-progresso: var(--status-progresso);
+  --color-status-neutro: var(--status-neutro);
+  --font-manuscrita: var(--font-caveat);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -60,90 +74,114 @@
 }
 
 :root {
-  /* Modern rounded corners */
   --radius: 1rem;
 
-  /* Earthy & Vibrant Palette with Modern Flair */
-  --background: oklch(0.97 0.01 70);
-  --foreground: oklch(0.2 0.03 40);
+  /* Identidade "Conexões que Transformam" — clara, humana e acessível.
+     Estes sete hex são a fonte da verdade; todo token abaixo deriva deles. */
+  --brand-offwhite: #FAF7F2;
+  --brand-areia: #E8DDD1;
+  --brand-bege: #D4C4B6;
+  --brand-terracota: #E07A5F;
+  --brand-oliva: #2F4F3E;
+  --brand-carvao: #1F1F1F;
+  --brand-coral: #F26D4F;
 
-  --card: oklch(0.99 0.005 70);
-  --card-foreground: oklch(0.2 0.03 40);
+  /* Escala semântica para status, badges e gráficos do painel.
+     Todas testadas sobre o off-white #FAF7F2. */
+  --status-sucesso: #2F4F3E;
+  --status-atencao: #A56A16;
+  --status-erro: #B3382B;
+  --status-info: #44657A;
+  --status-progresso: #B85C42;
+  --status-neutro: #6B635B;
 
-  --popover: oklch(0.99 0.005 70);
-  --popover-foreground: oklch(0.2 0.03 40);
+  --background: var(--brand-offwhite);
+  --foreground: var(--brand-carvao);
 
-  /* Primary: Warm Terracotta */
-  --primary: oklch(0.58 0.16 35);
-  --primary-foreground: oklch(0.98 0.01 70);
+  --card: #FFFFFF;
+  --card-foreground: var(--brand-carvao);
 
-  /* Secondary: Olive/Forest Green */
-  --secondary: oklch(0.48 0.1 145);
-  --secondary-foreground: oklch(0.98 0.01 70);
+  --popover: #FFFFFF;
+  --popover-foreground: var(--brand-carvao);
 
-  --muted: oklch(0.94 0.02 70);
-  --muted-foreground: oklch(0.45 0.03 40);
+  /* Terracota nos botões primários; o coral fica reservado para acento. */
+  --primary: var(--brand-terracota);
+  --primary-foreground: #FFFFFF;
 
-  /* Accent: Teal/Cyan Pop */
-  --accent: oklch(0.72 0.15 195);
-  --accent-foreground: oklch(0.15 0.02 40);
+  --secondary: var(--brand-oliva);
+  --secondary-foreground: var(--brand-offwhite);
 
-  --destructive: oklch(0.55 0.22 25);
-  --border: oklch(0.9 0.02 70);
-  --input: oklch(0.92 0.02 70);
-  --ring: oklch(0.58 0.16 35);
+  --muted: var(--brand-areia);
+  --muted-foreground: #6B635B;
 
-  --chart-1: oklch(0.58 0.16 35);
-  --chart-2: oklch(0.48 0.1 145);
-  --chart-3: oklch(0.72 0.15 195);
-  --chart-4: oklch(0.75 0.18 90);
-  --chart-5: oklch(0.65 0.2 350);
+  /* No shadcn --accent é superfície de hover, não cor de destaque:
+     mantê-la neutra evita menu inteiro pintado de coral. */
+  --accent: #F1EAE1;
+  --accent-foreground: var(--brand-carvao);
 
-  --sidebar: oklch(0.18 0.03 40);
-  --sidebar-foreground: oklch(0.95 0.01 70);
-  --sidebar-primary: oklch(0.7 0.14 35);
-  --sidebar-primary-foreground: oklch(0.15 0.02 40);
-  --sidebar-accent: oklch(0.48 0.1 145);
-  --sidebar-accent-foreground: oklch(0.95 0.01 70);
-  --sidebar-border: oklch(0.25 0.03 40);
-  --sidebar-ring: oklch(0.58 0.16 35);
+  --destructive: #C0392B;
+  --border: var(--brand-areia);
+  --input: var(--brand-bege);
+  --ring: var(--brand-terracota);
+
+  --chart-1: var(--brand-terracota);
+  --chart-2: var(--brand-oliva);
+  --chart-3: var(--brand-bege);
+  --chart-4: var(--brand-coral);
+  --chart-5: #8A7C6E;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: var(--brand-carvao);
+  --sidebar-primary: var(--brand-terracota);
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F1EAE1;
+  --sidebar-accent-foreground: var(--brand-carvao);
+  --sidebar-border: var(--brand-areia);
+  --sidebar-ring: var(--brand-terracota);
 }
 
 .dark {
-  --background: oklch(0.12 0.02 40);
-  --foreground: oklch(0.95 0.01 70);
+  --status-sucesso: #7FA98F;
+  --status-atencao: #D9A855;
+  --status-erro: #E58275;
+  --status-info: #8FAEC1;
+  --status-progresso: #E8977C;
+  --status-neutro: #A8A099;
 
-  --card: oklch(0.16 0.02 40);
-  --card-foreground: oklch(0.95 0.01 70);
+  --background: var(--brand-carvao);
+  --foreground: var(--brand-offwhite);
 
-  --popover: oklch(0.16 0.02 40);
-  --popover-foreground: oklch(0.95 0.01 70);
+  --card: #2A2A2A;
+  --card-foreground: var(--brand-offwhite);
 
-  --primary: oklch(0.7 0.14 35);
-  --primary-foreground: oklch(0.12 0.02 40);
+  --popover: #2A2A2A;
+  --popover-foreground: var(--brand-offwhite);
 
-  --secondary: oklch(0.6 0.1 145);
-  --secondary-foreground: oklch(0.12 0.02 40);
+  --primary: var(--brand-terracota);
+  --primary-foreground: #FFFFFF;
 
-  --muted: oklch(0.22 0.02 40);
-  --muted-foreground: oklch(0.7 0.02 70);
+  --secondary: #4A6B57;
+  --secondary-foreground: var(--brand-offwhite);
 
-  --accent: oklch(0.75 0.12 195);
-  --accent-foreground: oklch(0.12 0.02 40);
+  --muted: #333333;
+  --muted-foreground: #A8A099;
 
-  --destructive: oklch(0.55 0.2 25);
-  --border: oklch(0.25 0.02 40);
-  --input: oklch(0.25 0.02 40);
-  --ring: oklch(0.7 0.14 35);
+  --accent: #333333;
+  --accent-foreground: var(--brand-offwhite);
 
-  --sidebar: oklch(0.1 0.02 40);
-  --sidebar-foreground: oklch(0.95 0.01 70);
-  --sidebar-primary: oklch(0.7 0.14 35);
-  --sidebar-primary-foreground: oklch(0.1 0.02 40);
-  --sidebar-accent: oklch(0.6 0.1 145);
-  --sidebar-accent-foreground: oklch(0.1 0.02 40);
-  --sidebar-border: oklch(0.2 0.02 40);
-  --sidebar-ring: oklch(0.7 0.14 35);
+  --destructive: #E05A4A;
+  --border: #3A3A3A;
+  --input: #3A3A3A;
+  --ring: var(--brand-terracota);
+
+  --sidebar: #171717;
+  --sidebar-foreground: var(--brand-offwhite);
+  --sidebar-primary: var(--brand-terracota);
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #333333;
+  --sidebar-accent-foreground: var(--brand-offwhite);
+  --sidebar-border: #3A3A3A;
+  --sidebar-ring: var(--brand-terracota);
 }
 
 @layer base {
@@ -158,7 +196,7 @@
 
 /* Modern Glass Effect */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(250, 247, 242, 0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -257,12 +295,20 @@ html {
   input[type="radio"] {
     min-height: 44px;
     min-width: 44px;
+    /* Sem isto o rótulo encosta no topo da caixa de 44px e desalinha de
+       qualquer irmão numa linha flex (ex.: "Senha" / "Esqueci minha senha"). */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  /* Exception for inline links */
-  p a, li a, span a {
+  /* Links dentro de texto corrido voltam ao fluxo inline normal. */
+  p a, li a, span a, td a, dd a, label a, small a {
     min-height: auto;
     min-width: auto;
+    display: inline;
+    align-items: initial;
+    justify-content: initial;
   }
 }
 
@@ -436,4 +482,23 @@ html {
 
 .content-spacing {
   @apply space-y-4 sm:space-y-6 lg:space-y-8;
+}
+/* ===== COLAGEM DA HERO ===== */
+
+/* Bordas irregulares que dão o aspecto de papel rasgado da colagem.
+   Variações pequenas o bastante para não cortar rosto nas fotos. */
+.recorte-a {
+  clip-path: polygon(1% 2%, 99% 0%, 100% 97%, 96% 100%, 3% 99%, 0% 40%);
+}
+
+.recorte-b {
+  clip-path: polygon(0% 3%, 97% 1%, 100% 35%, 98% 98%, 4% 100%, 2% 60%);
+}
+
+.recorte-c {
+  clip-path: polygon(2% 0%, 100% 3%, 97% 100%, 40% 97%, 0% 100%, 1% 30%);
+}
+
+.recorte-d {
+  clip-path: polygon(0% 6%, 94% 0%, 100% 92%, 50% 100%, 6% 96%);
 }

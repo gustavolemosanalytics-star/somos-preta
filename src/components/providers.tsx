@@ -15,10 +15,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return (
         <SessionProvider>
             <QueryClientProvider client={queryClient}>
+                {/*
+                  A identidade "Conexões que Transformam" é clara e não define
+                  variante escura, e não há toggle de tema na interface. Com
+                  enableSystem, quem estivesse com o SO em modo escuro via o
+                  site inteiro em #1F1F1F. forcedTheme ignora tanto o SO quanto
+                  o que já estiver salvo no localStorage de visitas anteriores.
+                  Para reativar o tema escuro um dia: troque forcedTheme por
+                  defaultTheme/enableSystem — o bloco .dark do globals.css já
+                  está derivado desta paleta.
+                */}
                 <ThemeProvider
                     attribute="class"
-                    defaultTheme="system"
-                    enableSystem
+                    forcedTheme="light"
                     disableTransitionOnChange
                 >
                     {children}
