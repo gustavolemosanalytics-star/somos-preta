@@ -176,23 +176,32 @@ export default function CriadorCriarContaPage() {
 
                         </div>
 
-                        {/* retrato com a pincelada atrás */}
+                        {/* recorte do criador sobre a mancha de tinta */}
                         <div className="relative hidden aspect-[880/1000] lg:block">
-                            {/* mancha de tinta atrás do retrato */}
+                            {/* mancha de tinta atrás da figura */}
                             <span
                                 aria-hidden
-                                className="absolute -left-[18%] -top-[6%] h-[70%] w-[62%] rounded-[46%_54%_38%_62%/40%_45%_55%_60%] bg-brand-bege/70"
+                                className="absolute left-[6%] top-[10%] h-[74%] w-[80%] rounded-[46%_54%_38%_62%/40%_45%_55%_60%] bg-brand-bege/70"
                             />
 
-                            <div className="absolute inset-0 overflow-hidden rounded-[1.75rem] bg-muted">
+                            {/* A foto vem recortada, com fundo transparente: fica solta sobre a
+                                mancha, sem moldura, e object-contain preserva a silhueta. O
+                                recorte termina numa linha reta na altura do peito, então a
+                                máscara dissolve a base para não virar um corte seco. */}
+                            <div className="absolute inset-x-0 bottom-0 top-[4%]">
                                 <Image
-                                    src="/media-kit/criadora-turbante.svg"
-                                    alt="Criadora de conteúdo com turbante e brincos, olhando para o alto"
+                                    src="/media-kit/criador-principal.webp"
+                                    alt="Criador de conteúdo de chapéu bucket, olhando para a câmera"
                                     fill
                                     priority
                                     sizes="(max-width: 1024px) 0px, 36vw"
-                                    unoptimized
-                                    className="object-cover"
+                                    className="object-contain object-bottom"
+                                    style={{
+                                        maskImage:
+                                            "linear-gradient(to bottom, #000 82%, transparent 99%)",
+                                        WebkitMaskImage:
+                                            "linear-gradient(to bottom, #000 82%, transparent 99%)",
+                                    }}
                                 />
                             </div>
 
