@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
-import { Monograma } from "@/components/public/marca"
+import { LogoPreta } from "@/components/public/marca"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -82,11 +82,8 @@ export default function RedefinirSenhaPage() {
             <div className="min-h-screen flex items-center justify-center bg-background p-4">
                 <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 space-y-8">
                     <div className="text-center space-y-3">
-                        <Monograma className="h-12 w-12 text-lg mx-auto" />
-                        <div>
-                            <h1 className="text-3xl font-bold text-foreground">Somos Preta</h1>
-                            <p className="text-muted-foreground text-sm">Redefinir senha</p>
-                        </div>
+                        <LogoPreta className="mx-auto h-9 w-auto" />
+                        <h1 className="text-xl font-semibold text-foreground">Redefinir senha</h1>
                     </div>
                     <div className="text-center space-y-4 rounded-2xl border border-border bg-muted/40 p-6">
                         <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
@@ -107,11 +104,8 @@ export default function RedefinirSenhaPage() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 space-y-8">
                 <div className="text-center space-y-3">
-                    <Monograma className="h-12 w-12 text-lg mx-auto" />
-                    <div>
-                        <h1 className="text-3xl font-bold text-foreground">Somos Preta</h1>
-                        <p className="text-muted-foreground text-sm">Defina sua nova senha</p>
-                    </div>
+                    <LogoPreta className="mx-auto h-9 w-auto" />
+                    <h1 className="text-xl font-semibold text-foreground">Defina sua nova senha</h1>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { ArrowRight, Menu, X } from "lucide-react"
 
 import { PillNav, type PillNavItem } from "@/components/public/pill-nav"
-import { Monograma, SimboloTerritorio } from "@/components/public/marca"
+import { LogoPreta, SimboloTerritorio } from "@/components/public/marca"
 import { LINK_CONTATO } from "@/lib/constants/contato"
 
 // A ordem aqui espelha a ordem das dobras na home, de cima para baixo.
@@ -68,9 +68,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <nav className="mx-auto flex h-[76px] max-w-[1600px] items-center justify-between gap-6 px-6">
                     {/* assinatura */}
                     <div className="flex shrink-0 items-center gap-4">
-                        <Link href="/" className="flex items-center gap-3">
-                            <Monograma />
-                            <span className="text-lg font-semibold tracking-tight">Somos Preta</span>
+                        <Link href="/" aria-label="Preta — início" className="flex items-center gap-3">
+                            <LogoPreta className="h-7 w-auto" />
                         </Link>
 
                         <span aria-hidden className="hidden h-7 w-px bg-border xl:block" />
@@ -159,8 +158,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <footer className="border-t border-border">
                 <div className="mx-auto flex max-w-[1600px] flex-col items-center justify-between gap-6 px-6 py-10 md:flex-row">
                     <div className="flex items-center gap-2.5">
-                        <Monograma className="h-7 w-7 text-xs" />
-                        <span className="font-semibold tracking-tight">Somos Preta</span>
+                        <LogoPreta className="h-6 w-auto" />
                     </div>
                     <div className="flex gap-6 text-sm text-muted-foreground">
                         <Link href="/blog" className="transition-colors hover:text-foreground">

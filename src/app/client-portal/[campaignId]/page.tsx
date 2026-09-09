@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { LogoPreta } from "@/components/public/marca"
 
 type Vinculo = {
     vinculo: { pagamento: number | null; status: string; geo_percent: number | null; status_bia: string | null }
@@ -31,10 +32,7 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ c
         <div className="min-h-screen bg-background">
             <header className="border-b border-border/60">
                 <div className="container mx-auto px-4 py-5 flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-                        <span className="text-primary-foreground font-bold text-sm">S</span>
-                    </div>
-                    <span className="font-semibold tracking-tight">Somos Preta</span>
+                    <LogoPreta className="h-6 w-auto" />
                     <span className="text-muted-foreground text-sm ml-auto">Relatório de campanha</span>
                 </div>
             </header>

@@ -8,7 +8,7 @@ import { BarChart3, CheckCircle2, Eye, EyeOff, Loader2, Megaphone, Newspaper } f
 
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import { LogoSomosPreta } from "@/components/public/marca"
+import { LogoPreta } from "@/components/public/marca"
 
 /**
  * Porta de entrada do criador: cadastro e login na mesma tela, alternados por
@@ -129,7 +129,7 @@ export default function CriadorCriarContaPage() {
             <header className="border-b border-border">
                 <div className="mx-auto flex h-20 max-w-[1500px] items-center justify-between px-6">
                     <Link href="/" aria-label="Somos Preta — início">
-                        <LogoSomosPreta className="text-[1rem]" />
+                        <LogoPreta className="h-8 w-auto" />
                     </Link>
 
                     <p className="text-sm text-muted-foreground">

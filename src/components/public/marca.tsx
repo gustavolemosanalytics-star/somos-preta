@@ -1,18 +1,57 @@
 "use client"
 
+import Image from "next/image"
+
+import { cn } from "@/lib/utils"
+
 /**
- * Elementos fixos da marca Somos Preta.
+ * Elementos fixos da marca.
  */
 
-/** Monograma da marca — círculo terracota com o "S". */
-export function Monograma({ className = "h-9 w-9 text-base" }: { className?: string }) {
+/**
+ * Logo oficial da marca — o wordmark "PRETA".
+ *
+ * A arte é preta e vem de PNG com transparência, então herda o fundo. Em
+ * superfícies escuras use `invertida` para a versão em off-white.
+ */
+export function LogoPreta({
+    className,
+    invertida = false,
+}: {
+    className?: string
+    invertida?: boolean
+}) {
     return (
-        <span
-            className={`inline-flex shrink-0 items-center justify-center rounded-full bg-brand-terracota font-bold text-white ${className}`}
-            aria-hidden
-        >
-            S
-        </span>
+        <Image
+            src="/marca/preta-wordmark.png"
+            alt="Preta"
+            width={930}
+            height={200}
+            priority
+            className={cn("h-7 w-auto", invertida && "invert", className)}
+        />
+    )
+}
+
+/**
+ * Símbolo compacto — o "P" com a onda, para espaços quadrados onde o wordmark
+ * não cabe (sidebar recolhido, avatar da marca).
+ */
+export function SimboloPreta({
+    className,
+    invertida = false,
+}: {
+    className?: string
+    invertida?: boolean
+}) {
+    return (
+        <Image
+            src="/marca/preta-simbolo.png"
+            alt="Preta"
+            width={256}
+            height={256}
+            className={cn("h-8 w-8 shrink-0 object-contain", invertida && "invert", className)}
+        />
     )
 }
 
@@ -38,36 +77,5 @@ export function SimboloTerritorio({ className }: { className?: string }) {
                 <path d="M22 40c2-2 4-2 6 0 2 1 3 3 6 3s4-2 6-2" />
             </g>
         </svg>
-    )
-}
-
-/**
- * Assinatura da marca em duas linhas, com o traço em ângulo — o lockup usado
- * nas telas de conta e no cartão de Media Kit.
- */
-export function LogoSomosPreta({ className }: { className?: string }) {
-    return (
-        <span className={`inline-flex items-end gap-1.5 ${className ?? ""}`}>
-            <span className="text-[1.35em] font-bold leading-[0.95] tracking-[-0.02em]">
-                Somos
-                <br />
-                Preta
-            </span>
-            <svg
-                viewBox="0 0 24 20"
-                fill="none"
-                aria-hidden
-                focusable="false"
-                className="mb-[0.15em] h-[0.9em] w-auto shrink-0 text-brand-terracota"
-            >
-                <path
-                    d="M2 2 22 10 2 18"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-            </svg>
-        </span>
     )
 }

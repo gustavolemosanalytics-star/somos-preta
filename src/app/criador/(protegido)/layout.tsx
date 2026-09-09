@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getProfile } from "@/lib/supabase/auth"
+import { LogoPreta } from "@/components/public/marca"
 import { LogoutButton } from "../logout-button"
 
 const STAFF_ROLES = ["admin", "gestor", "analista"]
@@ -23,11 +24,8 @@ export default async function CriadorLayout({
         <div className="min-h-screen bg-background text-foreground">
             <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/60">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    <Link href="/criador" className="flex items-center gap-2.5">
-                        <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-                            <span className="text-primary-foreground font-bold text-sm">S</span>
-                        </div>
-                        <span className="text-lg font-semibold tracking-tight">Somos Preta</span>
+                    <Link href="/criador" aria-label="Preta — início" className="flex items-center gap-2.5">
+                        <LogoPreta className="h-6 w-auto" />
                     </Link>
 
                     <div className="flex items-center gap-3">

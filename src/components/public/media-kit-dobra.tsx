@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { ArrowRight, BarChart3, MapPin, Users } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { LogoPreta } from "./marca"
 import { MapaTerritorio } from "./mapa-territorio"
 
 /**
@@ -157,11 +158,7 @@ function CartaoExemplo() {
     return (
         <article className="relative z-10 rounded-[1.75rem] border border-border bg-card p-5 shadow-[0_30px_80px_-40px_rgba(31,31,31,0.5)] sm:p-6 lg:ml-[12%] lg:rotate-[-1.5deg]">
             <header className="flex items-center justify-between gap-4">
-                <span className="text-sm font-bold leading-[1.1] tracking-tight">
-                    Somos
-                    <br />
-                    Preta
-                </span>
+                <LogoPreta className="h-4 w-auto" />
                 <span className="flex flex-col items-center">
                     <span className="text-[9px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
                         Media Kit
