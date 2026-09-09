@@ -1,5 +1,8 @@
 # Imagens da landing — Somos Preta
 
+> A hero já está com as fotos finais. O que segue com placeholder é a 2ª dobra
+> (Quem somos) e a página de blog.
+
 Guia de assets de foto da landing page: as 4 fotos da colagem da hero e os 4 painéis da
 segunda dobra ("Quem somos"). Contém os prompts prontos para ferramentas de geração de
 imagem (Midjourney, Adobe Firefly, DALL-E, Ideogram) e as alternativas de banco de imagem,
@@ -65,160 +68,31 @@ Referência de cor para quem for gerar, tratar ou licenciar as fotos.
 
 Tagline: "Ideias que movem pessoas."
 
-## Hero
+## Hero — CONCLUÍDA
 
-Quatro fotos, na ordem do array `SLOTS` de `src/components/public/hero.tsx`. Os recortes de
-papel rasgado cortam de 2% a 6% de cada borda: deixe respiro em volta do rosto e não encoste
-elemento importante na margem.
+As nove peças da colagem já estão em `public/hero/` como `.webp` finais, entregues
+pelo cliente. Não há mais nada a gerar aqui.
 
-### 1. criador-chapeu
+| Arquivo | Papel na colagem |
+| --- | --- |
+| `textura-papel.webp` | papel kraft rasgado, ao fundo de tudo |
+| `recorte-raios.webp` | leque de raios coral, atrás da criadora central |
+| `criador-chapeu.webp` | criador de chapéu de palha, à esquerda |
+| `criadora-principal.webp` | criadora com tranças e brincos de leque, a peça dominante |
+| `criadora-cacheada.webp` | criadora de cabelo cacheado, à direita |
+| `coqueiros.webp` | coqueiros, no canto direito |
+| `recorte-palmeira.webp` | palmeira preta sobre papel coral, no pé |
+| `paisagem-falesias.webp` | falésias e mar, no pé |
+| `recorte-ondas.webp` | faixas onduladas sobre papel, no pé |
 
-- **Arquivo**: `public/hero/criador-chapeu.jpg`
-- **Proporção**: 3:4 retrato — `--ar 3:4`
-- **Papel na colagem**: retrato lateral, coluna da esquerda, levemente inclinado. Contrapeso
-  masculino à foto herói. Comunica criador de conteúdo real, não modelo — alguém no meio do
-  próprio dia.
+Os recortes gráficos (papel, raios, palmeira, ondas) já vêm com fundo e bordas
+próprios e são renderizados com `object-contain`, sem moldura. As fotos recebem
+borda irregular por `clip-path` e sombra. As posições estão em `PECAS`, em
+`src/components/public/hero.tsx`.
 
-**Prompt (EN)**
-
-> Documentary portrait of an adult Black Brazilian man wearing a woven straw hat with a
-> slightly frayed brim, white linen shirt, smiling openly and unposed, warm side light from the
-> low late-afternoon sun spilling under the hat brim onto his face, blurred sunlit whitewashed
-> wall and palm fronds behind him in bright open air, shallow depth of field, airy high-key
-> exposure with preserved highlights and open shadows, medium contrast, terracotta, sand and
-> warm beige palette, subtle 35mm film grain, natural skin texture, no retouching, no studio
-> lighting, no vignette, editorial photojournalism --ar 3:4 --style raw --v 7
-
-**Prompt (PT)**
-
-> Retrato documental de um homem negro brasileiro adulto de chapéu de palha trançada com a aba
-> levemente desfiada, camisa branca de linho, sorrindo aberto e sem pose, luz lateral quente do
-> sol baixo do fim de tarde entrando por baixo da aba e iluminando o rosto, parede caiada
-> iluminada e folhas de palmeira desfocadas ao fundo, ao ar livre e com muita luz, profundidade
-> de campo rasa, exposição clara e arejada com altas luzes preservadas e sombras abertas,
-> contraste médio, paleta terracota, areia e bege quente, grão sutil de filme 35mm, textura de
-> pele natural sem retoque, sem luz de estúdio, sem vinheta, fotojornalismo editorial.
-
-**Busca em banco de imagens**
-
-- `black man straw hat smiling golden hour portrait bright background`
-- `brazilian man straw hat linen shirt sunset whitewashed wall`
-- `afro brazilian creator straw hat portrait warm backlight documentary airy`
-
----
-
-### 2. criadora-principal
-
-- **Arquivo**: `public/hero/criadora-principal.jpg`
-- **Proporção**: 3:4 retrato — `--ar 3:4`
-- **Papel na colagem**: **a foto herói.** Bloco maior, no centro, primeiro ponto de leitura da
-  página, ao lado do título. Carrega sozinha a promessa da marca: criadora negra do
-  Norte/Nordeste, presença, confiança, autoria. Se só uma foto for feita com orçamento e
-  cuidado, é esta.
-
-**Prompt (EN)**
-
-> Close editorial portrait of a young Black Brazilian woman with box braids, large gold
-> fan-shaped statement earrings, wearing a terracotta top, skin luminous under warm golden hour
-> light, confident self-possessed gaze directed slightly above the camera, chin lifted, soft
-> warm rim light along her cheek and braids, softly blurred bright background of sand-toned wall
-> and open sky, very shallow depth of field, airy high-key exposure with preserved highlights
-> and open shadows, medium contrast, natural skin texture and visible pores, subtle film grain,
-> terracotta, coral and sand palette, documentary fashion photography, no studio flash, no heavy
-> retouching, no vignette --ar 3:4 --style raw --v 7
-
-**Prompt (PT)**
-
-> Retrato editorial aproximado de uma jovem mulher negra brasileira com tranças box braids,
-> brincos grandes dourados em forma de leque, blusa terracota, pele iluminada pela luz dourada
-> do fim de tarde, olhar confiante e seguro dirigido levemente acima da câmera, queixo erguido,
-> luz quente de contorno na bochecha e nas tranças, fundo claro suavemente desfocado de parede
-> cor de areia e céu aberto, profundidade de campo muito rasa, exposição clara e arejada com
-> altas luzes preservadas e sombras abertas, contraste médio, textura de pele natural com poros
-> visíveis, grão sutil de filme, paleta terracota, coral e areia, fotografia de moda documental,
-> sem flash de estúdio, sem retoque pesado, sem vinheta.
-
-**Busca em banco de imagens**
-
-- `black woman box braids gold fan earrings golden hour portrait`
-- `afro brazilian woman confident portrait light background warm sun`
-- `young black woman braids terracotta editorial portrait bright airy`
-
----
-
-### 3. criadora-cacheada
-
-- **Arquivo**: `public/hero/criadora-cacheada.jpg`
-- **Proporção**: 6:7 retrato curto — `--ar 6:7`
-- **Papel na colagem**: bloco quase quadrado, à direita e mais abaixo, quebra o ritmo dos dois
-  retratos verticais. Traz olhar direto e cidade — centro histórico nordestino — para a série
-  não virar só natureza e pose de perfil.
-
-**Prompt (EN)**
-
-> Documentary portrait of a Black Brazilian woman with voluminous natural curly hair catching
-> the late afternoon sun, looking straight into the camera with a warm open expression, blurred
-> sunlit pale ochre and whitewashed facades of a northeastern Brazilian historic town square
-> behind her, bright warm light on pale cobblestones, shallow depth of field, golden hour side
-> light, airy high-key exposure with preserved highlights and open soft shadows, medium
-> contrast, terracotta, ochre and sand palette, subtle film grain, natural skin texture, unposed
-> street photography feel, no vignette --ar 6:7 --style raw --v 7
-
-**Prompt (PT)**
-
-> Retrato documental de uma mulher negra brasileira de cabelo cacheado volumoso e natural
-> pegando o sol do fim da tarde, olhando direto para a câmera com expressão aberta e acolhedora,
-> fachadas caiadas e em ocre claro de praça de centro histórico do Nordeste desfocadas e
-> iluminadas ao fundo, luz quente e clara sobre o calçamento de pedra, profundidade de campo
-> rasa, luz lateral dourada, exposição clara e arejada com altas luzes preservadas e sombras
-> suaves e abertas, contraste médio, paleta terracota, ocre e areia, grão sutil de filme,
-> textura de pele natural, estética de fotografia de rua sem pose, sem vinheta.
-
-**Busca em banco de imagens**
-
-- `black woman curly hair looking at camera historic town brazil bright`
-- `brazilian woman natural curls historic square golden hour airy light`
-- `afro brazilian woman portrait ochre facade bokeh warm light`
-
----
-
-### 4. paisagem-litoral
-
-- **Arquivo**: `public/hero/paisagem-litoral.jpg`
-- **Proporção**: 10:7 landscape — `--ar 10:7`
-- **Papel na colagem**: faixa horizontal na base, entre os retratos. Estabelece território —
-  litoral nordestino, falésia, mar — sem pessoa nenhuma. É o que diz "essa agência é de lá"
-  antes de qualquer texto, e amarra a paleta terracota/coral da cena com o `#F26D4F` da marca.
-
-**Prompt (EN)**
-
-> Documentary landscape photograph of northeastern Brazilian coastal cliffs at late golden hour,
-> layered terracotta and ochre sandstone cliffs dropping to a wide bright beach, calm turquoise-
-> to-pale-green sea with gentle foam lines catching low warm sunlight, damp sand mirroring the
-> luminous sky, sparse dry coastal vegetation on the cliff top, wide open bright sky in a soft
-> sand to coral gradient with thin high clouds, warm haze on the horizon, deep focus, no people,
-> no buildings, terracotta, coral, sand and olive green palette, airy high-key exposure with
-> preserved highlights and open shadows, medium contrast, subtle film grain, no vignette, shot on
-> 35mm film, Kodak Portra tones, photojournalistic realism, no text, no logos
-> --ar 10:7 --style raw --v 7
-
-**Prompt (PT)**
-
-> Fotografia documental de paisagem das falésias do litoral nordestino brasileiro no fim da
-> tarde, camadas de arenito em terracota e ocre descendo para uma praia larga e clara, mar calmo
-> em verde-água claro com linhas suaves de espuma recebendo a luz quente do sol baixo, areia
-> úmida espelhando o céu luminoso, vegetação costeira seca e esparsa no alto da falésia, céu
-> aberto e claro em degradê suave de areia a coral com nuvens altas finas, névoa quente no
-> horizonte, foco profundo, sem pessoas, sem construções, paleta terracota, coral, areia e verde
-> oliva, exposição clara e arejada com altas luzes preservadas e sombras abertas, contraste
-> médio, grão sutil de filme, sem vinheta, estética de filme 35mm, realismo fotojornalístico,
-> sem texto, sem logotipos.
-
-**Busca em banco de imagens**
-
-- `northeast brazil coastal cliffs golden hour bright sky no people`
-- `falesias praia nordeste brasil sunset red sandstone sea`
-- `pipa canoa quebrada cliffs beach warm light wide landscape airy`
+Para trocar qualquer peça: mantenha o nome do arquivo e substitua em
+`public/hero/`. Se mudar a proporção da imagem, confira o enquadramento — as
+peças usam `object-cover` dentro de caixas com proporção fixa.
 
 ## Quem somos (2ª dobra)
 

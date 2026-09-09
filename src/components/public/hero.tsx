@@ -6,7 +6,6 @@ import { motion } from "framer-motion"
 import { ArrowRight, BarChart3, MapPin, Sparkles, Users } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { OndasRecorte, PalmaRecorte, PalmeiraRecorte } from "./hero-recortes"
 
 /**
  * Hero da landing — colagem de recortes sobre off-white.
@@ -16,46 +15,86 @@ import { OndasRecorte, PalmaRecorte, PalmeiraRecorte } from "./hero-recortes"
  * Os prompts de geração estão em docs/hero-imagens.md.
  */
 
-type Slot = {
+type Peca = {
     src: string
     alt: string
     /** Posição na colagem — só a partir de lg. */
     frame: string
-    recorte: string
     priority?: boolean
     sizes: string
 }
 
-const SLOTS: Slot[] = [
+/**
+ * A colagem é montada em camadas, de trás para a frente: papel kraft, recortes
+ * gráficos e fotos. A ordem do array define o empilhamento junto com o z do frame.
+ */
+/** Bordas irregulares alternadas, para as fotos lerem como recorte de papel. */
+const RECORTES = ["recorte-a", "recorte-b", "recorte-c", "recorte-d"]
+
+const PECAS: Peca[] = [
     {
-        src: "/hero/criador-chapeu.svg",
+        src: "/hero/textura-papel.webp",
+        alt: "",
+        frame: "left-[14%] top-[-3%] w-[50%] h-[62%] z-0",
+        sizes: "(max-width: 1024px) 0px, 25vw",
+    },
+    {
+        src: "/hero/recorte-raios.webp",
+        alt: "",
+        frame: "left-[57%] top-[3%] w-[15%] h-[23%] z-10",
+        sizes: "(max-width: 1024px) 0px, 9vw",
+    },
+    {
+        src: "/hero/criador-chapeu.webp",
         alt: "Criador de conteúdo de chapéu de palha sorrindo",
-        frame: "left-[1%] top-[7%] w-[24%] h-[53%] -rotate-2 z-10",
-        recorte: "recorte-b",
-        sizes: "(max-width: 1024px) 50vw, 14vw",
+        frame: "left-[0%] top-[8%] w-[27%] h-[46%] z-20 -rotate-1",
+        sizes: "(max-width: 1024px) 45vw, 16vw",
     },
     {
-        src: "/hero/criadora-principal.svg",
-        alt: "Criadora de conteúdo do Nordeste com tranças e brincos de leque",
-        frame: "left-[18%] top-[3%] w-[43%] h-[85%] z-20",
-        recorte: "recorte-a",
-        priority: true,
-        sizes: "(max-width: 1024px) 100vw, 26vw",
+        src: "/hero/coqueiros.webp",
+        alt: "Coqueiros contra o céu do litoral nordestino",
+        frame: "left-[70%] top-[46%] w-[13%] h-[34%] z-20",
+        sizes: "(max-width: 1024px) 45vw, 8vw",
     },
     {
-        src: "/hero/criadora-cacheada.svg",
+        src: "/hero/criadora-cacheada.webp",
         alt: "Criadora de cabelo cacheado olhando para a câmera",
-        frame: "left-[62%] top-[30%] w-[24%] h-[54%] rotate-1 z-10",
-        recorte: "recorte-c",
-        sizes: "(max-width: 1024px) 50vw, 14vw",
+        frame: "left-[56%] top-[27%] w-[19%] h-[57%] z-30",
+        sizes: "(max-width: 1024px) 45vw, 12vw",
     },
     {
-        src: "/hero/paisagem-litoral.svg",
-        alt: "Falésias e mar do litoral nordestino",
-        frame: "left-[36%] top-[79%] w-[27%] h-[19%] z-30",
-        recorte: "recorte-d",
-        sizes: "(max-width: 1024px) 50vw, 16vw",
+        src: "/hero/criadora-principal.webp",
+        alt: "Criadora de conteúdo do Nordeste com tranças e brincos de leque",
+        frame: "left-[16%] top-[2%] w-[45%] h-[94%] z-40",
+        priority: true,
+        sizes: "(max-width: 1024px) 90vw, 28vw",
     },
+    {
+        src: "/hero/recorte-palmeira.webp",
+        alt: "",
+        frame: "left-[17%] top-[71%] w-[17%] h-[27%] z-50",
+        sizes: "(max-width: 1024px) 45vw, 10vw",
+    },
+    {
+        src: "/hero/paisagem-falesias.webp",
+        alt: "Falésias e mar do litoral nordestino",
+        frame: "left-[33%] top-[72%] w-[22%] h-[25%] z-50",
+        sizes: "(max-width: 1024px) 45vw, 13vw",
+    },
+    {
+        src: "/hero/recorte-ondas.webp",
+        alt: "",
+        frame: "left-[54%] top-[80%] w-[21%] h-[16%] z-50",
+        sizes: "(max-width: 1024px) 45vw, 12vw",
+    },
+]
+
+/** Só as fotos entram na grade simplificada de telas pequenas. */
+const FOTOS_MOBILE = [
+    "/hero/criadora-principal.webp",
+    "/hero/criador-chapeu.webp",
+    "/hero/criadora-cacheada.webp",
+    "/hero/paisagem-falesias.webp",
 ]
 
 const FEATURES = [
@@ -66,14 +105,14 @@ const FEATURES = [
 
 /** Blocos de texto que pontuam a colagem, como na peça impressa. */
 const LEGENDAS = [
-    { linhas: ["Da", "nossa", "terra", "para", "o mundo"], frame: "left-[3%] top-[62%]" },
+    { linhas: ["Da", "nossa", "terra", "para", "o mundo"], frame: "left-[7%] top-[55%]" },
     {
         linhas: ["Território", "Criatividade", "Pessoas", "Potência"],
-        frame: "right-[1%] top-[32%]",
+        frame: "right-[0%] top-[30%]",
     },
     {
         linhas: ["Gente", "Cultura", "Conexões", "Oportunidades", "Realidade"],
-        frame: "right-[1%] top-[68%]",
+        frame: "right-[0%] top-[70%]",
     },
 ] as const
 
@@ -176,70 +215,40 @@ function Colagem() {
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
             className="relative"
         >
-            {/* mobile e tablet: grade simples, sem sobreposição */}
+            {/* mobile e tablet: só as fotos, em grade simples */}
             <div className="grid grid-cols-3 gap-3 lg:hidden">
-                {SLOTS.map((slot, i) => (
-                    <div
-                        key={slot.src}
-                        className={cn(
-                            "relative overflow-hidden rounded-lg bg-muted",
-                            // os três retratos dividem a linha; a paisagem fecha embaixo
-                            i === 3 ? "col-span-3 aspect-[16/9]" : "aspect-[3/4]"
-                        )}
-                    >
-                        <Foto slot={slot} />
-                    </div>
-                ))}
+                {FOTOS_MOBILE.map((src, i) => {
+                    const peca = PECAS.find((p) => p.src === src)!
+                    return (
+                        <div
+                            key={src}
+                            className={cn(
+                                "relative overflow-hidden rounded-lg bg-muted",
+                                i === 3 ? "col-span-3 aspect-[16/9]" : "aspect-[3/4]"
+                            )}
+                        >
+                            <Foto peca={peca} />
+                        </div>
+                    )
+                })}
             </div>
 
-            {/* desktop: a colagem da peça impressa */}
+            {/* desktop: a colagem da peça de referência */}
             <div
-                className="relative hidden aspect-[1126/890] w-full lg:block"
+                className="relative hidden aspect-[900/745] w-full lg:block"
                 style={{ marginRight: "calc(-1 * max(0px, (100vw - 1600px) / 2))" }}
             >
-                {/* folha de papel que assenta a colagem */}
-                <span
-                    aria-hidden
-                    className="recorte-a absolute left-[17%] top-0 h-[54%] w-[48%] -rotate-1 bg-brand-areia"
-                />
-
-                {/* palma no alto, à direita */}
-                <PalmaRecorte className="absolute left-[60%] top-[3%] z-0 h-[23%] w-[12%] rotate-6 text-brand-coral/85" />
-
-                {SLOTS.map((slot) => (
-                    <div
-                        key={slot.src}
-                        className={cn(
-                            "absolute overflow-hidden bg-muted shadow-[0_22px_54px_-22px_rgba(31,31,31,0.55)] ring-1 ring-brand-carvao/[0.07]",
-                            slot.recorte,
-                            slot.frame
-                        )}
-                    >
-                        <Foto slot={slot} />
+                {PECAS.map((peca, i) => (
+                    <div key={peca.src} className={cn("absolute", peca.frame)}>
+                        <Foto peca={peca} indice={i} />
                     </div>
                 ))}
-
-                {/* palmeira recortada sobre papel coral */}
-                <span
-                    aria-hidden
-                    className="recorte-c absolute left-[17%] top-[71%] z-20 flex h-[27%] w-[19%] items-end justify-center bg-brand-coral"
-                >
-                    <PalmeiraRecorte className="h-[88%] w-auto text-brand-carvao" />
-                </span>
-
-                {/* faixas onduladas */}
-                <span
-                    aria-hidden
-                    className="recorte-d absolute left-[56%] top-[83%] z-20 flex h-[15%] w-[28%] items-center bg-brand-offwhite"
-                >
-                    <OndasRecorte className="h-full w-full text-brand-carvao" />
-                </span>
 
                 {LEGENDAS.map((legenda) => (
                     <div
                         key={legenda.linhas.join()}
                         aria-hidden
-                        className={cn("absolute z-30 select-none", legenda.frame)}
+                        className={cn("absolute z-50 select-none", legenda.frame)}
                     >
                         <ul className="space-y-1.5">
                             {legenda.linhas.map((linha) => (
@@ -257,7 +266,7 @@ function Colagem() {
 
                 <p
                     aria-hidden
-                    className="absolute right-[2%] top-[4%] z-30 max-w-[8ch] -rotate-3 font-manuscrita text-[clamp(1.5rem,2vw,2.2rem)] leading-[1.15] text-brand-coral"
+                    className="absolute right-[2%] top-[4%] z-50 max-w-[8ch] -rotate-3 font-manuscrita text-[clamp(1.5rem,2vw,2.2rem)] leading-[1.15] text-brand-coral"
                 >
                     Mais vozes Mais nossos
                     <span aria-hidden className="mt-1 block h-[2px] w-20 rounded-full bg-brand-coral" />
@@ -267,16 +276,34 @@ function Colagem() {
     )
 }
 
-function Foto({ slot }: { slot: Slot }) {
+/**
+ * Uma peça da colagem. Os recortes gráficos (papel, palmeira, raios, ondas) já
+ * vêm com fundo e bordas rasgadas próprios, então usam `object-contain` e não
+ * levam moldura; só as fotos ganham cantos e sombra.
+ */
+function Foto({ peca, indice = 0 }: { peca: Peca; indice?: number }) {
+    const eRecorte = peca.alt === ""
+
     return (
-        <Image
-            src={slot.src}
-            alt={slot.alt}
-            fill
-            sizes={slot.sizes}
-            priority={slot.priority}
-            unoptimized={slot.src.endsWith(".svg")}
-            className="object-cover"
-        />
+        <div
+            className={cn(
+                "relative h-full w-full",
+                !eRecorte &&
+                    cn(
+                        "overflow-hidden shadow-[0_22px_54px_-22px_rgba(31,31,31,0.45)]",
+                        RECORTES[indice % RECORTES.length]
+                    )
+            )}
+        >
+            <Image
+                src={peca.src}
+                alt={peca.alt}
+                fill
+                sizes={peca.sizes}
+                priority={peca.priority}
+                aria-hidden={eRecorte || undefined}
+                className={eRecorte ? "object-contain" : "object-cover"}
+            />
+        </div>
     )
 }

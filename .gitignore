@@ -47,3 +47,6 @@ supabase/seeds/
 
 # planilhas com dados pessoais
 *.xlsx
+
+# Fontes originais das imagens (já copiadas para public/)
+imagens_hero/
