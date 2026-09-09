@@ -70,7 +70,7 @@ export default function CriadorLoginPage() {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <Label htmlFor="password">Senha</Label>
-                                    <Link href="/app/esqueci-senha" className="text-primary text-xs font-medium hover:underline">
+                                    <Link href="/criador/esqueci-senha" className="text-primary text-xs font-medium hover:underline">
                                         Esqueci minha senha
                                     </Link>
                                 </div>

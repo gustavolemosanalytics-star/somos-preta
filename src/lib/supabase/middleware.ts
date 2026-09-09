@@ -12,6 +12,8 @@ const PUBLIC_PATHS = [
     "/app/redefinir-senha",
     "/criador/login",
     "/criador/criar-conta",
+    "/criador/esqueci-senha",
+    "/criador/redefinir-senha",
     "/kit",
     "/engajamento",
 ]

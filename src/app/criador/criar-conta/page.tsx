@@ -359,7 +359,7 @@ export default function CriadorCriarContaPage() {
                                         <p className="mt-4 text-center text-xs text-muted-foreground">
                                             Esqueceu a senha?{" "}
                                             <Link
-                                                href="/app/esqueci-senha"
+                                                href="/criador/esqueci-senha"
                                                 className="text-brand-terracota underline"
                                             >
                                                 Recuperar acesso
