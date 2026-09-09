@@ -129,7 +129,7 @@ export default function CriadorCriarContaPage() {
             <header className="border-b border-border">
                 <div className="mx-auto flex h-20 max-w-[1500px] items-center justify-between px-6">
                     <Link href="/" aria-label="Somos Preta — início">
-                        <LogoPreta className="h-8 w-auto" />
+                        <LogoPreta className="h-8 w-auto" priority />
                     </Link>
 
                     <p className="text-sm text-muted-foreground">

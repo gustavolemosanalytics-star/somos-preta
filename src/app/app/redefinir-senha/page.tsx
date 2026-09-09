@@ -82,7 +82,7 @@ export default function RedefinirSenhaPage() {
             <div className="min-h-screen flex items-center justify-center bg-background p-4">
                 <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 space-y-8">
                     <div className="text-center space-y-3">
-                        <LogoPreta className="mx-auto h-9 w-auto" />
+                        <LogoPreta className="mx-auto h-9 w-auto" priority />
                         <h1 className="text-xl font-semibold text-foreground">Redefinir senha</h1>
                     </div>
                     <div className="text-center space-y-4 rounded-2xl border border-border bg-muted/40 p-6">
@@ -104,7 +104,7 @@ export default function RedefinirSenhaPage() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 space-y-8">
                 <div className="text-center space-y-3">
-                    <LogoPreta className="mx-auto h-9 w-auto" />
+                    <LogoPreta className="mx-auto h-9 w-auto" priority />
                     <h1 className="text-xl font-semibold text-foreground">Defina sua nova senha</h1>
                 </div>
 

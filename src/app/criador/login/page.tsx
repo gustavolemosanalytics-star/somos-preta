@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { LogoPreta } from "@/components/public/marca"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -46,10 +47,8 @@ export default function CriadorLoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-sm space-y-8">
                 <div className="text-center space-y-2">
-                    <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center mx-auto">
-                        <span className="text-primary-foreground font-bold text-lg">S</span>
-                    </div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Área do Creator</h1>
+                    <LogoPreta className="mx-auto h-9 w-auto" priority />
+                    <h1 className="text-xl font-semibold text-foreground">Área do Creator</h1>
                     <p className="text-muted-foreground text-sm">Entre para acessar seu Media Kit</p>
                 </div>
 

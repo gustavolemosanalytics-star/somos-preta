@@ -24,7 +24,7 @@ export default async function CriadorLayout({
         <div className="min-h-screen bg-background text-foreground">
             <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/60">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    <Link href="/criador" aria-label="Preta — início" className="flex items-center gap-2.5">
+                    <Link href="/criador" aria-label="Somos Preta — início" className="flex items-center gap-2.5">
                         <LogoPreta className="h-6 w-auto" />
                     </Link>
 

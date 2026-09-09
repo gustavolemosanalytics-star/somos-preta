@@ -68,8 +68,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <nav className="mx-auto flex h-[76px] max-w-[1600px] items-center justify-between gap-6 px-6">
                     {/* assinatura */}
                     <div className="flex shrink-0 items-center gap-4">
-                        <Link href="/" aria-label="Preta — início" className="flex items-center gap-3">
-                            <LogoPreta className="h-7 w-auto" />
+                        <Link href="/" aria-label="Somos Preta — início" className="flex items-center gap-3">
+                            <LogoPreta className="h-7 w-auto" priority />
                         </Link>
 
                         <span aria-hidden className="hidden h-7 w-px bg-border xl:block" />

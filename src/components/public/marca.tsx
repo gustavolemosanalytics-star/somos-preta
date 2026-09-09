@@ -17,17 +17,20 @@ import { cn } from "@/lib/utils"
 export function LogoPreta({
     className,
     invertida = false,
+    /** Ligue só na instância que é o LCP da página (o header). */
+    priority = false,
 }: {
     className?: string
     invertida?: boolean
+    priority?: boolean
 }) {
     return (
         <Image
             src="/marca/preta-wordmark.png"
-            alt="Preta"
+            alt="Somos Preta"
             width={930}
             height={200}
-            priority
+            priority={priority}
             className={cn("h-7 w-auto", invertida && "invert", className)}
         />
     )
@@ -47,7 +50,7 @@ export function SimboloPreta({
     return (
         <Image
             src="/marca/preta-simbolo.png"
-            alt="Preta"
+            alt="Somos Preta"
             width={256}
             height={256}
             className={cn("h-8 w-8 shrink-0 object-contain", invertida && "invert", className)}

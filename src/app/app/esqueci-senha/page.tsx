@@ -41,7 +41,7 @@ export default function EsqueciSenhaPage() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 space-y-8">
                 <div className="text-center space-y-3">
-                    <LogoPreta className="mx-auto h-9 w-auto" />
+                    <LogoPreta className="mx-auto h-9 w-auto" priority />
                     <h1 className="text-xl font-semibold text-foreground">Recuperar acesso</h1>
                 </div>
 
