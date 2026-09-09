@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder de foto">
+  <defs>
+    <linearGradient id="qtlBase" x1="0.06" y1="0.02" x2="0.94" y2="1">
+      <stop offset="0" stop-color="#FAF7F2"/>
+      <stop offset="0.36" stop-color="#F3EADF"/>
+      <stop offset="0.72" stop-color="#E8DDD1"/>
+      <stop offset="1" stop-color="#D4C4B6"/>
+    </linearGradient>
+    <radialGradient id="qtlWarm" cx="0.2" cy="0.14" r="0.62">
+      <stop offset="0" stop-color="#E07A5F" stop-opacity="0.2"/>
+      <stop offset="0.58" stop-color="#E07A5F" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#E07A5F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="qtlLift" cx="0.48" cy="0.44" r="0.8">
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FAF7F2" stop-opacity="0.52"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#qtlBase)"/>
+  <rect width="600" height="800" fill="url(#qtlWarm)"/>
+  <path d="M72 396 A 228 228 0 0 1 528 396" fill="none" stroke="#F26D4F" stroke-width="4" opacity="0.18" stroke-linecap="round"/>
+  <g fill="#1F1F1F" opacity="0.1">
+    <circle cx="298" cy="344" r="120"/>
+    <path d="M46 800 C 62 638 154 540 298 540 C 442 540 534 638 550 800 Z"/>
+  </g>
+  <g fill="none" stroke="#F26D4F" stroke-width="8" opacity="0.16" stroke-linecap="round">
+    <path d="M404 282 C 430 372 408 442 352 484"/>
+    <path d="M488 766 C 474 634 414 552 322 522"/>
+  </g>
+  <rect width="600" height="800" fill="url(#qtlLift)"/>
+</svg>

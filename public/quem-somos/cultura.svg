@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder de foto">
+  <defs>
+    <linearGradient id="qcuBase" x1="0.04" y1="0.98" x2="0.9" y2="0.04">
+      <stop offset="0" stop-color="#FAF7F2"/>
+      <stop offset="0.34" stop-color="#F4EBE0"/>
+      <stop offset="0.7" stop-color="#E8DDD1"/>
+      <stop offset="1" stop-color="#DFC9B7"/>
+    </linearGradient>
+    <radialGradient id="qcuGlow" cx="0.34" cy="0.74" r="0.66">
+      <stop offset="0" stop-color="#E07A5F" stop-opacity="0.24"/>
+      <stop offset="0.56" stop-color="#E07A5F" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#E07A5F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="qcuLift" cx="0.54" cy="0.4" r="0.78">
+      <stop offset="0.48" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FAF7F2" stop-opacity="0.5"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#qcuBase)"/>
+  <rect width="600" height="800" fill="url(#qcuGlow)"/>
+  <circle cx="304" cy="300" r="208" fill="none" stroke="#F26D4F" stroke-width="4" opacity="0.16"/>
+  <g fill="#E07A5F" opacity="0.18" transform="rotate(-7 304 380)">
+    <circle cx="304" cy="330" r="126"/>
+    <path d="M62 800 C 80 646 168 528 304 528 C 440 528 528 646 546 800 Z"/>
+  </g>
+  <g fill="#1F1F1F" opacity="0.08">
+    <circle cx="186" cy="252" r="46"/>
+    <circle cx="428" cy="238" r="34"/>
+    <circle cx="128" cy="366" r="26"/>
+  </g>
+  <path d="M188 618 Q 302 690 418 618" fill="none" stroke="#F26D4F" stroke-width="7" opacity="0.18" stroke-linecap="round"/>
+  <rect width="600" height="800" fill="url(#qcuLift)"/>
+</svg>

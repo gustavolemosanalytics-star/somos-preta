@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder de foto">
+  <defs>
+    <linearGradient id="mkG4Base" x1="0.04" y1="0.96" x2="0.96" y2="0.08">
+      <stop offset="0" stop-color="#FAF7F2"/>
+      <stop offset="0.34" stop-color="#F0E6D9"/>
+      <stop offset="0.72" stop-color="#E0D0BE"/>
+      <stop offset="1" stop-color="#CDBAA8"/>
+    </linearGradient>
+    <radialGradient id="mkG4Warm" cx="0.16" cy="0.24" r="0.56">
+      <stop offset="0" stop-color="#E07A5F" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#E07A5F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="mkG4Lift" cx="0.56" cy="0.46" r="0.76">
+      <stop offset="0.46" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FAF7F2" stop-opacity="0.46"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#mkG4Base)"/>
+  <rect width="400" height="500" fill="url(#mkG4Warm)"/>
+  <circle cx="300" cy="128" r="72" fill="#F26D4F" opacity="0.12"/>
+  <g fill="#1F1F1F" opacity="0.11">
+    <path d="M212 66 C 296 66 348 132 348 220 C 348 288 318 340 272 364 L 272 414 C 344 434 388 468 404 500 L 24 500 C 46 464 108 432 172 416 L 172 366 C 128 348 96 314 84 268 C 78 246 68 240 58 232 C 48 224 52 210 66 204 C 76 200 78 190 78 176 C 80 116 138 66 212 66 Z"/>
+  </g>
+  <g fill="none" stroke="#F26D4F" stroke-width="14" opacity="0.18" stroke-linecap="round">
+    <path d="M120 122 C 176 76 264 74 320 122"/>
+    <path d="M104 176 C 164 128 268 124 336 172"/>
+  </g>
+  <g stroke="#F26D4F" fill="none" opacity="0.24">
+    <circle cx="288" cy="330" r="42" stroke-width="10"/>
+    <circle cx="278" cy="272" r="10" stroke-width="8"/>
+  </g>
+  <path d="M96 288 C 130 316 168 320 196 304" fill="none" stroke="#F26D4F" stroke-width="7" opacity="0.16" stroke-linecap="round"/>
+  <rect width="400" height="500" fill="url(#mkG4Lift)"/>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder de foto">
+  <defs>
+    <linearGradient id="bp3Base" x1="0.5" y1="0" x2="0.62" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.32" stop-color="#FAF7F2"/>
+      <stop offset="0.66" stop-color="#F0E3D4"/>
+      <stop offset="1" stop-color="#D4C4B6"/>
+    </linearGradient>
+    <radialGradient id="bp3Dusk" cx="0.52" cy="0.54" r="0.46">
+      <stop offset="0" stop-color="#E07A5F" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#E07A5F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bp3Lift" cx="0.5" cy="0.42" r="0.78">
+      <stop offset="0.48" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FAF7F2" stop-opacity="0.55"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="560" fill="url(#bp3Base)"/>
+  <rect width="800" height="560" fill="url(#bp3Dusk)"/>
+  <circle cx="418" cy="304" r="88" fill="#F26D4F" opacity="0.14"/>
+  <g fill="none" stroke="#1F1F1F" opacity="0.1" stroke-linecap="round">
+    <path d="M162 560 C 186 442 204 366 220 306" stroke-width="17"/>
+    <g stroke-width="12">
+      <path d="M220 306 C 168 268 122 262 86 278"/>
+      <path d="M220 306 C 174 240 136 216 100 210"/>
+      <path d="M220 306 C 212 232 230 180 264 152"/>
+      <path d="M220 306 C 268 240 322 218 362 218"/>
+      <path d="M220 306 C 278 282 328 282 366 300"/>
+    </g>
+    <path d="M652 560 C 640 460 622 400 606 356" stroke-width="14"/>
+    <g stroke-width="10">
+      <path d="M606 356 C 646 322 690 314 722 326"/>
+      <path d="M606 356 C 642 296 676 272 710 264"/>
+      <path d="M606 356 C 600 292 582 250 552 226"/>
+      <path d="M606 356 C 556 306 512 290 476 292"/>
+      <path d="M606 356 C 566 340 528 344 498 360"/>
+    </g>
+  </g>
+  <g fill="none" stroke="#1F1F1F" opacity="0.07" stroke-linecap="round">
+    <path d="M402 560 C 398 494 392 452 384 418" stroke-width="11"/>
+    <g stroke-width="8">
+      <path d="M384 418 C 352 392 320 388 296 396"/>
+      <path d="M384 418 C 382 372 396 340 420 322"/>
+      <path d="M384 418 C 418 384 452 372 480 374"/>
+    </g>
+  </g>
+  <path d="M0 486 Q 400 464 800 488" fill="none" stroke="#F26D4F" stroke-width="5" opacity="0.19" stroke-linecap="round"/>
+  <rect width="800" height="560" fill="url(#bp3Lift)"/>
+</svg>

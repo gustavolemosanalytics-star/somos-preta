@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder de foto">
+  <defs>
+    <linearGradient id="mkPfBase" x1="0.1" y1="0.04" x2="0.92" y2="0.98">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.3" stop-color="#FAF7F2"/>
+      <stop offset="0.62" stop-color="#F0E4D6"/>
+      <stop offset="0.86" stop-color="#E2D2C1"/>
+      <stop offset="1" stop-color="#CFBBA9"/>
+    </linearGradient>
+    <radialGradient id="mkPfSun" cx="0.24" cy="0.16" r="0.6">
+      <stop offset="0" stop-color="#E07A5F" stop-opacity="0.22"/>
+      <stop offset="0.56" stop-color="#E07A5F" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#E07A5F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="mkPfLift" cx="0.52" cy="0.44" r="0.8">
+      <stop offset="0.46" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FAF7F2" stop-opacity="0.5"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#mkPfBase)"/>
+  <rect width="600" height="800" fill="url(#mkPfSun)"/>
+  <circle cx="430" cy="196" r="120" fill="#F26D4F" opacity="0.1"/>
+  <path d="M118 372 A 232 232 0 0 1 508 244" fill="none" stroke="#F26D4F" stroke-width="5" opacity="0.16" stroke-linecap="round"/>
+  <g fill="#1F1F1F" opacity="0.11">
+    <g transform="rotate(-14 300 660)">
+      <path d="M300 146 C 392 146 448 212 448 294 C 448 318 442 332 452 346 C 462 360 472 374 470 386 C 468 397 456 400 448 404 C 440 408 442 422 436 436 C 430 450 416 456 404 454 C 400 482 386 506 362 520 C 336 536 300 540 272 534 C 214 524 178 466 176 384 C 174 290 214 176 300 146 Z"/>
+      <path d="M252 480 C 252 560 250 620 246 668 L 358 668 C 352 602 350 540 352 476 Z"/>
+    </g>
+    <path d="M28 800 C 46 698 128 636 300 636 C 472 636 554 698 572 800 Z"/>
+  </g>
+  <g fill="none" stroke="#F26D4F" stroke-width="16" opacity="0.17" stroke-linecap="round">
+    <path d="M214 172 C 150 246 118 356 124 470"/>
+    <path d="M156 224 C 100 306 80 420 92 536"/>
+    <path d="M120 328 C 82 412 70 512 80 616"/>
+    <path d="M104 452 C 78 546 70 646 78 744"/>
+  </g>
+  <g stroke="#F26D4F" fill="none" opacity="0.22">
+    <circle cx="212" cy="502" r="44" stroke-width="10"/>
+    <circle cx="228" cy="440" r="10" stroke-width="8"/>
+  </g>
+  <rect width="600" height="800" fill="url(#mkPfLift)"/>
+</svg>

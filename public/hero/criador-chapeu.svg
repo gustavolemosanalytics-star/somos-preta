@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 760" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder de foto">
+  <defs>
+    <linearGradient id="dreBase" x1="0.05" y1="0" x2="0.95" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.36" stop-color="#F3EADF"/>
+      <stop offset="0.76" stop-color="#E2D2C3"/>
+      <stop offset="1" stop-color="#E07A5F"/>
+    </linearGradient>
+    <radialGradient id="dreGlow" cx="0.28" cy="0.18" r="0.6">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="dreLift" cx="0.5" cy="0.46" r="0.78">
+      <stop offset="0.5" stop-color="#FAF7F2" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FAF7F2" stop-opacity="0.52"/>
+    </radialGradient>
+  </defs>
+  <rect width="560" height="760" fill="url(#dreBase)"/>
+  <rect width="560" height="760" fill="url(#dreGlow)"/>
+  <circle cx="282" cy="318" r="176" fill="none" stroke="#F26D4F" stroke-width="3" opacity="0.18"/>
+  <g fill="#1F1F1F" opacity="0.1">
+    <circle cx="282" cy="318" r="118"/>
+    <path d="M56 760 C 70 602 158 506 282 506 C 406 506 494 602 508 760 Z"/>
+  </g>
+  <g fill="none" stroke="#F26D4F" stroke-width="7" opacity="0.18" stroke-linecap="round">
+    <path d="M170 264 C 150 346 170 402 216 430"/>
+    <path d="M396 268 C 418 350 400 404 356 432"/>
+  </g>
+  <rect width="560" height="760" fill="url(#dreLift)"/>
+</svg>

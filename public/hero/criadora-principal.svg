@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1040" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder de foto">
+  <defs>
+    <linearGradient id="prcBase" x1="0.95" y1="0.05" x2="0.08" y2="1">
+      <stop offset="0" stop-color="#FAF7F2"/>
+      <stop offset="0.34" stop-color="#F2E8DC"/>
+      <stop offset="0.7" stop-color="#E4D6C7"/>
+      <stop offset="1" stop-color="#D4C4B6"/>
+    </linearGradient>
+    <radialGradient id="prcWarm" cx="0.76" cy="0.18" r="0.62">
+      <stop offset="0" stop-color="#E07A5F" stop-opacity="0.2"/>
+      <stop offset="0.6" stop-color="#E07A5F" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#E07A5F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="prcLift" cx="0.5" cy="0.44" r="0.8">
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.5"/>
+    </radialGradient>
+  </defs>
+  <rect width="760" height="1040" fill="url(#prcBase)"/>
+  <rect width="760" height="1040" fill="url(#prcWarm)"/>
+  <path d="M96 486 A 290 290 0 0 1 676 486" fill="none" stroke="#F26D4F" stroke-width="4" opacity="0.18" stroke-linecap="round"/>
+  <g fill="#1F1F1F" opacity="0.09">
+    <circle cx="386" cy="424" r="156"/>
+    <path d="M64 1040 C 82 830 200 694 386 694 C 572 694 690 830 708 1040 Z"/>
+  </g>
+  <g fill="none" stroke="#F26D4F" stroke-width="9" opacity="0.16" stroke-linecap="round">
+    <path d="M528 350 C 556 452 532 528 470 574"/>
+    <path d="M636 1000 C 620 850 552 756 448 722"/>
+  </g>
+  <rect width="760" height="1040" fill="url(#prcLift)"/>
+</svg>

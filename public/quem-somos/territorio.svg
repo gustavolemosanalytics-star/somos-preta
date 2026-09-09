@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder de foto">
+  <defs>
+    <linearGradient id="qtrBase" x1="0.96" y1="0.04" x2="0.12" y2="1">
+      <stop offset="0" stop-color="#FAF7F2"/>
+      <stop offset="0.32" stop-color="#F1E7DB"/>
+      <stop offset="0.68" stop-color="#E4D6C7"/>
+      <stop offset="1" stop-color="#C9B4A3"/>
+    </linearGradient>
+    <radialGradient id="qtrSky" cx="0.74" cy="0.2" r="0.5">
+      <stop offset="0" stop-color="#E07A5F" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#E07A5F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="qtrLift" cx="0.5" cy="0.54" r="0.76">
+      <stop offset="0.44" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FAF7F2" stop-opacity="0.6"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#qtrBase)"/>
+  <rect width="600" height="800" fill="url(#qtrSky)"/>
+  <circle cx="446" cy="178" r="62" fill="#F26D4F" opacity="0.16"/>
+  <g fill="#1F1F1F" opacity="0.1">
+    <path d="M94 436 L94 348 L126 348 L126 322 L158 322 L158 348 L212 348 L212 320 L244 320 L244 348 L296 348 L296 436 Z"/>
+    <path d="M388 436 L400 286 L438 286 L450 436 Z"/>
+    <path d="M394 272 L444 272 L437 250 L401 250 Z"/>
+  </g>
+  <g fill="#1F1F1F" opacity="0.07">
+    <rect x="52" y="512" width="336" height="6" rx="3"/>
+    <rect x="248" y="580" width="308" height="6" rx="3"/>
+    <rect x="96" y="648" width="392" height="6" rx="3"/>
+    <rect x="286" y="714" width="234" height="6" rx="3"/>
+  </g>
+  <path d="M0 436 Q 300 414 600 438" fill="none" stroke="#F26D4F" stroke-width="5" opacity="0.2" stroke-linecap="round"/>
+  <rect width="600" height="800" fill="url(#qtrLift)"/>
+</svg>

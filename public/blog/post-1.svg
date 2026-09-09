@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Placeholder de foto">
+  <defs>
+    <linearGradient id="bp1Base" x1="0.94" y1="0.06" x2="0.1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.34" stop-color="#FAF7F2"/>
+      <stop offset="0.72" stop-color="#E8DDD1"/>
+      <stop offset="1" stop-color="#C9B4A3"/>
+    </linearGradient>
+    <radialGradient id="bp1Glow" cx="0.76" cy="0.22" r="0.54">
+      <stop offset="0" stop-color="#E07A5F" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#E07A5F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bp1Lift" cx="0.48" cy="0.46" r="0.76">
+      <stop offset="0.46" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FAF7F2" stop-opacity="0.58"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="560" fill="url(#bp1Base)"/>
+  <rect width="800" height="560" fill="url(#bp1Glow)"/>
+  <path d="M148 274 A 252 252 0 0 1 652 274" fill="none" stroke="#F26D4F" stroke-width="5" opacity="0.18" stroke-linecap="round"/>
+  <g fill="#1F1F1F" opacity="0.1">
+    <circle cx="400" cy="272" r="106"/>
+    <path d="M248 560 C 258 452 318 396 400 396 C 482 396 542 452 552 560 Z"/>
+  </g>
+  <g fill="#E07A5F" opacity="0.18">
+    <path d="M292 244 C 292 148 338 100 402 100 C 470 100 514 152 512 250 C 484 202 442 184 400 184 C 350 184 314 208 292 244 Z"/>
+    <path d="M504 168 C 556 152 588 172 592 208 C 566 190 534 190 512 204 Z"/>
+  </g>
+  <g fill="none" stroke="#F26D4F" stroke-width="8" opacity="0.16" stroke-linecap="round">
+    <path d="M600 486 C 588 424 552 388 500 370"/>
+  </g>
+  <g fill="#1F1F1F" opacity="0.07">
+    <rect x="88" y="486" width="122" height="7" rx="3.5"/>
+    <rect x="602" y="532" width="132" height="7" rx="3.5"/>
+  </g>
+  <rect width="800" height="560" fill="url(#bp1Lift)"/>
+</svg>
