@@ -91,7 +91,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     <div className="flex shrink-0 items-center gap-2">
 
                         <Link
-                            href="/criador/login"
+                            href="/creator/login"
                             className="hidden h-10 items-center rounded-full px-4 text-sm font-medium text-foreground/70 transition-colors hover:bg-accent hover:text-foreground sm:inline-flex"
                         >
                             Entrar
@@ -134,7 +134,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                         </ul>
                         <div className="mt-5 flex flex-col gap-3 border-t border-border pt-5">
                             <Link
-                                href="/criador/login"
+                                href="/creator/login"
                                 onClick={() => setMenuMobile(false)}
                                 className="flex h-12 items-center justify-center rounded-full border border-border text-sm font-medium"
                             >

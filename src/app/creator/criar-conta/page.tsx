@@ -66,7 +66,7 @@ export default function CriadorCriarContaPage() {
         setErro("")
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
-            options: { redirectTo: `${window.location.origin}/criador` },
+            options: { redirectTo: `${window.location.origin}/creator` },
         })
         if (error) {
             // Acontece quando o provider Google ainda não foi habilitado no Supabase.
@@ -93,7 +93,7 @@ export default function CriadorCriarContaPage() {
                 setCarregando(false)
                 return
             }
-            router.push("/criador")
+            router.push("/creator")
             router.refresh()
             return
         }
@@ -115,7 +115,7 @@ export default function CriadorCriarContaPage() {
         }
 
         if (data.session) {
-            router.push("/criador")
+            router.push("/creator")
             router.refresh()
             return
         }
@@ -363,7 +363,7 @@ export default function CriadorCriarContaPage() {
                                         <p className="mt-4 text-center text-xs text-muted-foreground">
                                             Esqueceu a senha?{" "}
                                             <Link
-                                                href="/criador/esqueci-senha"
+                                                href="/creator/esqueci-senha"
                                                 className="text-brand-terracota underline"
                                             >
                                                 Recuperar acesso

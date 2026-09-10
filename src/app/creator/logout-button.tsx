@@ -14,7 +14,7 @@ export function LogoutButton() {
     async function sair() {
         setIsLoading(true)
         await supabase.auth.signOut()
-        router.push("/criador/login")
+        router.push("/creator/login")
         router.refresh()
     }
 

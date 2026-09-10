@@ -39,7 +39,7 @@ export default function CriadorLoginPage() {
             return
         }
 
-        router.push("/criador")
+        router.push("/creator")
         router.refresh()
     }
 
@@ -70,7 +70,7 @@ export default function CriadorLoginPage() {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <Label htmlFor="password">Senha</Label>
-                                    <Link href="/criador/esqueci-senha" className="text-primary text-xs font-medium hover:underline">
+                                    <Link href="/creator/esqueci-senha" className="text-primary text-xs font-medium hover:underline">
                                         Esqueci minha senha
                                     </Link>
                                 </div>
@@ -113,7 +113,7 @@ export default function CriadorLoginPage() {
 
                 <p className="text-center text-muted-foreground text-sm">
                     Não tem conta?{" "}
-                    <Link href="/criador/criar-conta" className="text-primary font-medium hover:underline">
+                    <Link href="/creator/criar-conta" className="text-primary font-medium hover:underline">
                         Criar conta
                     </Link>
                 </p>

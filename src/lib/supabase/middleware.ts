@@ -10,10 +10,10 @@ const PUBLIC_PATHS = [
     "/app/criar-conta",
     "/app/esqueci-senha",
     "/app/redefinir-senha",
-    "/criador/login",
-    "/criador/criar-conta",
-    "/criador/esqueci-senha",
-    "/criador/redefinir-senha",
+    "/creator/login",
+    "/creator/criar-conta",
+    "/creator/esqueci-senha",
+    "/creator/redefinir-senha",
     "/kit",
     "/engajamento",
 ]
@@ -61,10 +61,14 @@ export async function updateSession(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname
 
-    // Não logado tentando acessar rota protegida -> login do hub
+    // Não logado tentando acessar rota protegida -> login da área correspondente.
+    // Quem tenta a área do creator vai para o login do creator: mandá-lo para o
+    // /app/login o deixaria preso no acesso da equipe, que não é dele.
     if (!user && !isPublic(pathname)) {
         const redirectUrl = request.nextUrl.clone()
-        redirectUrl.pathname = "/app/login"
+        redirectUrl.pathname = pathname.startsWith("/creator")
+            ? "/creator/login"
+            : "/app/login"
         return NextResponse.redirect(redirectUrl)
     }
 
@@ -76,9 +80,9 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Logado tentando acessar as telas de auth do creator -> área do creator (o layout roteia por papel)
-    if (user && (pathname === "/criador/login" || pathname === "/criador/criar-conta")) {
+    if (user && (pathname === "/creator/login" || pathname === "/creator/criar-conta")) {
         const redirectUrl = request.nextUrl.clone()
-        redirectUrl.pathname = "/criador"
+        redirectUrl.pathname = "/creator"
         return NextResponse.redirect(redirectUrl)
     }
 

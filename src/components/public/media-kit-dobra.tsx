@@ -75,7 +75,7 @@ export function MediaKitDobra() {
 
                     <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                         <Link
-                            href="/criador/criar-conta"
+                            href="/creator/criar-conta"
                             className="group inline-flex h-14 items-center justify-center gap-3 rounded-full bg-brand-terracota px-8 text-base font-semibold text-white transition-colors hover:bg-brand-coral"
                         >
                             Criar meu Media Kit

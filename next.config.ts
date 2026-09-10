@@ -40,6 +40,12 @@ const legacyMidiaKitPaths = [
   "/midia-kit/criar",
 ];
 
+// A área do creator saiu de /criador para /creator; estes redirects preservam
+// links, bookmarks e e-mails já enviados apontando para a rota antiga.
+const criadorParaCreator: [string, string][] = [
+  ["/criador", "/creator"],
+]
+
 const nextConfig: NextConfig = {
   async redirects() {
     return [
@@ -48,6 +54,10 @@ const nextConfig: NextConfig = {
         destination: "/",
         permanent: false,
       })),
+      ...criadorParaCreator.flatMap(([from, to]) => [
+        { source: from, destination: to, permanent: false },
+        { source: `${from}/:path*`, destination: `${to}/:path*`, permanent: false },
+      ]),
       ...routeMap.flatMap(([from, to]) => [
         { source: from, destination: to, permanent: false },
         { source: `${from}/:path*`, destination: `${to}/:path*`, permanent: false },

@@ -266,7 +266,7 @@ export default function EngajamentoPage() {
                                         <p className="text-sm text-muted-foreground mt-1">Tenha suas métricas organizadas e visíveis para marcas.</p>
                                     </div>
                                     <Button asChild className="w-full shrink-0 rounded-lg sm:w-auto">
-                                        <Link href="/criador/criar-conta">
+                                        <Link href="/creator/criar-conta">
                                             Criar minha conta <ArrowRight className="h-4 w-4" />
                                         </Link>
                                     </Button>

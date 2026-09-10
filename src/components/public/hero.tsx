@@ -170,7 +170,7 @@ export function Hero() {
                             />
                         </SpecularButton>
                         <Link
-                            href="/criador/criar-conta"
+                            href="/creator/criar-conta"
                             className="inline-flex h-14 items-center justify-center rounded-full border border-border px-8 text-base font-semibold transition-colors hover:border-brand-terracota hover:bg-accent"
                         >
                             Sou criador
