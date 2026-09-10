@@ -7,21 +7,12 @@ import { motion } from "framer-motion"
 import { ArrowRight, Search } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { BLOG_FILTROS } from "@/lib/constants/blog"
 import { MapaTerritorio } from "./mapa-territorio"
 import type { PostResumo } from "./blog-hero"
 
 /** Página do blog: abertura, filtros, artigo em destaque e posts recentes. */
 
-const CATEGORIAS = [
-    "Todos",
-    "Creators",
-    "Marcas",
-    "Campanhas",
-    "Mercado",
-    "Cultura",
-    "Bastidores",
-    "Norte e Nordeste",
-]
 
 const EIXOS = ["Pessoas", "Território", "Cultura", "Autenticidade", "Movimento"]
 
@@ -143,7 +134,7 @@ export function BlogPagina({
             <section className="mx-auto w-full max-w-[1600px] px-6 pt-10">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <ul className="flex flex-wrap gap-2">
-                        {CATEGORIAS.map((c) => {
+                        {BLOG_FILTROS.map((c) => {
                             const ativa = c === categoria
                             return (
                                 <li key={c}>

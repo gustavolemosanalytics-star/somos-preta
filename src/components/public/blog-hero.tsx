@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { ArrowDownRight, ArrowRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { BLOG_FILTROS } from "@/lib/constants/blog"
 import { Masonry, type MasonryItem } from "./masonry"
 
 /**
@@ -21,8 +22,6 @@ export type PostResumo = {
     categoria: string | null
     publicado_em: string | null
 }
-
-const CATEGORIAS = ["Todos", "Creators", "Marcas", "Mercado", "Norte e Nordeste", "Cases", "Dicas"]
 
 const EIXOS = ["Ideias", "Estratégias", "Cases", "Pessoas", "Tendências"]
 
@@ -128,7 +127,7 @@ export function BlogConteudo({
                         </p>
 
                         <ul className="mt-8 flex flex-wrap gap-2.5">
-                            {CATEGORIAS.map((c) => {
+                            {BLOG_FILTROS.map((c) => {
                                 const ativa = c === categoria
                                 return (
                                     <li key={c}>

@@ -22,6 +22,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Newspaper, Plus, Loader2, Trash2, ExternalLink, Pencil } from "lucide-react"
 import { toast } from "sonner"
+import { BLOG_CATEGORIAS } from "@/lib/constants/blog"
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select"
+import { revalidarBlog } from "./actions"
 
 const slugify = (s: string) =>
     s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "post"
@@ -74,6 +79,7 @@ export default function BlogAdminPage() {
         }
         setSaving(false)
         if (!saved) { toast.error("Slug em uso, tente outro título"); return }
+        await revalidarBlog()
         toast.success("Post criado")
         setOpen(false)
         setForm({ titulo: "", categoria: "", resumo: "", conteudo: "", cover_url: "", status: "rascunho" })
@@ -87,12 +93,15 @@ export default function BlogAdminPage() {
             status: novo,
             publicado_em: novo === "publicado" ? (p.publicado_em ?? new Date().toISOString()) : p.publicado_em,
         }).eq("id", p.id)
-        if (error) { toast.error("Erro ao atualizar"); load() }
+        if (error) { toast.error("Erro ao atualizar"); load(); return }
+        await revalidarBlog(p.slug)
+        toast.success(novo === "publicado" ? "Post publicado" : "Post despublicado")
     }
 
     async function handleDelete(p: BlogPost) {
         const { error } = await supabase.from("somos_preta_blog_posts").delete().eq("id", p.id)
         if (error) { toast.error("Erro ao excluir"); return }
+        await revalidarBlog(p.slug)
         toast.success("Post excluído")
         load()
     }
@@ -117,6 +126,7 @@ export default function BlogAdminPage() {
         }).eq("id", editing.id)
         setEditSaving(false)
         if (error) { toast.error("Erro ao atualizar"); return }
+        await revalidarBlog(editing.slug)
         toast.success("Post atualizado")
         setEditing(null)
         load()
@@ -143,7 +153,15 @@ export default function BlogAdminPage() {
                                     <Input id="titulo" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2"><Label htmlFor="cat">Categoria</Label><Input id="cat" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} /></div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="cat">Categoria</Label>
+                                        <Select value={form.categoria} onValueChange={(v) => setForm({ ...form, categoria: v })}>
+                                            <SelectTrigger id="cat"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                            <SelectContent>
+                                                {BLOG_CATEGORIAS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     <div className="grid gap-2"><Label htmlFor="cover">Imagem de capa (URL)</Label><Input id="cover" type="url" value={form.cover_url} onChange={(e) => setForm({ ...form, cover_url: e.target.value })} /></div>
                                 </div>
                                 <div className="grid gap-2">
@@ -243,7 +261,15 @@ export default function BlogAdminPage() {
                                 <Input id="edit-titulo" value={editForm.titulo} onChange={(e) => setEditForm({ ...editForm, titulo: e.target.value })} required />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2"><Label htmlFor="edit-cat">Categoria</Label><Input id="edit-cat" value={editForm.categoria} onChange={(e) => setEditForm({ ...editForm, categoria: e.target.value })} /></div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit-cat">Categoria</Label>
+                                    <Select value={editForm.categoria} onValueChange={(v) => setEditForm({ ...editForm, categoria: v })}>
+                                        <SelectTrigger id="edit-cat"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                                        <SelectContent>
+                                            {BLOG_CATEGORIAS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                                 <div className="grid gap-2"><Label htmlFor="edit-cover">Imagem de capa (URL)</Label><Input id="edit-cover" type="url" value={editForm.cover_url} onChange={(e) => setEditForm({ ...editForm, cover_url: e.target.value })} /></div>
                             </div>
                             <div className="grid gap-2">
