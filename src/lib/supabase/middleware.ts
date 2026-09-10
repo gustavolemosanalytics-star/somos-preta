@@ -24,7 +24,7 @@ function isPublic(pathname: string) {
     )
 }
 
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest, pathnameEfetivo?: string) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     // Se o Supabase ainda não estiver configurado (ex.: env não setada na Vercel),
@@ -59,7 +59,7 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    const pathname = request.nextUrl.pathname
+    const pathname = pathnameEfetivo ?? request.nextUrl.pathname
 
     // Não logado tentando acessar rota protegida -> login da área correspondente.
     // Quem tenta a área do creator vai para o login do creator: mandá-lo para o

@@ -40,6 +40,9 @@ const legacyMidiaKitPaths = [
   "/midia-kit/criar",
 ];
 
+// Condição para excluir o subdomínio da plataforma de um redirect.
+const HOST_PLATAFORMA = [{ type: "host" as const, value: "plataforma.somospreta.com" }]
+
 // A área do creator saiu de /criador para /creator; estes redirects preservam
 // links, bookmarks e e-mails já enviados apontando para a rota antiga.
 const criadorParaCreator: [string, string][] = [
@@ -58,9 +61,13 @@ const nextConfig: NextConfig = {
         { source: from, destination: to, permanent: false },
         { source: `${from}/:path*`, destination: `${to}/:path*`, permanent: false },
       ]),
+      // Estes redirects levam rotas antigas para o prefixo /app. No subdomínio da
+      // plataforma o prefixo não existe na URL — /dashboard já É o dashboard —,
+      // então ali eles não podem valer: rodam antes do middleware e roubariam a
+      // rota antes do rewrite acontecer.
       ...routeMap.flatMap(([from, to]) => [
-        { source: from, destination: to, permanent: false },
-        { source: `${from}/:path*`, destination: `${to}/:path*`, permanent: false },
+        { source: from, destination: to, permanent: false, missing: HOST_PLATAFORMA },
+        { source: `${from}/:path*`, destination: `${to}/:path*`, permanent: false, missing: HOST_PLATAFORMA },
       ]),
     ];
   },
