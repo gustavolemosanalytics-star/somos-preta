@@ -20,26 +20,26 @@ import { LINK_CONTATO } from "@/lib/constants/contato"
 const PAINEIS = [
     {
         legenda: "Talento",
-        src: "/quem-somos/talento.svg",
+        src: "/quem-somos/talento.webp",
         alt: "Criador de conteúdo com dreadlocks sorrindo ao ar livre",
         inclinacao: "-rotate-[3.5deg]",
     },
     {
         legenda: "Território",
-        src: "/quem-somos/territorio.svg",
-        alt: "Forte histórico à beira-mar no litoral nordestino",
+        src: "/quem-somos/territorio.webp",
+        alt: "Farol da Barra e o forte de Santo Antônio, em Salvador",
         inclinacao: "rotate-2",
     },
     {
         legenda: "Cultura",
-        src: "/quem-somos/cultura.svg",
-        alt: "Criadora de cabelo cacheado rindo",
+        src: "/quem-somos/cultura.webp",
+        alt: "Criadora de cabelo cacheado rindo diante de uma parede terracota",
         inclinacao: "-rotate-2",
     },
     {
         legenda: "Oportunidades",
-        src: "/quem-somos/oportunidades.svg",
-        alt: "Criador de chapéu em uma paisagem de campo",
+        src: "/quem-somos/oportunidades.webp",
+        alt: "Criador de chapéu de palha caminhando por uma trilha à beira-mar",
         inclinacao: "rotate-[3.5deg]",
     },
 ]
@@ -137,7 +137,6 @@ export function QuemSomos() {
                                                     alt={painel.alt}
                                                     fill
                                                     sizes="(max-width: 1024px) 45vw, 18vw"
-                                                    unoptimized={painel.src.endsWith(".svg")}
                                                     className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                                                 />
                                             </span>

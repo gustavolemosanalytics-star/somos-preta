@@ -29,13 +29,13 @@ const EIXOS = ["Ideias", "Estratégias", "Cases", "Pessoas", "Tendências"]
 /** Capas de reserva para posts ainda sem imagem própria. */
 const CAPAS_RESERVA = [
     "/hero/criadora-principal.webp",
-    "/quem-somos/territorio.svg",
+    "/quem-somos/territorio.webp",
     "/hero/criador-chapeu.webp",
-    "/quem-somos/cultura.svg",
+    "/quem-somos/cultura.webp",
     "/hero/paisagem-falesias.webp",
-    "/quem-somos/talento.svg",
+    "/quem-somos/talento.webp",
     "/hero/criadora-cacheada.webp",
-    "/quem-somos/oportunidades.svg",
+    "/quem-somos/oportunidades.webp",
 ]
 
 /**
