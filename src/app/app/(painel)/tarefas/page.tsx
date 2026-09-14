@@ -2,719 +2,638 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
-import { useProfiles } from "@/hooks/use-profiles"
-import type { Tarefa, TarefaStatus, TarefaPrioridade } from "@/lib/db/types"
-import { TAREFA_STATUS, TAREFA_STATUS_ORDEM, TAREFA_PRIORIDADE, tarefaPrazoBadge } from "@/lib/constants/tarefas"
-import { UserAvatar, UserPicker, UserMultiPicker } from "@/components/tarefas/user-picker"
-import { InfluencerPicker } from "@/components/tarefas/influencer-picker"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Switch } from "@/components/ui/switch"
-import { DropdownSelect } from "@/components/ui/dropdown-select"
 import {
-    Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription,
-} from "@/components/ui/dialog"
-import {
-    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-    DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
-} from "@/components/ui/dropdown-menu"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-    Archive, ArchiveRestore, ClipboardList, Copy, Filter, FolderInput, Kanban, List, Loader2,
-    MoreHorizontal, Plus, Search, Tag, Trash2, X, ArrowRightLeft,
+    AlertTriangle, CalendarDays, CheckCircle2, ClipboardList, Clock, Inbox,
+    Loader2, Plus, Timer, TriangleAlert, UserRound,
 } from "lucide-react"
 import { toast } from "sonner"
 
-type TarefaComCampanha = Tarefa & { campanha: { id: string; nome: string } | null }
-type CampanhaOpcao = { id: string; nome: string }
-type ProgressoSubtarefas = { total: number; concluidas: number }
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { BarraFiltros } from "@/components/painel/barra-filtros"
+import { FeedAtividade, type ItemAtividade } from "@/components/painel/feed-atividade"
+import { MetricaCard } from "@/components/painel/metrica-card"
+import { Paginacao } from "@/components/painel/paginacao"
+import { UserAvatar } from "@/components/tarefas/user-picker"
+import { useProfiles } from "@/hooks/use-profiles"
+import { dataCurta } from "@/lib/constants/blog"
+import {
+    TAREFA_PRIORIDADE, TAREFA_STATUS, TAREFA_STATUS_ABERTOS,
+    TAREFA_STATUS_ORDEM, tarefaPrazoBadge,
+} from "@/lib/constants/tarefas"
+import { createClient } from "@/lib/supabase/client"
+import type { Area, TarefaMetrica, TarefaPrioridade, TarefaStatus } from "@/lib/db/types"
+import { cn } from "@/lib/utils"
+import { Board } from "./board"
+import { Calendario } from "./calendario"
+import { ListaTarefas } from "./lista"
+import { TarefaDialog } from "./tarefa-dialog"
+import {
+    VISAO_LABEL, VISOES, type MapaMetricas, type TarefaDaLista, type Visao,
+} from "./tipos"
 
-const FILTROS: { value: TarefaStatus | "todas"; label: string }[] = [
-    { value: "todas", label: "Todas" },
-    ...TAREFA_STATUS_ORDEM.map((s) => ({ value: s, label: TAREFA_STATUS[s].label })),
+const TODOS = "__todos__"
+const TODAS_AREAS = "__todas__"
+
+const COLUNAS = `
+    *,
+    campanha:somos_preta_campanhas(id, nome, cliente:somos_preta_clientes(id, nome)),
+    area:somos_preta_areas(id, nome, cor)
+`
+
+const PRIORIDADES: TarefaPrioridade[] = ["urgente", "alta", "media", "baixa"]
+
+const PRAZOS = [
+    { value: TODOS, label: "Prazo: todos" },
+    { value: "hoje", label: "Vence hoje" },
+    { value: "semana", label: "Próximos 7 dias" },
+    { value: "atrasadas", label: "Atrasadas" },
+    { value: "sem", label: "Sem prazo" },
 ]
-
-function CardTarefa({ t, profilesById, progresso, onExcluir, onDuplicar, onMover, onArquivar, onMudarStatus }: {
-    t: TarefaComCampanha
-    profilesById: Map<string, { nome: string | null; avatar_url: string | null }>
-    progresso?: ProgressoSubtarefas
-    onExcluir: (t: TarefaComCampanha) => void
-    onDuplicar: (t: TarefaComCampanha) => void
-    onMover: (t: TarefaComCampanha) => void
-    onArquivar: (t: TarefaComCampanha) => void
-    onMudarStatus: (t: TarefaComCampanha, status: TarefaStatus) => void
-}) {
-    const prazo = tarefaPrazoBadge(t)
-    const responsavel = t.responsavel ? profilesById.get(t.responsavel) : null
-    const pct = progresso && progresso.total > 0 ? Math.round((progresso.concluidas / progresso.total) * 100) : null
-
-    return (
-        <Card className={t.arquivada ? "opacity-60" : undefined}>
-            <CardContent className="p-3 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                    <Link href={`/app/tarefas/${t.id}`} className="min-w-0 flex-1">
-                        <p className={`font-medium text-sm truncate hover:text-primary ${t.status === "concluida" ? "line-through text-muted-foreground" : ""}`}>
-                            {t.titulo}
-                        </p>
-                    </Link>
-                    <div className="flex items-center shrink-0">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" aria-label="Mais ações" title="Mais ações">
-                                    <MoreHorizontal className="h-3.5 w-3.5" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => onDuplicar(t)}><Copy className="h-4 w-4" /> Duplicar</DropdownMenuItem>
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger><ArrowRightLeft className="h-4 w-4" /> Mudar status</DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent>
-                                        {TAREFA_STATUS_ORDEM.map((s) => {
-                                            const bloqueado = s === "concluida" && t.evidencia_obrigatoria
-                                            return (
-                                                <DropdownMenuItem
-                                                    key={s}
-                                                    disabled={s === t.status || bloqueado}
-                                                    onClick={() => onMudarStatus(t, s)}
-                                                    title={bloqueado ? "Esta tarefa exige evidência — conclua pela página da tarefa" : undefined}
-                                                >
-                                                    {TAREFA_STATUS[s].label}
-                                                </DropdownMenuItem>
-                                            )
-                                        })}
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-                                <DropdownMenuItem onClick={() => onMover(t)}><FolderInput className="h-4 w-4" /> Mover para campanha</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onArquivar(t)}>
-                                    {t.arquivada ? <><ArchiveRestore className="h-4 w-4" /> Desarquivar</> : <><Archive className="h-4 w-4" /> Arquivar</>}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" aria-label="Excluir tarefa" title="Excluir tarefa">
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Esta ação não pode ser desfeita. A tarefa &quot;{t.titulo}&quot; será removida permanentemente.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => onExcluir(t)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <span className={`text-xs font-medium ${TAREFA_PRIORIDADE[t.prioridade].className}`}>{TAREFA_PRIORIDADE[t.prioridade].label}</span>
-                    {prazo && <Badge className={prazo.className} variant="secondary">{prazo.label}</Badge>}
-                    {t.arquivada && <Badge variant="outline" className="text-muted-foreground"><Archive className="h-3 w-3" /></Badge>}
-                    {t.tags.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="bg-muted text-muted-foreground text-[10px]"><Tag className="h-2.5 w-2.5" /> {tag}</Badge>
-                    ))}
-                </div>
-                {pct !== null && (
-                    <div className="space-y-1">
-                        <Progress value={pct} className="h-1" />
-                        <p className="text-[10px] text-muted-foreground">{progresso!.concluidas}/{progresso!.total} subtarefas</p>
-                    </div>
-                )}
-                <div className="flex items-center justify-between gap-2">
-                    {t.campanha ? (
-                        <Link href={`/app/campanhas/${t.campanha.id}`} className="text-xs text-muted-foreground hover:text-primary truncate">
-                            {t.campanha.nome}
-                        </Link>
-                    ) : <span />}
-                    {responsavel && <UserAvatar profile={responsavel} className="shrink-0" />}
-                </div>
-            </CardContent>
-        </Card>
-    )
-}
 
 export default function TarefasPage() {
     const [supabase] = useState(() => createClient())
     const { profiles } = useProfiles()
-    const [tarefas, setTarefas] = useState<TarefaComCampanha[]>([])
-    const [progressos, setProgressos] = useState<Map<string, ProgressoSubtarefas>>(new Map())
-    const [campanhas, setCampanhas] = useState<CampanhaOpcao[]>([])
+
+    const [tarefas, setTarefas] = useState<TarefaDaLista[]>([])
+    const [campanhas, setCampanhas] = useState<{ id: string; nome: string; cliente_id: string | null }[]>([])
+    const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([])
+    const [areas, setAreas] = useState<Area[]>([])
+    const [metricas, setMetricas] = useState<MapaMetricas>(new Map())
+    const [atividades, setAtividades] = useState<ItemAtividade[]>([])
+    const [euId, setEuId] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
-    const [filtro, setFiltro] = useState<TarefaStatus | "todas">("todas")
-    const [visao, setVisao] = useState<"board" | "lista">("board")
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+    const [falhaSchema, setFalhaSchema] = useState(false)
+    // Relógio congelado no carregamento: lê-lo no render tornaria o componente
+    // impuro e os recortes por prazo mudariam a cada re-render.
+    const [agora, setAgora] = useState(0)
+
+    const [visao, setVisao] = useState<Visao>("board")
     const [busca, setBusca] = useState("")
+    const [area, setArea] = useState(TODAS_AREAS)
+    const [cliente, setCliente] = useState(TODOS)
+    const [campanha, setCampanha] = useState(TODOS)
+    const [responsavel, setResponsavel] = useState(TODOS)
+    const [prioridade, setPrioridade] = useState(TODOS)
+    const [prazo, setPrazo] = useState(TODOS)
+    const [status, setStatus] = useState(TODOS)
+    const [soMinhas, setSoMinhas] = useState(false)
     const [mostrarArquivadas, setMostrarArquivadas] = useState(false)
-    const [moverAlvo, setMoverAlvo] = useState<TarefaComCampanha | null>(null)
-    const [novaCampanhaId, setNovaCampanhaId] = useState("")
+    const [rapidos, setRapidos] = useState<Record<string, boolean>>({})
 
-    const [filtrosOpen, setFiltrosOpen] = useState(false)
-    const [filtroResponsavel, setFiltroResponsavel] = useState<string | null>(null)
-    const [filtroCampanhaId, setFiltroCampanhaId] = useState("todas")
-    const [filtroPrioridade, setFiltroPrioridade] = useState<TarefaPrioridade | "todas">("todas")
-    const [filtroPrazo, setFiltroPrazo] = useState<"todas" | "atrasadas" | "hoje" | "futuras" | "sem_prazo">("todas")
-    const [filtroTags, setFiltroTags] = useState<string[]>([])
+    const [pagina, setPagina] = useState(1)
+    const [porPagina, setPorPagina] = useState(10)
+    const [selecionados, setSelecionados] = useState<string[]>([])
 
-    const [open, setOpen] = useState(false)
-    const [saving, setSaving] = useState(false)
-    const [form, setForm] = useState({
-        campanha_id: "", titulo: "", descricao: "",
-        solicitante_id: null as string | null,
-        responsavel: null as string | null,
-        colaboradores: [] as string[],
-        influencer_id: null as string | null,
-        prioridade: "media" as TarefaPrioridade,
-        data_inicio: "", data_entrega: "", horario: "",
-    })
+    const [editando, setEditando] = useState<TarefaDaLista | null>(null)
+    const [statusInicial, setStatusInicial] = useState<TarefaStatus | undefined>()
+    const [dialogAberto, setDialogAberto] = useState(false)
+    const [aberturas, setAberturas] = useState(0)
+    const [excluindo, setExcluindo] = useState<TarefaDaLista | null>(null)
 
-    const profilesById = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles])
-
-    async function load() {
+    async function carregar() {
         setLoading(true)
-        const [{ data: ts }, { data: camps }, { data: { user } }, { data: subs }] = await Promise.all([
-            supabase.from("somos_preta_tarefas").select("*, campanha:somos_preta_campanhas(id, nome)").order("created_at", { ascending: false }),
-            supabase.from("somos_preta_campanhas").select("id, nome").order("nome"),
-            supabase.auth.getUser(),
-            supabase.from("somos_preta_subtarefas").select("tarefa_id, concluida"),
+        setAgora(Date.now())
+
+        const { data: { user } } = await supabase.auth.getUser()
+        setEuId(user?.id ?? null)
+
+        const [ts, camps, cls, ars, mets, atvs] = await Promise.all([
+            supabase.from("somos_preta_tarefas").select(COLUNAS).limit(2000),
+            supabase.from("somos_preta_campanhas").select("id, nome, cliente_id").order("nome"),
+            supabase.from("somos_preta_clientes").select("id, nome").order("nome"),
+            supabase.from("somos_preta_areas").select("*").order("ordem"),
+            supabase.rpc("somos_preta_tarefa_metricas"),
+            supabase.from("somos_preta_atividades")
+                .select("*, autor:somos_preta_profiles!autor_id(nome, email, avatar_url)")
+                .order("created_at", { ascending: false })
+                .limit(8),
         ])
-        setTarefas((ts as TarefaComCampanha[]) ?? [])
-        setCampanhas((camps as CampanhaOpcao[]) ?? [])
-        setCurrentUserId(user?.id ?? null)
-        const mapa = new Map<string, ProgressoSubtarefas>()
-        for (const s of (subs as { tarefa_id: string; concluida: boolean }[]) ?? []) {
-            const atual = mapa.get(s.tarefa_id) ?? { total: 0, concluidas: 0 }
-            atual.total += 1
-            if (s.concluida) atual.concluidas += 1
-            mapa.set(s.tarefa_id, atual)
+
+        if (ts.error) { setFalhaSchema(true); setLoading(false); return }
+
+        setFalhaSchema(false)
+        setTarefas((ts.data ?? []) as unknown as TarefaDaLista[])
+        // Só substitui o que veio bem: com erro o Supabase devolve data null, e
+        // o `?? []` transformaria "não consegui ler" em "não existe nada".
+        if (!camps.error) setCampanhas((camps.data ?? []) as { id: string; nome: string; cliente_id: string | null }[])
+        if (!cls.error) setClientes((cls.data ?? []) as { id: string; nome: string }[])
+        if (!ars.error) setAreas((ars.data ?? []) as Area[])
+        if (!mets.error) {
+            setMetricas(new Map(((mets.data ?? []) as TarefaMetrica[]).map((m) => [m.tarefa_id, m])))
         }
-        setProgressos(mapa)
+        if (!atvs.error) setAtividades((atvs.data ?? []) as unknown as ItemAtividade[])
+
+        setSelecionados([])
         setLoading(false)
     }
 
     useEffect(() => {
-        load()
+        carregar()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    function abrirCriar() {
-        setForm({
-            campanha_id: "", titulo: "", descricao: "",
-            solicitante_id: currentUserId, responsavel: null, colaboradores: [], influencer_id: null,
-            prioridade: "media", data_inicio: "", data_entrega: "", horario: "",
-        })
-        setOpen(true)
+    function filtrar<T>(set: (v: T) => void) {
+        return (v: T) => { set(v); setPagina(1); setSelecionados([]) }
     }
 
-    async function criar() {
-        if (!form.titulo.trim() || !form.campanha_id) return
-        setSaving(true)
-        const { data, error } = await supabase.from("somos_preta_tarefas").insert({
-            campanha_id: form.campanha_id,
-            titulo: form.titulo.trim(),
-            descricao: form.descricao || null,
-            solicitante_id: form.solicitante_id,
-            responsavel: form.responsavel,
-            influencer_id: form.influencer_id,
-            prioridade: form.prioridade,
-            status: "backlog",
-            data_inicio: form.data_inicio || null,
-            data_entrega: form.data_entrega || null,
-            horario: form.horario || null,
-            created_by: currentUserId,
-        }).select("id").single()
+    const profilesById = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles])
+    const hoje = useMemo(() => new Date(agora || 0).toISOString().slice(0, 10), [agora])
+    const emSeteDias = useMemo(() => {
+        const d = new Date(agora || 0)
+        d.setDate(d.getDate() + 7)
+        return d.toISOString().slice(0, 10)
+    }, [agora])
 
-        if (error || !data) { toast.error("Não foi possível criar a tarefa"); setSaving(false); return }
+    // ------------------------------------------------------------- filtragem
 
-        if (form.colaboradores.length > 0) {
-            await supabase.from("somos_preta_tarefa_colaboradores").insert(
-                form.colaboradores.map((profile_id) => ({ tarefa_id: data.id, profile_id }))
+    const visiveis = useMemo(() => {
+        let r = tarefas.filter((t) => mostrarArquivadas || !t.arquivada)
+
+        // A aba "Minhas tarefas" é um recorte, não uma quinta visão: é a Lista
+        // já filtrada por quem está olhando.
+        if (visao === "minhas" || soMinhas) r = r.filter((t) => t.responsavel === euId)
+
+        const q = busca.trim().toLowerCase()
+        if (q) {
+            r = r.filter((t) =>
+                t.titulo.toLowerCase().includes(q)
+                || t.descricao?.toLowerCase().includes(q)
+                || t.campanha?.nome.toLowerCase().includes(q)
+                || t.tags.some((tag) => tag.toLowerCase().includes(q))
             )
         }
 
-        setSaving(false)
-        setOpen(false)
-        toast.success("Tarefa criada")
-        load()
+        if (area !== TODAS_AREAS) r = r.filter((t) => t.area_id === area)
+        if (cliente !== TODOS) r = r.filter((t) => t.campanha?.cliente?.id === cliente)
+        if (campanha !== TODOS) r = r.filter((t) => t.campanha_id === campanha)
+        if (responsavel !== TODOS) r = r.filter((t) => t.responsavel === responsavel)
+        if (prioridade !== TODOS) r = r.filter((t) => t.prioridade === prioridade)
+        if (status !== TODOS) r = r.filter((t) => t.status === status)
+
+        if (prazo === "hoje") r = r.filter((t) => t.data_entrega === hoje)
+        else if (prazo === "semana") r = r.filter((t) => t.data_entrega && t.data_entrega >= hoje && t.data_entrega <= emSeteDias)
+        else if (prazo === "atrasadas") r = r.filter((t) => t.data_entrega && t.data_entrega < hoje && TAREFA_STATUS_ABERTOS.includes(t.status))
+        else if (prazo === "sem") r = r.filter((t) => !t.data_entrega)
+
+        // Os filtros rápidos do calendário são aditivos entre si: marcar dois
+        // mostra a união, não a interseção — o contrário devolveria vazio quase
+        // sempre ("minhas" E "atrasadas" E "concluídas").
+        const ativos = Object.entries(rapidos).filter(([, v]) => v).map(([k]) => k)
+        if (ativos.length > 0) {
+            r = r.filter((t) => ativos.some((k) => {
+                switch (k) {
+                    case "minhas": return t.responsavel === euId
+                    case "atrasadas": return !!t.data_entrega && t.data_entrega < hoje && TAREFA_STATUS_ABERTOS.includes(t.status)
+                    case "semana": return !!t.data_entrega && t.data_entrega >= hoje && t.data_entrega <= emSeteDias
+                    case "terceiros": return t.status === "aguardando_terceiro"
+                    case "concluidas": return t.status === "concluida"
+                    default: return false
+                }
+            }))
+        }
+
+        return r
+    }, [
+        tarefas, visao, soMinhas, euId, busca, area, cliente, campanha, responsavel,
+        prioridade, status, prazo, hoje, emSeteDias, mostrarArquivadas, rapidos,
+    ])
+
+    const emLista = useMemo(
+        () => visiveis.slice().sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
+        [visiveis]
+    )
+
+    const totalPaginas = Math.max(1, Math.ceil(emLista.length / porPagina))
+    const paginaAtual = Math.min(pagina, totalPaginas)
+    const daPagina = emLista.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina)
+
+    const filtrosAtivos = busca.trim() !== "" || area !== TODAS_AREAS || cliente !== TODOS
+        || campanha !== TODOS || responsavel !== TODOS || prioridade !== TODOS
+        || prazo !== TODOS || status !== TODOS || soMinhas || mostrarArquivadas
+        || Object.values(rapidos).some(Boolean)
+
+    // --------------------------------------------------------------- métricas
+
+    const naoArquivadas = tarefas.filter((t) => !t.arquivada)
+    const abertas = naoArquivadas.filter((t) => TAREFA_STATUS_ABERTOS.includes(t.status))
+    const emAndamento = naoArquivadas.filter((t) => t.status === "em_andamento").length
+    const atrasadas = abertas.filter((t) => t.data_entrega && t.data_entrega < hoje).length
+    const naSemana = abertas.filter((t) => t.data_entrega && t.data_entrega >= hoje && t.data_entrega <= emSeteDias).length
+    const terceiros = naoArquivadas.filter((t) => t.status === "aguardando_terceiro").length
+    // Reabrir uma tarefa zera concluida_em, então esta métrica conta o que
+    // PERMANECE concluído — não o que foi concluído e depois reaberto.
+    const concluidas7 = agora === 0 ? 0 : naoArquivadas.filter((t) =>
+        t.concluida_em && new Date(t.concluida_em).getTime() >= agora - 7 * 24 * 60 * 60 * 1000
+    ).length
+
+    const proximasDoPrazo = useMemo(
+        () => abertas
+            .filter((t) => t.data_entrega)
+            .slice()
+            .sort((a, b) => a.data_entrega!.localeCompare(b.data_entrega!))
+            .slice(0, 5),
+        [abertas]
+    )
+
+    // ----------------------------------------------------------------- ações
+
+    async function mudarStatus(t: TarefaDaLista, novo: TarefaStatus) {
+        if (novo === t.status) return
+        if (novo === "concluida" && t.evidencia_obrigatoria) {
+            toast.error("Esta tarefa exige evidência — conclua pela página dela")
+            return
+        }
+        // Otimista: o board precisa responder no instante em que o card é solto.
+        setTarefas((ts) => ts.map((x) => (x.id === t.id ? { ...x, status: novo } : x)))
+
+        const { data, error } = await supabase
+            .from("somos_preta_tarefas")
+            .update({ status: novo, concluida_em: novo === "concluida" ? new Date().toISOString() : null })
+            .eq("id", t.id)
+            .select("id")
+
+        if (error || !data?.length) { toast.error("Não foi possível mudar o status"); carregar(); return }
+        toast.success(`Movida para ${TAREFA_STATUS[novo].label}`)
     }
 
-    async function excluir(t: TarefaComCampanha) {
-        const { error } = await supabase.from("somos_preta_tarefas").delete().eq("id", t.id)
-        if (error) { toast.error("Erro ao excluir"); return }
-        setTarefas((prev) => prev.filter((x) => x.id !== t.id))
-        toast.success("Tarefa excluída")
+    async function arquivar(t: TarefaDaLista) {
+        const { data, error } = await supabase
+            .from("somos_preta_tarefas")
+            .update({ arquivada: !t.arquivada })
+            .eq("id", t.id)
+            .select("id")
+        if (error || !data?.length) { toast.error("Não foi possível arquivar"); return }
+        toast.success(t.arquivada ? "Tarefa desarquivada" : "Tarefa arquivada")
+        carregar()
     }
 
-    async function duplicar(t: TarefaComCampanha) {
+    async function duplicar(t: TarefaDaLista) {
+        const { data: { user } } = await supabase.auth.getUser()
         const { error } = await supabase.from("somos_preta_tarefas").insert({
             campanha_id: t.campanha_id,
             titulo: `${t.titulo} (cópia)`,
             descricao: t.descricao,
             prioridade: t.prioridade,
-            status: "backlog",
-            solicitante_id: t.solicitante_id,
+            area_id: t.area_id,
             responsavel: t.responsavel,
-            influencer_id: t.influencer_id,
             data_entrega: t.data_entrega,
+            horario: t.horario,
+            duracao_minutos: t.duracao_minutos,
             tags: t.tags,
+            // A cópia nasce no backlog: duplicar não é reabrir trabalho em curso.
+            status: "backlog" as TarefaStatus,
+            created_by: user?.id ?? null,
         })
-        if (error) { toast.error("Erro ao duplicar"); return }
-        toast.success("Tarefa duplicada")
-        load()
+        if (error) { toast.error("Não foi possível duplicar"); return }
+        toast.success("Cópia criada no backlog")
+        carregar()
     }
 
-    async function arquivar(t: TarefaComCampanha) {
-        const { error } = await supabase.from("somos_preta_tarefas").update({ arquivada: !t.arquivada }).eq("id", t.id)
-        if (error) { toast.error("Erro ao atualizar"); return }
-        toast.success(t.arquivada ? "Tarefa desarquivada" : "Tarefa arquivada")
-        load()
+    async function excluirTarefa(t: TarefaDaLista) {
+        const { error } = await supabase.from("somos_preta_tarefas").delete().eq("id", t.id)
+        setExcluindo(null)
+        if (error) { toast.error("Não foi possível excluir"); return }
+        toast.success("Tarefa excluída")
+        carregar()
     }
 
-    function abrirMover(t: TarefaComCampanha) {
-        setMoverAlvo(t)
-        setNovaCampanhaId(t.campanha_id)
-    }
-
-    async function confirmarMover() {
-        if (!moverAlvo || !novaCampanhaId) return
-        const { error } = await supabase.from("somos_preta_tarefas").update({ campanha_id: novaCampanhaId }).eq("id", moverAlvo.id)
-        if (error) { toast.error("Erro ao mover"); return }
-        toast.success("Tarefa movida")
-        setMoverAlvo(null)
-        load()
-    }
-
-    async function mudarStatusRapido(t: TarefaComCampanha, status: TarefaStatus) {
-        if (status === t.status) return
-        if (status === "concluida" && t.evidencia_obrigatoria) {
-            toast.error("Esta tarefa exige evidência de conclusão — abra a tarefa para concluir")
-            return
-        }
-        const { error } = await supabase.from("somos_preta_tarefas").update({
-            status, concluida_em: status === "concluida" ? new Date().toISOString() : null,
-        }).eq("id", t.id)
-        if (error) { toast.error("Erro ao mudar status"); return }
-        toast.success("Status atualizado")
-        load()
+    function abrirDialogo(t: TarefaDaLista | null, status?: TarefaStatus) {
+        setEditando(t)
+        setStatusInicial(status)
+        setAberturas((n) => n + 1)
+        setDialogAberto(true)
     }
 
     function limparFiltros() {
-        setFiltroResponsavel(null)
-        setFiltroCampanhaId("todas")
-        setFiltroPrioridade("todas")
-        setFiltroPrazo("todas")
-        setFiltroTags([])
+        setBusca(""); setArea(TODAS_AREAS); setCliente(TODOS); setCampanha(TODOS)
+        setResponsavel(TODOS); setPrioridade(TODOS); setPrazo(TODOS); setStatus(TODOS)
+        setSoMinhas(false); setMostrarArquivadas(false); setRapidos({})
+        setPagina(1); setSelecionados([])
     }
 
-    const filtrosAtivosCount = [
-        filtroResponsavel !== null,
-        filtroCampanhaId !== "todas",
-        filtroPrioridade !== "todas",
-        filtroPrazo !== "todas",
-        filtroTags.length > 0,
-    ].filter(Boolean).length
+    // ---------------------------------------------------------------- render
 
-    const todasTags = useMemo(
-        () => Array.from(new Set(tarefas.flatMap((t) => t.tags))).sort(),
-        [tarefas]
-    )
-
-    const visiveis = useMemo(() => {
-        const q = busca.trim().toLowerCase()
-        const hoje = new Date().toISOString().slice(0, 10)
-        return tarefas.filter((t) => {
-            if (!mostrarArquivadas && t.arquivada) return false
-            if (q && !t.titulo.toLowerCase().includes(q)) return false
-            if (filtroResponsavel && t.responsavel !== filtroResponsavel) return false
-            if (filtroCampanhaId !== "todas" && t.campanha_id !== filtroCampanhaId) return false
-            if (filtroPrioridade !== "todas" && t.prioridade !== filtroPrioridade) return false
-            if (filtroPrazo !== "todas") {
-                const badge = tarefaPrazoBadge(t)
-                if (filtroPrazo === "atrasadas" && badge?.label !== "Atrasada") return false
-                if (filtroPrazo === "hoje" && badge?.label !== "Vence hoje") return false
-                if (filtroPrazo === "sem_prazo" && t.data_entrega) return false
-                if (filtroPrazo === "futuras" && !(t.data_entrega && t.data_entrega > hoje)) return false
-            }
-            if (filtroTags.length > 0 && !filtroTags.every((tag) => t.tags.includes(tag))) return false
-            return true
-        })
-    }, [tarefas, busca, mostrarArquivadas, filtroResponsavel, filtroCampanhaId, filtroPrioridade, filtroPrazo, filtroTags])
-
-    const filtradas = useMemo(
-        () => (filtro === "todas" ? visiveis : visiveis.filter((t) => t.status === filtro)),
-        [visiveis, filtro]
-    )
-
-    const contagem = (s: TarefaStatus) => visiveis.filter((t) => t.status === s).length
-    const atrasadas = visiveis.filter((t) => tarefaPrazoBadge(t)?.label === "Atrasada").length
-    const venceHoje = visiveis.filter((t) => tarefaPrazoBadge(t)?.label === "Vence hoje").length
+    const campanhasFiltradas = cliente === TODOS
+        ? campanhas
+        : campanhas.filter((c) => c.cliente_id === cliente)
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+        <div className="space-y-5 sm:space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
                         <ClipboardList className="h-6 w-6 text-primary" /> Tarefas
                     </h1>
-                    <p className="text-muted-foreground text-sm">Todas as tarefas das campanhas em um só lugar.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Organize e acompanhe todas as demandas da PRETA. Em um só lugar.
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center rounded-xl border p-0.5">
-                        <Button variant={visao === "board" ? "default" : "ghost"} size="sm" className="rounded-lg h-8" onClick={() => setVisao("board")}>
-                            <Kanban className="h-4 w-4" /> Board
-                        </Button>
-                        <Button variant={visao === "lista" ? "default" : "ghost"} size="sm" className="rounded-lg h-8" onClick={() => setVisao("lista")}>
-                            <List className="h-4 w-4" /> Lista
-                        </Button>
-                    </div>
-                    <Dialog open={open} onOpenChange={setOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="rounded-xl" onClick={abrirCriar}><Plus className="h-4 w-4" /> Nova tarefa</Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                                <DialogTitle>Nova tarefa</DialogTitle>
-                                <DialogDescription>Defina responsabilidade, prazo e prioridade.</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-2">
-                                <div className="space-y-1.5">
-                                    <Label>Campanha *</Label>
-                                    <DropdownSelect
-                                        value={form.campanha_id}
-                                        onValueChange={(v) => setForm({ ...form, campanha_id: v })}
-                                        options={campanhas.map((c) => ({ value: c.id, label: c.nome }))}
-                                        placeholder="Selecionar campanha"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="titulo">Título *</Label>
-                                    <Input id="titulo" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="descricao">Descrição</Label>
-                                    <Textarea id="descricao" rows={3} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <Label>Solicitante</Label>
-                                        <UserPicker value={form.solicitante_id} onChange={(v) => setForm({ ...form, solicitante_id: v })} placeholder="Quem solicitou" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label>Responsável principal</Label>
-                                        <UserPicker value={form.responsavel} onChange={(v) => setForm({ ...form, responsavel: v })} placeholder="Quem responde" />
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label>Colaboradores</Label>
-                                    <UserMultiPicker values={form.colaboradores} onChange={(v) => setForm({ ...form, colaboradores: v })} />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label>Criador</Label>
-                                    <InfluencerPicker value={form.influencer_id} onChange={(v) => setForm({ ...form, influencer_id: v })} placeholder="Vincular um criador (opcional)" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <Label>Prioridade</Label>
-                                        <DropdownSelect
-                                            value={form.prioridade}
-                                            onValueChange={(v) => setForm({ ...form, prioridade: v as TarefaPrioridade })}
-                                            options={Object.entries(TAREFA_PRIORIDADE).map(([k, m]) => ({ value: k, label: m.label }))}
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="horario">Horário</Label>
-                                        <Input id="horario" type="time" value={form.horario} onChange={(e) => setForm({ ...form, horario: e.target.value })} />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="inicio">Início</Label>
-                                        <Input id="inicio" type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="entrega">Prazo</Label>
-                                        <Input id="entrega" type="date" value={form.data_entrega} onChange={(e) => setForm({ ...form, data_entrega: e.target.value })} />
-                                    </div>
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                                <Button onClick={criar} disabled={saving || !form.titulo.trim() || !form.campanha_id}>
-                                    {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Criar tarefa
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                <Button className="rounded-xl" onClick={() => abrirDialogo(null)}>
+                    <Plus className="h-4 w-4" /> Nova tarefa
+                </Button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Card><CardContent className="py-4">
-                    <p className="text-2xl font-bold">{visiveis.length}</p>
-                    <p className="text-xs text-muted-foreground">Total</p>
-                </CardContent></Card>
-                <Card><CardContent className="py-4">
-                    <p className="text-2xl font-bold">{contagem("em_andamento")}</p>
-                    <p className="text-xs text-muted-foreground">Em andamento</p>
-                </CardContent></Card>
-                <Card><CardContent className="py-4">
-                    <p className="text-2xl font-bold text-status-atencao">{venceHoje}</p>
-                    <p className="text-xs text-muted-foreground">Vence hoje</p>
-                </CardContent></Card>
-                <Card><CardContent className="py-4">
-                    <p className="text-2xl font-bold text-status-erro">{atrasadas}</p>
-                    <p className="text-xs text-muted-foreground">Atrasadas</p>
-                </CardContent></Card>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="relative max-w-sm flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Buscar por título..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9 rounded-xl" />
-                </div>
-                <Popover open={filtrosOpen} onOpenChange={setFiltrosOpen}>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="rounded-xl">
-                            <Filter className="h-4 w-4" /> Filtros
-                            {filtrosAtivosCount > 0 && <Badge className="ml-1 h-5 min-w-5 px-1 justify-center">{filtrosAtivosCount}</Badge>}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] space-y-3" align="start">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Responsável</Label>
-                            <UserPicker value={filtroResponsavel} onChange={setFiltroResponsavel} placeholder="Qualquer um" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Campanha</Label>
-                            <DropdownSelect
-                                value={filtroCampanhaId}
-                                onValueChange={setFiltroCampanhaId}
-                                options={[{ value: "todas", label: "Todas" }, ...campanhas.map((c) => ({ value: c.id, label: c.nome }))]}
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Prioridade</Label>
-                            <DropdownSelect
-                                value={filtroPrioridade}
-                                onValueChange={(v) => setFiltroPrioridade(v as TarefaPrioridade | "todas")}
-                                options={[{ value: "todas", label: "Todas" }, ...Object.entries(TAREFA_PRIORIDADE).map(([k, m]) => ({ value: k, label: m.label }))]}
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Prazo</Label>
-                            <DropdownSelect
-                                value={filtroPrazo}
-                                onValueChange={(v) => setFiltroPrazo(v as typeof filtroPrazo)}
-                                options={[
-                                    { value: "todas", label: "Todas" },
-                                    { value: "atrasadas", label: "Atrasadas" },
-                                    { value: "hoje", label: "Vence hoje" },
-                                    { value: "futuras", label: "Futuras" },
-                                    { value: "sem_prazo", label: "Sem prazo" },
-                                ]}
-                            />
-                        </div>
-                        {todasTags.length > 0 && (
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-muted-foreground">Tags</Label>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {todasTags.map((tag) => (
-                                        <Badge
-                                            key={tag}
-                                            variant={filtroTags.includes(tag) ? "default" : "outline"}
-                                            className="cursor-pointer"
-                                            onClick={() => setFiltroTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag])}
-                                        >
-                                            <Tag className="h-2.5 w-2.5" /> {tag}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
+            <div className="flex flex-wrap gap-1 border-b">
+                {VISOES.map((v) => (
+                    <button
+                        key={v}
+                        type="button"
+                        onClick={() => { setVisao(v); setPagina(1) }}
+                        aria-current={visao === v ? "true" : undefined}
+                        className={cn(
+                            "flex h-auto min-h-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition-colors",
+                            visao === v
+                                ? "border-primary font-medium text-foreground"
+                                : "border-transparent text-muted-foreground hover:text-foreground",
                         )}
-                        {filtrosAtivosCount > 0 && (
-                            <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={limparFiltros}>
-                                <X className="h-4 w-4" /> Limpar filtros
-                            </Button>
-                        )}
-                    </PopoverContent>
-                </Popover>
-                <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Switch checked={mostrarArquivadas} onCheckedChange={setMostrarArquivadas} /> Mostrar arquivadas
-                </label>
+                    >
+                        {v === "minhas" && <UserRound className="h-4 w-4" />}
+                        {v === "board" && <ClipboardList className="h-4 w-4" />}
+                        {v === "lista" && <Inbox className="h-4 w-4" />}
+                        {v === "calendario" && <CalendarDays className="h-4 w-4" />}
+                        {VISAO_LABEL[v]}
+                    </button>
+                ))}
             </div>
 
-            <Dialog open={!!moverAlvo} onOpenChange={(o) => { if (!o) setMoverAlvo(null) }}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Mover tarefa</DialogTitle>
-                        <DialogDescription>Escolha a campanha de destino para &quot;{moverAlvo?.titulo}&quot;.</DialogDescription>
-                    </DialogHeader>
-                    <DropdownSelect
-                        value={novaCampanhaId}
-                        onValueChange={setNovaCampanhaId}
-                        options={campanhas.map((c) => ({ value: c.id, label: c.nome }))}
-                        placeholder="Selecionar campanha"
-                    />
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setMoverAlvo(null)}>Cancelar</Button>
-                        <Button onClick={confirmarMover} disabled={!novaCampanhaId || novaCampanhaId === moverAlvo?.campanha_id}>Mover</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {loading ? (
-                <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
-            ) : tarefas.length === 0 ? (
-                <Card><CardContent className="py-14 text-center text-muted-foreground">
-                    <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                    <p className="font-medium">Nenhuma tarefa ainda</p>
-                </CardContent></Card>
-            ) : visao === "board" ? (
-                <div className="flex gap-4 overflow-x-auto pb-2">
-                    {TAREFA_STATUS_ORDEM.map((s) => {
-                        const doStatus = visiveis.filter((t) => t.status === s)
-                        return (
-                            <div key={s} className="w-[280px] shrink-0 space-y-3">
-                                <div className="flex items-center justify-between px-1">
-                                    <h3 className="text-sm font-semibold">{TAREFA_STATUS[s].label}</h3>
-                                    <Badge variant="secondary" className={TAREFA_STATUS[s].className}>{doStatus.length}</Badge>
-                                </div>
-                                <div className="space-y-2 min-h-[40px]">
-                                    {doStatus.map((t) => (
-                                        <CardTarefa
-                                            key={t.id}
-                                            t={t}
-                                            profilesById={profilesById}
-                                            progresso={progressos.get(t.id)}
-                                            onExcluir={excluir}
-                                            onDuplicar={duplicar}
-                                            onMover={abrirMover}
-                                            onArquivar={arquivar}
-                                            onMudarStatus={mudarStatusRapido}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
+            {falhaSchema ? (
+                <Card className="border-status-atencao/40 bg-status-atencao/5">
+                    <CardContent className="flex items-start gap-3 p-5">
+                        <AlertTriangle className="h-5 w-5 shrink-0 text-status-atencao" />
+                        <div className="text-sm">
+                            <p className="font-medium">A tela precisa das migrations do painel.</p>
+                            <p className="mt-1 text-muted-foreground">
+                                Aplique <code className="rounded bg-muted px-1 py-0.5 text-xs">0019_painel_enums.sql</code> e{" "}
+                                <code className="rounded bg-muted px-1 py-0.5 text-xs">0020_painel_operacao.sql</code>, nessa ordem.
+                            </p>
+                            <Button variant="outline" size="sm" className="mt-3 rounded-xl" onClick={carregar}>Tentar de novo</Button>
+                        </div>
+                    </CardContent>
+                </Card>
             ) : (
                 <>
-                    <div className="flex flex-wrap gap-2">
-                        {FILTROS.map((f) => (
-                            <Button key={f.value} variant={filtro === f.value ? "default" : "outline"} size="sm" className="rounded-full" onClick={() => setFiltro(f.value)}>
-                                {f.label}
-                            </Button>
-                        ))}
+                    <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+                        <MetricaCard icone={<Inbox className="h-5 w-5" />} cor="bg-status-info/12 text-status-info"
+                            valor={abertas.length} rotulo="Tarefas abertas" />
+                        <MetricaCard icone={<Clock className="h-5 w-5" />} cor="bg-status-progresso/12 text-status-progresso"
+                            valor={emAndamento} rotulo="Em andamento"
+                            onClick={() => filtrar(setStatus)("em_andamento")} />
+                        <MetricaCard icone={<TriangleAlert className="h-5 w-5" />} cor="bg-status-erro/12 text-status-erro"
+                            valor={atrasadas} rotulo="Atrasadas"
+                            destaque={atrasadas > 0 ? "erro" : undefined}
+                            onClick={() => filtrar(setPrazo)("atrasadas")} />
+                        <MetricaCard icone={<CalendarDays className="h-5 w-5" />} cor="bg-primary/12 text-primary"
+                            valor={naSemana} rotulo="Vencem esta semana"
+                            onClick={() => filtrar(setPrazo)("semana")} />
+                        <MetricaCard icone={<Timer className="h-5 w-5" />} cor="bg-status-atencao/12 text-status-atencao"
+                            valor={terceiros} rotulo="Aguardando terceiros"
+                            onClick={() => filtrar(setStatus)("aguardando_terceiro")} />
+                        <MetricaCard icone={<CheckCircle2 className="h-5 w-5" />} cor="bg-status-sucesso/12 text-status-sucesso"
+                            valor={concluidas7} rotulo="Concluídas (7 dias)" />
                     </div>
-                    {filtradas.length === 0 ? (
-                        <Card><CardContent className="py-14 text-center text-muted-foreground">
-                            <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-40" />
+
+                    <BarraFiltros
+                        busca={busca}
+                        onBusca={filtrar(setBusca)}
+                        placeholder="Buscar tarefas..."
+                        ativos={filtrosAtivos}
+                        onLimpar={limparFiltros}
+                        filtros={[
+                            {
+                                chave: "area", label: "Filtrar por área", valor: area, onChange: filtrar(setArea),
+                                className: "lg:w-[140px]",
+                                opcoes: [{ value: TODAS_AREAS, label: "Área: todas" },
+                                    ...areas.map((a) => ({ value: a.id, label: a.nome }))],
+                            },
+                            {
+                                chave: "cliente", label: "Filtrar por cliente", valor: cliente,
+                                onChange: (v) => { filtrar(setCliente)(v); setCampanha(TODOS) },
+                                opcoes: [{ value: TODOS, label: "Cliente: todos" },
+                                    ...clientes.map((c) => ({ value: c.id, label: c.nome }))],
+                            },
+                            {
+                                chave: "campanha", label: "Filtrar por campanha", valor: campanha, onChange: filtrar(setCampanha),
+                                opcoes: [{ value: TODOS, label: "Campanha: todas" },
+                                    ...campanhasFiltradas.map((c) => ({ value: c.id, label: c.nome }))],
+                            },
+                            {
+                                chave: "responsavel", label: "Filtrar por responsável", valor: responsavel, onChange: filtrar(setResponsavel),
+                                opcoes: [{ value: TODOS, label: "Responsável: todos" },
+                                    ...profiles.map((p) => ({ value: p.id, label: p.nome ?? p.email ?? p.id }))],
+                            },
+                            {
+                                chave: "prioridade", label: "Filtrar por prioridade", valor: prioridade, onChange: filtrar(setPrioridade),
+                                className: "lg:w-[140px]",
+                                opcoes: [{ value: TODOS, label: "Prioridade: toda" },
+                                    ...PRIORIDADES.map((p) => ({ value: p, label: TAREFA_PRIORIDADE[p].label }))],
+                            },
+                            {
+                                chave: "prazo", label: "Filtrar por prazo", valor: prazo, onChange: filtrar(setPrazo),
+                                className: "lg:w-[150px]", opcoes: PRAZOS,
+                            },
+                            {
+                                chave: "status", label: "Filtrar por status", valor: status, onChange: filtrar(setStatus),
+                                opcoes: [{ value: TODOS, label: "Status: todos" },
+                                    ...TAREFA_STATUS_ORDEM.map((s) => ({ value: s, label: TAREFA_STATUS[s].label }))],
+                            },
+                        ]}
+                        extras={
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    variant={soMinhas ? "default" : "outline"}
+                                    className="rounded-xl"
+                                    onClick={() => filtrar(setSoMinhas)(!soMinhas)}
+                                    aria-pressed={soMinhas}
+                                    disabled={visao === "minhas"}
+                                    title={visao === "minhas" ? "A aba já mostra só as suas" : undefined}
+                                >
+                                    <UserRound className="h-3.5 w-3.5" /> Minhas tarefas
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={mostrarArquivadas ? "default" : "outline"}
+                                    className="rounded-xl"
+                                    onClick={() => filtrar(setMostrarArquivadas)(!mostrarArquivadas)}
+                                    aria-pressed={mostrarArquivadas}
+                                >
+                                    Arquivadas
+                                </Button>
+                            </div>
+                        }
+                    />
+
+                    {loading ? (
+                        <Card><CardContent className="flex items-center justify-center py-16 text-muted-foreground">
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
+                        </CardContent></Card>
+                    ) : visao === "calendario" ? (
+                        <Calendario
+                            tarefas={visiveis}
+                            areas={areas}
+                            agora={agora}
+                            filtros={rapidos}
+                            onFiltro={(k, v) => { setRapidos((r) => ({ ...r, [k]: v })); setPagina(1) }}
+                            areaFiltro={area}
+                            onAreaFiltro={filtrar(setArea)}
+                        />
+                    ) : visiveis.length === 0 ? (
+                        <Card><CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                            <ClipboardList className="mb-3 h-10 w-10 text-muted-foreground/40" />
                             <p className="font-medium">
-                                {busca.trim()
-                                    ? `Nenhuma tarefa encontrada para "${busca.trim()}"`
-                                    : filtrosAtivosCount > 0
-                                        ? "Nenhuma tarefa encontrada para esses filtros"
-                                        : "Nenhuma tarefa neste status"}
+                                {tarefas.length === 0 ? "Nenhuma tarefa ainda" : "Nenhuma tarefa com esses filtros"}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                {tarefas.length === 0 ? (
+                                    campanhas.length === 0
+                                        ? <>Crie uma <Link href="/campanhas" className="text-primary underline">campanha</Link> antes — toda tarefa pertence a uma.</>
+                                        : "Crie a primeira em “Nova tarefa”."
+                                ) : "Ajuste a busca, a área, o responsável ou o prazo."}
                             </p>
                         </CardContent></Card>
+                    ) : visao === "board" ? (
+                        <>
+                            <Board
+                                tarefas={visiveis}
+                                metricas={metricas}
+                                profilesById={profilesById}
+                                onMoverStatus={mudarStatus}
+                                onNova={(s) => abrirDialogo(null, s)}
+                            />
+
+                            <div className="grid gap-4 xl:grid-cols-2">
+                                <Card className="rounded-2xl">
+                                    <CardContent className="p-4 sm:p-5">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-sm font-semibold">Tarefas próximas do prazo</p>
+                                            <button
+                                                type="button"
+                                                className="h-auto min-h-0 text-xs font-medium text-primary hover:underline"
+                                                onClick={() => { setVisao("lista"); filtrar(setPrazo)("semana") }}
+                                            >
+                                                Ver todas
+                                            </button>
+                                        </div>
+                                        {proximasDoPrazo.length === 0 ? (
+                                            <p className="py-8 text-center text-sm text-muted-foreground">Nada com prazo à vista.</p>
+                                        ) : (
+                                            <ul className="mt-3 space-y-1">
+                                                {proximasDoPrazo.map((t) => {
+                                                    const p = tarefaPrazoBadge(t)
+                                                    const r = t.responsavel ? profilesById.get(t.responsavel) : null
+                                                    return (
+                                                        <li key={t.id}>
+                                                            <Link href={`/tarefas/${t.id}`} className="flex items-center gap-3 rounded-xl p-2 hover:bg-muted/50">
+                                                                <span className={cn(
+                                                                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+                                                                    p ? p.className : "bg-muted text-muted-foreground",
+                                                                )}>
+                                                                    <Clock className="h-3.5 w-3.5" />
+                                                                </span>
+                                                                <span className="min-w-0 flex-1 truncate text-sm">{t.titulo}</span>
+                                                                {t.campanha && (
+                                                                    <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">
+                                                                        {t.campanha.nome}
+                                                                    </Badge>
+                                                                )}
+                                                                <span className={cn("shrink-0 text-xs", p ? "text-status-erro" : "text-muted-foreground")}>
+                                                                    {p?.label ?? dataCurta(t.data_entrega!)}
+                                                                </span>
+                                                                {r && <UserAvatar profile={r} />}
+                                                            </Link>
+                                                        </li>
+                                                    )
+                                                })}
+                                            </ul>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="rounded-2xl">
+                                    <CardContent className="p-4 sm:p-5">
+                                        <p className="text-sm font-semibold">Atividade recente</p>
+                                        <div className="mt-3">
+                                            <FeedAtividade itens={atividades} vazio="Nenhuma movimentação registrada ainda." />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </>
                     ) : (
-                        <div className="space-y-2">
-                            {filtradas.map((t) => {
-                                const prazo = tarefaPrazoBadge(t)
-                                const responsavel = t.responsavel ? profilesById.get(t.responsavel) : null
-                                return (
-                                    <Card key={t.id}>
-                                        <CardContent className="flex items-center gap-3 py-3">
-                                            <div className="flex-1 min-w-0">
-                                                <Link href={`/app/tarefas/${t.id}`} className="hover:text-primary">
-                                                    <p className={`font-medium truncate ${t.status === "concluida" ? "line-through text-muted-foreground" : ""}`}>{t.titulo}</p>
-                                                </Link>
-                                                <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground mt-0.5">
-                                                    <span className={TAREFA_PRIORIDADE[t.prioridade].className}>{TAREFA_PRIORIDADE[t.prioridade].label}</span>
-                                                    {t.campanha && <Link href={`/app/campanhas/${t.campanha.id}`} className="hover:text-primary">• {t.campanha.nome}</Link>}
-                                                    {t.data_entrega && <span>• entrega {t.data_entrega}</span>}
-                                                    {prazo && <Badge className={prazo.className} variant="secondary">{prazo.label}</Badge>}
-                                                    {t.arquivada && <Badge variant="outline" className="text-muted-foreground"><Archive className="h-3 w-3" /></Badge>}
-                                                    {t.tags.map((tag) => <Badge key={tag} variant="secondary" className="bg-muted text-muted-foreground text-[10px]"><Tag className="h-2.5 w-2.5" /> {tag}</Badge>)}
-                                                </div>
-                                            </div>
-                                            {responsavel && <UserAvatar profile={responsavel} />}
-                                            <Badge className={TAREFA_STATUS[t.status].className} variant="secondary">{TAREFA_STATUS[t.status].label}</Badge>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label="Mais ações" title="Mais ações">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => duplicar(t)}><Copy className="h-4 w-4" /> Duplicar</DropdownMenuItem>
-                                                    <DropdownMenuSub>
-                                                        <DropdownMenuSubTrigger><ArrowRightLeft className="h-4 w-4" /> Mudar status</DropdownMenuSubTrigger>
-                                                        <DropdownMenuSubContent>
-                                                            {TAREFA_STATUS_ORDEM.map((s) => {
-                                                                const bloqueado = s === "concluida" && t.evidencia_obrigatoria
-                                                                return (
-                                                                    <DropdownMenuItem
-                                                                        key={s}
-                                                                        disabled={s === t.status || bloqueado}
-                                                                        onClick={() => mudarStatusRapido(t, s)}
-                                                                        title={bloqueado ? "Esta tarefa exige evidência — conclua pela página da tarefa" : undefined}
-                                                                    >
-                                                                        {TAREFA_STATUS[s].label}
-                                                                    </DropdownMenuItem>
-                                                                )
-                                                            })}
-                                                        </DropdownMenuSubContent>
-                                                    </DropdownMenuSub>
-                                                    <DropdownMenuItem onClick={() => abrirMover(t)}><FolderInput className="h-4 w-4" /> Mover para campanha</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => arquivar(t)}>
-                                                        {t.arquivada ? <><ArchiveRestore className="h-4 w-4" /> Desarquivar</> : <><Archive className="h-4 w-4" /> Arquivar</>}
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Excluir tarefa" title="Excluir tarefa">
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Esta ação não pode ser desfeita. A tarefa &quot;{t.titulo}&quot; será removida permanentemente.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => excluir(t)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </CardContent>
-                                    </Card>
-                                )
-                            })}
-                        </div>
+                        <>
+                            <Card><CardContent className="p-0">
+                                <ListaTarefas
+                                    tarefas={daPagina}
+                                    metricas={metricas}
+                                    profilesById={profilesById}
+                                    selecionados={selecionados}
+                                    onAlternar={(id) => setSelecionados((s) =>
+                                        s.includes(id) ? s.filter((x) => x !== id) : [...s, id])}
+                                    onAlternarTodos={() => {
+                                        const ids = daPagina.map((t) => t.id)
+                                        const todos = ids.every((id) => selecionados.includes(id))
+                                        setSelecionados((s) => todos
+                                            ? s.filter((id) => !ids.includes(id))
+                                            : [...new Set([...s, ...ids])])
+                                    }}
+                                    onEditar={(t) => abrirDialogo(t)}
+                                    onStatus={mudarStatus}
+                                    onDuplicar={duplicar}
+                                    onArquivar={arquivar}
+                                    onExcluir={setExcluindo}
+                                />
+                            </CardContent></Card>
+
+                            <Paginacao
+                                total={emLista.length}
+                                pagina={paginaAtual}
+                                porPagina={porPagina}
+                                onPagina={setPagina}
+                                onPorPagina={(n) => { setPorPagina(n); setPagina(1) }}
+                                substantivo={["tarefa", "tarefas"]}
+                            />
+                        </>
                     )}
                 </>
             )}
+
+            <TarefaDialog
+                key={`${editando?.id ?? "nova"}-${aberturas}`}
+                tarefa={editando}
+                statusInicial={statusInicial}
+                aberto={dialogAberto}
+                onOpenChange={(v) => { setDialogAberto(v); if (!v) { setEditando(null); setStatusInicial(undefined) } }}
+                campanhas={campanhas}
+                areas={areas}
+                onSalvo={() => { setDialogAberto(false); setEditando(null); setStatusInicial(undefined); carregar() }}
+            />
+
+            <AlertDialog open={!!excluindo} onOpenChange={(v) => !v && setExcluindo(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            &quot;{excluindo?.titulo}&quot; será removida com subtarefas, comentários, anexos e
+                            histórico. Para tirá-la da frente sem perder o registro, use Arquivar.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => excluindo && excluirTarefa(excluindo)}
+                            className="bg-destructive text-white hover:bg-destructive/90"
+                        >
+                            Excluir mesmo assim
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

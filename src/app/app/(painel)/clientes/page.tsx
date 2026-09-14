@@ -1,557 +1,477 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
-import type { Cliente } from "@/lib/db/types"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from "@/components/ui/card"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Building2, Plus, Loader2, Search, Pencil, Trash2 } from "lucide-react"
+import { AlertTriangle, Building2, CheckSquare, Loader2, Megaphone, Plus, Users } from "lucide-react"
 import { toast } from "sonner"
+
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { BarraFiltros } from "@/components/painel/barra-filtros"
+import { MetricaCard } from "@/components/painel/metrica-card"
+import { Paginacao } from "@/components/painel/paginacao"
+import { CLIENTE_STATUS, CLIENTE_STATUS_ORDEM } from "@/lib/constants/campanhas"
+import { CAMPANHA_STATUS_ATIVOS } from "@/lib/constants/campanhas"
+import { SEGMENTOS } from "@/lib/constants/segmentos"
 import { UFS } from "@/lib/constants/uf"
-import { SEGMENTOS, SEGMENTO_OUTRO } from "@/lib/constants/segmentos"
+import { useProfiles } from "@/hooks/use-profiles"
+import { createClient } from "@/lib/supabase/client"
+import type { ClienteStatus, TarefaStatus } from "@/lib/db/types"
+import { ClienteDialog } from "./cliente-dialog"
+import { PainelCliente } from "./painel-cliente"
+import { TabelaClientes } from "./tabela-clientes"
+import type {
+    CampanhaResumo, ClienteDaLista, ColunaOrdenavel, Ordenacao, TarefaResumo, UltimaAtividade,
+} from "./tipos"
 
-type ClienteFormState = {
-    nome: string
-    empresa: string
-    email: string
-    telefone: string
-    segmento: string
-    segmentoOutro: string
-    cidade: string
-    estado: string
-    observacoes: string
-}
+const TODOS = "__todos__"
 
-/** Resolve o valor final de `segmento` a ser salvo: quando "Outro" está
- *  selecionado, usa o texto livre digitado em vez do literal "Outro". */
-function resolveSegmento(form: Pick<ClienteFormState, "segmento" | "segmentoOutro">) {
-    return form.segmento === SEGMENTO_OUTRO ? form.segmentoOutro.trim() : form.segmento
-}
-
-/** Reconstrói o estado do Select de segmento a partir de um valor salvo no
- *  banco: se bater com uma opção padrão, seleciona ela; caso contrário,
- *  cai em "Outro" com o valor original preenchido no campo livre. */
-function deriveSegmentoState(segmento: string | null): Pick<ClienteFormState, "segmento" | "segmentoOutro"> {
-    if (!segmento) return { segmento: "", segmentoOutro: "" }
-    if ((SEGMENTOS as readonly string[]).includes(segmento) && segmento !== SEGMENTO_OUTRO) {
-        return { segmento, segmentoOutro: "" }
-    }
-    return { segmento: SEGMENTO_OUTRO, segmentoOutro: segmento }
-}
-
-function validarCliente(form: Pick<ClienteFormState, "nome" | "empresa" | "segmento" | "segmentoOutro">) {
-    const errors: Record<string, string> = {}
-    if (!form.nome.trim()) errors.nome = "Informe o nome do cliente"
-    if (!form.empresa.trim()) errors.empresa = "Informe a empresa/marca"
-    if (!resolveSegmento(form)) errors.segmento = "Selecione o segmento"
-    return errors
-}
+/**
+ * Colunas da listagem. O join traz o responsável com cargo — é o que a coluna
+ * "Responsável" mostra embaixo do nome, e `role` (permissão) não serve para isso.
+ */
+const COLUNAS = `
+    *, responsavel:somos_preta_profiles!responsavel_id(id, nome, email, avatar_url, cargo)
+`
 
 export default function ClientesPage() {
     const [supabase] = useState(() => createClient())
-    const [clientes, setClientes] = useState<Cliente[]>([])
+    const { profiles } = useProfiles()
+
+    const [clientes, setClientes] = useState<ClienteDaLista[]>([])
+    const [campanhas, setCampanhas] = useState<CampanhaResumo[]>([])
+    const [tarefas, setTarefas] = useState<TarefaResumo[]>([])
+    const [atividades, setAtividades] = useState<Map<string, UltimaAtividade>>(new Map())
+    const [favoritos, setFavoritos] = useState<Set<string>>(new Set())
     const [loading, setLoading] = useState(true)
+    const [falhaSchema, setFalhaSchema] = useState(false)
+
     const [busca, setBusca] = useState("")
-    const [open, setOpen] = useState(false)
-    const [saving, setSaving] = useState(false)
+    const [status, setStatus] = useState<string>(TODOS)
+    const [segmento, setSegmento] = useState<string>(TODOS)
+    const [estado, setEstado] = useState<string>(TODOS)
+    const [responsavel, setResponsavel] = useState<string>(TODOS)
+    const [ordenacao, setOrdenacao] = useState<Ordenacao>({ coluna: "nome", direcao: "asc" })
+    const [pagina, setPagina] = useState(1)
+    const [porPagina, setPorPagina] = useState(10)
 
-    const [form, setForm] = useState<ClienteFormState>({
-        nome: "",
-        empresa: "",
-        email: "",
-        telefone: "",
-        segmento: "",
-        segmentoOutro: "",
-        cidade: "",
-        estado: "",
-        observacoes: "",
-    })
-    const [errors, setErrors] = useState<Record<string, string>>({})
+    const [selecionado, setSelecionado] = useState<string | null>(null)
+    const [editando, setEditando] = useState<ClienteDaLista | null>(null)
+    const [dialogAberto, setDialogAberto] = useState(false)
+    // Conta as aberturas para compor a `key` do diálogo: remontar é o que faz o
+    // formulário nascer do cliente certo sem sincronizar props em efeito.
+    const [aberturas, setAberturas] = useState(0)
+    const [excluindo, setExcluindo] = useState<ClienteDaLista | null>(null)
 
-    function updateField<K extends keyof ClienteFormState>(key: K, value: ClienteFormState[K]) {
-        setForm((f) => ({ ...f, [key]: value }))
-        setErrors((er) => (er[key] ? { ...er, [key]: "" } : er))
-    }
-
-    async function load() {
+    async function carregar() {
         setLoading(true)
-        const { data, error } = await supabase
-            .from("somos_preta_clientes")
-            .select("*")
-            .order("created_at", { ascending: false })
-        if (error) toast.error("Erro ao carregar clientes")
-        setClientes((data as Cliente[]) ?? [])
+
+        const { data: { user } } = await supabase.auth.getUser()
+
+        const [lista, camps, tars, atvs, favs] = await Promise.all([
+            supabase.from("somos_preta_clientes").select(COLUNAS).limit(500),
+            supabase.from("somos_preta_campanhas")
+                .select("id, nome, cliente_id, status, capa_url, data_inicio, data_fim").limit(1000),
+            supabase.from("somos_preta_tarefas")
+                .select("id, titulo, campanha_id, status, data_entrega, horario")
+                .eq("arquivada", false).limit(2000),
+            supabase.from("somos_preta_atividades")
+                .select("entidade_id, resumo, created_at")
+                .eq("entidade", "cliente")
+                .order("created_at", { ascending: false })
+                .limit(500),
+            user
+                ? supabase.from("somos_preta_cliente_favoritos").select("cliente_id").eq("profile_id", user.id)
+                : Promise.resolve({ data: [], error: null }),
+        ])
+
+        if (lista.error) { setFalhaSchema(true); setLoading(false); return }
+
+        setFalhaSchema(false)
+        setClientes((lista.data ?? []) as unknown as ClienteDaLista[])
+        // Só substitui o que veio bem: com erro o Supabase devolve data null, e
+        // o `?? []` transformaria "não consegui ler" em "não existe nada".
+        if (!camps.error) setCampanhas((camps.data ?? []) as CampanhaResumo[])
+        if (!tars.error) setTarefas((tars.data ?? []) as TarefaResumo[])
+
+        if (!atvs.error) {
+            // A consulta já vem da mais recente para a mais antiga, então a
+            // PRIMEIRA linha de cada cliente é a última atividade dele.
+            const mapa = new Map<string, UltimaAtividade>()
+            for (const a of (atvs.data ?? []) as { entidade_id: string | null; resumo: string; created_at: string }[]) {
+                if (a.entidade_id && !mapa.has(a.entidade_id)) {
+                    mapa.set(a.entidade_id, { resumo: a.resumo, created_at: a.created_at })
+                }
+            }
+            setAtividades(mapa)
+        }
+
+        if (!favs.error) {
+            setFavoritos(new Set(((favs.data ?? []) as { cliente_id: string }[]).map((f) => f.cliente_id)))
+        }
+
         setLoading(false)
     }
 
     useEffect(() => {
-        load()
+        carregar()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    const filtrados = useMemo(() => {
-        const q = busca.trim().toLowerCase()
-        if (!q) return clientes
-        return clientes.filter(
-            (c) =>
-                c.nome.toLowerCase().includes(q) ||
-                (c.empresa ?? "").toLowerCase().includes(q) ||
-                (c.segmento ?? "").toLowerCase().includes(q)
-        )
-    }, [clientes, busca])
-
-    async function handleCreate(e: React.FormEvent) {
-        e.preventDefault()
-        const validation = validarCliente(form)
-        setErrors(validation)
-        if (Object.keys(validation).length > 0) return
-        setSaving(true)
-
-        const {
-            data: { user },
-        } = await supabase.auth.getUser()
-
-        const { error } = await supabase.from("somos_preta_clientes").insert({
-            nome: form.nome.trim(),
-            empresa: form.empresa.trim(),
-            email: form.email || null,
-            telefone: form.telefone || null,
-            segmento: resolveSegmento(form),
-            cidade: form.cidade || null,
-            estado: form.estado || null,
-            observacoes: form.observacoes || null,
-            created_by: user?.id ?? null,
-        })
-
-        setSaving(false)
-        if (error) {
-            toast.error("Não foi possível salvar o cliente")
-            return
-        }
-        toast.success("Cliente cadastrado")
-        setOpen(false)
-        setForm({ nome: "", empresa: "", email: "", telefone: "", segmento: "", segmentoOutro: "", cidade: "", estado: "", observacoes: "" })
-        setErrors({})
-        load()
+    /** Todo filtro volta para a primeira página e limpa a seleção aberta. */
+    function filtrar<T>(set: (v: T) => void) {
+        return (v: T) => { set(v); setPagina(1) }
     }
 
+    // ------------------------------------------------------------- derivados
+
+    const campanhasPorCliente = useMemo(() => {
+        const mapa = new Map<string, { total: number; ativas: number }>()
+        for (const c of campanhas) {
+            if (!c.cliente_id) continue
+            const atual = mapa.get(c.cliente_id) ?? { total: 0, ativas: 0 }
+            atual.total += 1
+            if (CAMPANHA_STATUS_ATIVOS.includes(c.status)) atual.ativas += 1
+            mapa.set(c.cliente_id, atual)
+        }
+        return mapa
+    }, [campanhas])
+
+    /** Tarefa não aponta para cliente: a ligação passa pela campanha. */
+    const tarefasPorCliente = useMemo(() => {
+        const clientePorCampanha = new Map(campanhas.map((c) => [c.id, c.cliente_id]))
+        const mapa = new Map<string, TarefaResumo[]>()
+        for (const t of tarefas) {
+            const cliente = clientePorCampanha.get(t.campanha_id)
+            if (!cliente) continue
+            const atual = mapa.get(cliente) ?? []
+            atual.push(t)
+            mapa.set(cliente, atual)
+        }
+        return mapa
+    }, [tarefas, campanhas])
+
+    const filtrados = useMemo(() => {
+        let r = clientes
+        const q = busca.trim().toLowerCase()
+        if (q) {
+            r = r.filter((c) =>
+                c.nome.toLowerCase().includes(q)
+                || c.empresa?.toLowerCase().includes(q)
+                || c.segmento?.toLowerCase().includes(q)
+                || c.cidade?.toLowerCase().includes(q)
+                || c.responsavel?.nome?.toLowerCase().includes(q)
+            )
+        }
+        if (status !== TODOS) r = r.filter((c) => c.status === status)
+        if (segmento !== TODOS) r = r.filter((c) => c.segmento === segmento)
+        if (estado !== TODOS) r = r.filter((c) => c.estado === estado)
+        if (responsavel !== TODOS) r = r.filter((c) => c.responsavel_id === responsavel)
+        return r
+    }, [clientes, busca, status, segmento, estado, responsavel])
+
+    const ordenados = useMemo(() => {
+        const dir = ordenacao.direcao === "asc" ? 1 : -1
+        const chave = (c: ClienteDaLista): string | number => {
+            switch (ordenacao.coluna) {
+                case "segmento": return c.segmento ?? ""
+                case "local": return [c.cidade, c.estado].filter(Boolean).join(" ")
+                case "campanhas": return campanhasPorCliente.get(c.id)?.total ?? 0
+                case "responsavel": return c.responsavel?.nome ?? c.responsavel?.email ?? ""
+                // Data como número: comparar ISO por localeCompare erra quando um
+                // lado tem fração de segundo e o outro não.
+                case "atividade": return atividades.get(c.id) ? new Date(atividades.get(c.id)!.created_at).getTime() : 0
+                case "status": return CLIENTE_STATUS_ORDEM.indexOf(c.status)
+                default: return c.nome
+            }
+        }
+        return filtrados.slice().sort((a, b) => {
+            const va = chave(a), vb = chave(b)
+            if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir
+            return String(va).localeCompare(String(vb), "pt-BR") * dir
+        })
+    }, [filtrados, ordenacao, campanhasPorCliente, atividades])
+
+    const totalPaginas = Math.max(1, Math.ceil(ordenados.length / porPagina))
+    const paginaAtual = Math.min(pagina, totalPaginas)
+    const daPagina = ordenados.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina)
+
+    const clienteAberto = clientes.find((c) => c.id === selecionado) ?? null
+
+    const filtrosAtivos = busca.trim() !== "" || status !== TODOS
+        || segmento !== TODOS || estado !== TODOS || responsavel !== TODOS
+
+    // --------------------------------------------------------------- métricas
+
+    const ativos = clientes.filter((c) => c.status === "ativo").length
+    const campanhasAtivas = campanhas.filter((c) => CAMPANHA_STATUS_ATIVOS.includes(c.status)).length
+    const tarefasVinculadas = [...tarefasPorCliente.values()].reduce((n, t) => n + t.length, 0)
+    const responsaveisAtivos = new Set(
+        clientes.filter((c) => c.status === "ativo" && c.responsavel_id).map((c) => c.responsavel_id)
+    ).size
+
+    // ----------------------------------------------------------------- ações
+
+    function ordenar(coluna: ColunaOrdenavel) {
+        setOrdenacao((o) =>
+            o.coluna === coluna
+                ? { coluna, direcao: o.direcao === "asc" ? "desc" : "asc" }
+                : { coluna, direcao: "asc" }
+        )
+    }
+
+    async function mudarStatus(c: ClienteDaLista, novo: ClienteStatus) {
+        const { data, error } = await supabase
+            .from("somos_preta_clientes")
+            .update({ status: novo })
+            .eq("id", c.id)
+            .select("id")
+        if (error || !data?.length) { toast.error("Não foi possível mudar o status"); return }
+        toast.success(`${c.nome} agora está ${CLIENTE_STATUS[novo].label.toLowerCase()}`)
+        carregar()
+    }
+
+    async function alternarFavorito(c: ClienteDaLista) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        if (favoritos.has(c.id)) {
+            const { error } = await supabase.from("somos_preta_cliente_favoritos")
+                .delete().eq("cliente_id", c.id).eq("profile_id", user.id)
+            if (error) { toast.error("Não foi possível remover"); return }
+            setFavoritos((f) => new Set([...f].filter((x) => x !== c.id)))
+        } else {
+            const { error } = await supabase.from("somos_preta_cliente_favoritos")
+                .insert({ cliente_id: c.id, profile_id: user.id })
+            if (error) { toast.error("Não foi possível favoritar"); return }
+            setFavoritos((f) => new Set([...f, c.id]))
+        }
+    }
+
+    async function excluirCliente(c: ClienteDaLista) {
+        const { error } = await supabase.from("somos_preta_clientes").delete().eq("id", c.id)
+        setExcluindo(null)
+        if (error) { toast.error("Não foi possível excluir"); return }
+        if (selecionado === c.id) setSelecionado(null)
+        toast.success("Cliente excluído")
+        carregar()
+    }
+
+    async function mudarStatusTarefa(id: string, novo: TarefaStatus) {
+        const { data, error } = await supabase
+            .from("somos_preta_tarefas")
+            .update({
+                status: novo,
+                concluida_em: novo === "concluida" ? new Date().toISOString() : null,
+            })
+            .eq("id", id)
+            .select("id")
+        if (error || !data?.length) { toast.error("Não foi possível atualizar a tarefa"); return }
+        setTarefas((ts) => ts.map((t) => (t.id === id ? { ...t, status: novo } : t)))
+    }
+
+    // ---------------------------------------------------------------- render
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                        <Building2 className="h-6 w-6 text-primary" />
-                        Clientes
+        <div className="space-y-5 sm:space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+                        <Building2 className="h-6 w-6 text-primary" /> Clientes
                     </h1>
-                    <p className="text-muted-foreground text-sm">
-                        As marcas e contas atendidas. Cada cliente reúne suas campanhas.
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Gerencie as contas, marcas e campanhas dos seus clientes.
                     </p>
                 </div>
-
-                <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setErrors({}) }}>
-                    <DialogTrigger asChild>
-                        <Button className="rounded-xl">
-                            <Plus className="h-4 w-4" /> Novo cliente
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-lg">
-                        <form onSubmit={handleCreate}>
-                            <DialogHeader>
-                                <DialogTitle>Novo cliente</DialogTitle>
-                                <DialogDescription>Cadastre a marca/conta atendida.</DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="nome">Nome *</Label>
-                                    <Input id="nome" value={form.nome} onChange={(e) => updateField("nome", e.target.value)} aria-invalid={!!errors.nome} />
-                                    {errors.nome && <p className="text-xs text-destructive">{errors.nome}</p>}
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="empresa">Empresa/Marca *</Label>
-                                        <Input id="empresa" value={form.empresa} onChange={(e) => updateField("empresa", e.target.value)} aria-invalid={!!errors.empresa} />
-                                        {errors.empresa && <p className="text-xs text-destructive">{errors.empresa}</p>}
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="segmento">Segmento *</Label>
-                                        <Select value={form.segmento} onValueChange={(v) => updateField("segmento", v)}>
-                                            <SelectTrigger id="segmento" className="w-full" aria-invalid={!!errors.segmento}>
-                                                <SelectValue placeholder="Selecione..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {SEGMENTOS.map((s) => (
-                                                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {form.segmento === SEGMENTO_OUTRO && (
-                                            <Input
-                                                placeholder="Qual segmento?"
-                                                value={form.segmentoOutro}
-                                                onChange={(e) => updateField("segmentoOutro", e.target.value)}
-                                                aria-invalid={!!errors.segmento}
-                                            />
-                                        )}
-                                        {errors.segmento && <p className="text-xs text-destructive">{errors.segmento}</p>}
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input id="email" type="email" value={form.email} onChange={(e) => updateField("email", e.target.value)} />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="telefone">Telefone</Label>
-                                        <Input id="telefone" value={form.telefone} onChange={(e) => updateField("telefone", e.target.value)} />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="cidade">Cidade</Label>
-                                        <Input id="cidade" value={form.cidade} onChange={(e) => updateField("cidade", e.target.value)} />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="estado">Estado (UF)</Label>
-                                        <Select value={form.estado} onValueChange={(v) => updateField("estado", v)}>
-                                            <SelectTrigger id="estado" className="w-full">
-                                                <SelectValue placeholder="UF" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {UFS.map((uf) => (
-                                                    <SelectItem key={uf.sigla} value={uf.sigla}>{uf.nome} ({uf.sigla})</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="obs">Observações</Label>
-                                    <Textarea id="obs" value={form.observacoes} onChange={(e) => updateField("observacoes", e.target.value)} />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button type="submit" disabled={saving} className="rounded-xl">
-                                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar cliente"}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <Button
+                    className="rounded-xl"
+                    onClick={() => { setEditando(null); setAberturas((n) => n + 1); setDialogAberto(true) }}
+                >
+                    <Plus className="h-4 w-4" /> Novo cliente
+                </Button>
             </div>
 
-            <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Buscar cliente..."
-                    value={busca}
-                    onChange={(e) => setBusca(e.target.value)}
-                    className="pl-9 rounded-xl"
-                />
-            </div>
-
-            <Card>
-                <CardContent className="p-0">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-16 text-muted-foreground">
-                            <Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...
-                        </div>
-                    ) : filtrados.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <Building2 className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                            <p className="font-medium">Nenhum cliente ainda</p>
-                            <p className="text-sm text-muted-foreground">Clique em “Novo cliente” para começar.</p>
-                        </div>
-                    ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Nome</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Empresa</TableHead>
-                                    <TableHead className="hidden md:table-cell">Segmento</TableHead>
-                                    <TableHead className="hidden lg:table-cell">Local</TableHead>
-                                    <TableHead className="text-right">Campanhas</TableHead>
-                                    <TableHead className="text-right">Ações</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filtrados.map((c) => (
-                                    <TableRow key={c.id} className="cursor-pointer">
-                                        <TableCell className="font-medium">
-                                            <Link href={`/app/clientes/${c.id}`} className="hover:text-primary">
-                                                {c.nome}
-                                            </Link>
-                                        </TableCell>
-                                        <TableCell className="hidden sm:table-cell text-muted-foreground">{c.empresa ?? "—"}</TableCell>
-                                        <TableCell className="hidden md:table-cell text-muted-foreground">{c.segmento ?? "—"}</TableCell>
-                                        <TableCell className="hidden lg:table-cell text-muted-foreground">
-                                            {[c.cidade, c.estado].filter(Boolean).join(" / ") || "—"}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Link href={`/app/clientes/${c.id}`} className="text-primary text-sm hover:underline">
-                                                ver
-                                            </Link>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <ClienteRowActions cliente={c} supabase={supabase} onDone={load} />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
-    )
-}
-
-function ClienteRowActions({
-    cliente,
-    supabase,
-    onDone,
-}: {
-    cliente: Cliente
-    supabase: ReturnType<typeof createClient>
-    onDone: () => void
-}) {
-    const [openEdit, setOpenEdit] = useState(false)
-    const [saving, setSaving] = useState(false)
-    const [deleting, setDeleting] = useState(false)
-    const segmentoInicial = deriveSegmentoState(cliente.segmento)
-    const [form, setForm] = useState<ClienteFormState>({
-        nome: cliente.nome ?? "",
-        empresa: cliente.empresa ?? "",
-        email: cliente.email ?? "",
-        telefone: cliente.telefone ?? "",
-        segmento: segmentoInicial.segmento,
-        segmentoOutro: segmentoInicial.segmentoOutro,
-        cidade: cliente.cidade ?? "",
-        estado: cliente.estado ?? "",
-        observacoes: cliente.observacoes ?? "",
-    })
-    const [errors, setErrors] = useState<Record<string, string>>({})
-
-    function updateField<K extends keyof ClienteFormState>(key: K, value: ClienteFormState[K]) {
-        setForm((f) => ({ ...f, [key]: value }))
-        setErrors((er) => (er[key] ? { ...er, [key]: "" } : er))
-    }
-
-    async function handleUpdate(e: React.FormEvent) {
-        e.preventDefault()
-        const validation = validarCliente(form)
-        setErrors(validation)
-        if (Object.keys(validation).length > 0) return
-        setSaving(true)
-
-        const { error } = await supabase
-            .from("somos_preta_clientes")
-            .update({
-                nome: form.nome.trim(),
-                empresa: form.empresa.trim(),
-                email: form.email || null,
-                telefone: form.telefone || null,
-                segmento: resolveSegmento(form),
-                cidade: form.cidade || null,
-                estado: form.estado || null,
-                observacoes: form.observacoes || null,
-            })
-            .eq("id", cliente.id)
-
-        setSaving(false)
-        if (error) {
-            toast.error("Não foi possível atualizar o cliente")
-            return
-        }
-        toast.success("Cliente atualizado")
-        setOpenEdit(false)
-        onDone()
-    }
-
-    async function handleDelete() {
-        setDeleting(true)
-        const { error } = await supabase
-            .from("somos_preta_clientes")
-            .delete()
-            .eq("id", cliente.id)
-        setDeleting(false)
-        if (error) {
-            toast.error("Não foi possível excluir o cliente")
-            return
-        }
-        toast.success("Cliente excluído")
-        onDone()
-    }
-
-    return (
-        <div
-            className="flex items-center justify-end gap-1"
-            onClick={(e) => e.stopPropagation()}
-        >
-            <Dialog open={openEdit} onOpenChange={(o) => { setOpenEdit(o); if (!o) setErrors({}) }}>
-                <DialogTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-xl text-muted-foreground hover:text-foreground"
-                        title="Editar"
-                        aria-label="Editar cliente"
-                    >
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
-                    <form onSubmit={handleUpdate}>
-                        <DialogHeader>
-                            <DialogTitle>Editar cliente</DialogTitle>
-                            <DialogDescription>Atualize os dados da marca/conta atendida.</DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor={`edit-nome-${cliente.id}`}>Nome *</Label>
-                                <Input id={`edit-nome-${cliente.id}`} value={form.nome} onChange={(e) => updateField("nome", e.target.value)} aria-invalid={!!errors.nome} />
-                                {errors.nome && <p className="text-xs text-destructive">{errors.nome}</p>}
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor={`edit-empresa-${cliente.id}`}>Empresa/Marca *</Label>
-                                    <Input id={`edit-empresa-${cliente.id}`} value={form.empresa} onChange={(e) => updateField("empresa", e.target.value)} aria-invalid={!!errors.empresa} />
-                                    {errors.empresa && <p className="text-xs text-destructive">{errors.empresa}</p>}
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor={`edit-segmento-${cliente.id}`}>Segmento *</Label>
-                                    <Select value={form.segmento} onValueChange={(v) => updateField("segmento", v)}>
-                                        <SelectTrigger id={`edit-segmento-${cliente.id}`} className="w-full" aria-invalid={!!errors.segmento}>
-                                            <SelectValue placeholder="Selecione..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {SEGMENTOS.map((s) => (
-                                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {form.segmento === SEGMENTO_OUTRO && (
-                                        <Input
-                                            placeholder="Qual segmento?"
-                                            value={form.segmentoOutro}
-                                            onChange={(e) => updateField("segmentoOutro", e.target.value)}
-                                            aria-invalid={!!errors.segmento}
-                                        />
-                                    )}
-                                    {errors.segmento && <p className="text-xs text-destructive">{errors.segmento}</p>}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor={`edit-email-${cliente.id}`}>Email</Label>
-                                    <Input id={`edit-email-${cliente.id}`} type="email" value={form.email} onChange={(e) => updateField("email", e.target.value)} />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor={`edit-telefone-${cliente.id}`}>Telefone</Label>
-                                    <Input id={`edit-telefone-${cliente.id}`} value={form.telefone} onChange={(e) => updateField("telefone", e.target.value)} />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor={`edit-cidade-${cliente.id}`}>Cidade</Label>
-                                    <Input id={`edit-cidade-${cliente.id}`} value={form.cidade} onChange={(e) => updateField("cidade", e.target.value)} />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor={`edit-estado-${cliente.id}`}>Estado (UF)</Label>
-                                    <Select value={form.estado} onValueChange={(v) => updateField("estado", v)}>
-                                        <SelectTrigger id={`edit-estado-${cliente.id}`} className="w-full">
-                                            <SelectValue placeholder="UF" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {UFS.map((uf) => (
-                                                <SelectItem key={uf.sigla} value={uf.sigla}>{uf.nome} ({uf.sigla})</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor={`edit-obs-${cliente.id}`}>Observações</Label>
-                                <Textarea id={`edit-obs-${cliente.id}`} value={form.observacoes} onChange={(e) => updateField("observacoes", e.target.value)} />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button type="submit" disabled={saving} className="rounded-xl">
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar alterações"}
+            {falhaSchema ? (
+                <Card className="border-status-atencao/40 bg-status-atencao/5">
+                    <CardContent className="flex items-start gap-3 p-5">
+                        <AlertTriangle className="h-5 w-5 shrink-0 text-status-atencao" />
+                        <div className="text-sm">
+                            <p className="font-medium">A tela precisa das migrations do painel.</p>
+                            <p className="mt-1 text-muted-foreground">
+                                Aplique <code className="rounded bg-muted px-1 py-0.5 text-xs">0019_painel_enums.sql</code> e
+                                depois <code className="rounded bg-muted px-1 py-0.5 text-xs">0020_painel_operacao.sql</code>{" "}
+                                no SQL Editor do Supabase, nessa ordem, e recarregue.
+                            </p>
+                            <Button variant="outline" size="sm" className="mt-3 rounded-xl" onClick={carregar}>
+                                Tentar de novo
                             </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : (
+                <>
+                    <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <MetricaCard
+                            icone={<Building2 className="h-5 w-5" />}
+                            cor="bg-status-sucesso/12 text-status-sucesso"
+                            valor={ativos}
+                            rotulo={ativos === 1 ? "cliente ativo" : "clientes ativos"}
+                            onClick={() => filtrar(setStatus)("ativo")}
+                        />
+                        <MetricaCard
+                            icone={<Megaphone className="h-5 w-5" />}
+                            cor="bg-primary/12 text-primary"
+                            valor={campanhasAtivas}
+                            rotulo={campanhasAtivas === 1 ? "campanha ativa" : "campanhas ativas"}
+                            href="/campanhas"
+                        />
+                        <MetricaCard
+                            icone={<CheckSquare className="h-5 w-5" />}
+                            cor="bg-status-info/12 text-status-info"
+                            valor={tarefasVinculadas}
+                            rotulo={tarefasVinculadas === 1 ? "tarefa vinculada" : "tarefas vinculadas"}
+                            href="/tarefas"
+                        />
+                        <MetricaCard
+                            icone={<Users className="h-5 w-5" />}
+                            cor="bg-status-atencao/12 text-status-atencao"
+                            valor={responsaveisAtivos}
+                            rotulo={responsaveisAtivos === 1 ? "responsável ativo" : "responsáveis ativos"}
+                        />
+                    </div>
 
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-xl text-muted-foreground hover:text-destructive"
-                        title="Excluir"
-                        aria-label="Excluir cliente"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="border border-border/60 rounded-xl">
+                    <BarraFiltros
+                        busca={busca}
+                        onBusca={filtrar(setBusca)}
+                        placeholder="Buscar cliente, marca ou palavra-chave..."
+                        ativos={filtrosAtivos}
+                        onLimpar={() => {
+                            setBusca(""); setStatus(TODOS); setSegmento(TODOS)
+                            setEstado(TODOS); setResponsavel(TODOS); setPagina(1)
+                        }}
+                        filtros={[
+                            {
+                                chave: "status", label: "Filtrar por status", valor: status,
+                                onChange: filtrar(setStatus),
+                                opcoes: [
+                                    { value: TODOS, label: "Status: todos" },
+                                    ...CLIENTE_STATUS_ORDEM.map((s) => ({ value: s, label: CLIENTE_STATUS[s].label })),
+                                ],
+                            },
+                            {
+                                chave: "segmento", label: "Filtrar por segmento", valor: segmento,
+                                onChange: filtrar(setSegmento),
+                                opcoes: [
+                                    { value: TODOS, label: "Segmento: todos" },
+                                    ...SEGMENTOS.map((s) => ({ value: s, label: s })),
+                                ],
+                            },
+                            {
+                                chave: "estado", label: "Filtrar por estado", valor: estado,
+                                onChange: filtrar(setEstado),
+                                className: "lg:w-[130px]",
+                                opcoes: [
+                                    { value: TODOS, label: "Estado: todos" },
+                                    ...UFS.map((u) => ({ value: u.sigla, label: u.sigla })),
+                                ],
+                            },
+                            {
+                                chave: "responsavel", label: "Filtrar por responsável", valor: responsavel,
+                                onChange: filtrar(setResponsavel),
+                                opcoes: [
+                                    { value: TODOS, label: "Responsável: todos" },
+                                    ...profiles.map((p) => ({ value: p.id, label: p.nome ?? p.email ?? p.id })),
+                                ],
+                            },
+                        ]}
+                    />
+
+                    <Card>
+                        <CardContent className="p-0">
+                            {loading ? (
+                                <div className="flex items-center justify-center py-16 text-muted-foreground">
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
+                                </div>
+                            ) : ordenados.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <Building2 className="mb-3 h-10 w-10 text-muted-foreground/40" />
+                                    <p className="font-medium">
+                                        {clientes.length === 0 ? "Nenhum cliente ainda" : "Nenhum cliente com esses filtros"}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {clientes.length === 0
+                                            ? "Cadastre a primeira conta em “Novo cliente”."
+                                            : "Ajuste a busca, o status, o segmento ou o responsável."}
+                                    </p>
+                                </div>
+                            ) : (
+                                <TabelaClientes
+                                    clientes={daPagina}
+                                    campanhasPorCliente={campanhasPorCliente}
+                                    atividadePorCliente={atividades}
+                                    favoritos={favoritos}
+                                    selecionado={selecionado}
+                                    ordenacao={ordenacao}
+                                    onOrdenar={ordenar}
+                                    onSelecionar={(id) => setSelecionado((s) => (s === id ? null : id))}
+                                    onEditar={(c) => { setEditando(c); setAberturas((n) => n + 1); setDialogAberto(true) }}
+                                    onExcluir={setExcluindo}
+                                    onStatus={mudarStatus}
+                                    onFavorito={alternarFavorito}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Paginacao
+                        total={ordenados.length}
+                        pagina={paginaAtual}
+                        porPagina={porPagina}
+                        onPagina={setPagina}
+                        onPorPagina={(n) => { setPorPagina(n); setPagina(1) }}
+                        substantivo={["cliente", "clientes"]}
+                    />
+
+                    {clienteAberto && (
+                        <PainelCliente
+                            cliente={clienteAberto}
+                            campanhas={campanhas.filter((c) => c.cliente_id === clienteAberto.id)}
+                            tarefas={tarefasPorCliente.get(clienteAberto.id) ?? []}
+                            onEditarTarefa={mudarStatusTarefa}
+                        />
+                    )}
+                </>
+            )}
+
+            <ClienteDialog
+                key={`${editando?.id ?? "novo"}-${aberturas}`}
+                cliente={editando}
+                aberto={dialogAberto}
+                onOpenChange={(v) => { setDialogAberto(v); if (!v) setEditando(null) }}
+                profiles={profiles}
+                onSalvo={() => { setDialogAberto(false); setEditando(null); carregar() }}
+            />
+
+            <AlertDialog open={!!excluindo} onOpenChange={(v) => !v && setExcluindo(null)}>
+                <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            As campanhas vinculadas também serão removidas.
+                            &quot;{excluindo?.nome}&quot; será removido — e com ele as campanhas, tarefas,
+                            subtarefas, comentários e anexos vinculados, em cascata. Para tirar a conta de
+                            circulação sem perder o histórico, mude o status para Encerrado.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl" disabled={deleting}>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
                         <AlertDialogAction
-                            className="rounded-xl bg-destructive text-white hover:bg-destructive/90"
-                            disabled={deleting}
-                            onClick={(e) => {
-                                e.preventDefault()
-                                handleDelete()
-                            }}
+                            onClick={() => excluindo && excluirCliente(excluindo)}
+                            className="bg-destructive text-white hover:bg-destructive/90"
                         >
-                            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
+                            Excluir mesmo assim
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

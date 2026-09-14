@@ -2,362 +2,487 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
-import type { Cliente, Campanha, CampanhaStatus } from "@/lib/db/types"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import {
-    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select"
+    AlertTriangle, CalendarClock, CircleAlert, LayoutGrid, List, Loader2,
+    Megaphone, Plus, Timer,
+} from "lucide-react"
+import { toast } from "sonner"
+
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Megaphone, Plus, Loader2, Search, Pencil, Trash2 } from "lucide-react"
-import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table"
+import { BarraFiltros } from "@/components/painel/barra-filtros"
+import { MetricaCard, variacaoPercentual } from "@/components/painel/metrica-card"
+import { Paginacao } from "@/components/painel/paginacao"
+import { dataCurta } from "@/lib/constants/blog"
+import {
+    brl, CAMPANHA_ETAPA_LABEL, CAMPANHA_STATUS, CAMPANHA_STATUS_ATIVOS,
+    CAMPANHA_STATUS_ORDEM, orcamentoDaCampanha,
+} from "@/lib/constants/campanhas"
+import { TAREFA_PRIORIDADE } from "@/lib/constants/tarefas"
+import { BLOG_PERIODOS, type BlogPeriodo } from "@/lib/constants/blog"
+import { useProfiles } from "@/hooks/use-profiles"
+import { createClient } from "@/lib/supabase/client"
+import type {
+    CampanhaEtapa, CampanhaMetrica, CampanhaStatus, Cliente, TarefaPrioridade,
+} from "@/lib/db/types"
+import { cn } from "@/lib/utils"
+import { CampanhaDialog } from "./campanha-dialog"
+import { CardCampanha } from "./card-campanha"
+import { capaDaCampanha, type CampanhaDaLista, type MapaMetricas } from "./tipos"
 
-type CampanhaComCliente = Campanha & { cliente: { nome: string } | null }
+const TODOS = "__todos__"
 
-const STATUS_META: Record<CampanhaStatus, { label: string; className: string }> = {
-    rascunho: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
-    planejamento: { label: "Planejamento", className: "bg-status-info/12 text-status-info" },
-    ativa: { label: "Ativa", className: "bg-status-sucesso/12 text-status-sucesso" },
-    concluida: { label: "Concluída", className: "bg-primary/15 text-primary" },
-    cancelada: { label: "Cancelada", className: "bg-status-erro/12 text-status-erro" },
-}
+const COLUNAS = `
+    *,
+    cliente:somos_preta_clientes(id, nome, logo_url),
+    dono:somos_preta_profiles!responsavel(id, nome, email, avatar_url)
+`
 
-const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-
-export default function CampaignsPage() {
+export default function CampanhasPage() {
     const [supabase] = useState(() => createClient())
-    const [campanhas, setCampanhas] = useState<CampanhaComCliente[]>([])
-    const [clientes, setClientes] = useState<Cliente[]>([])
+    const { profiles } = useProfiles()
+
+    const [campanhas, setCampanhas] = useState<CampanhaDaLista[]>([])
+    const [clientes, setClientes] = useState<Pick<Cliente, "id" | "nome">[]>([])
+    const [metricas, setMetricas] = useState<MapaMetricas>(new Map())
     const [loading, setLoading] = useState(true)
+    const [falhaSchema, setFalhaSchema] = useState(false)
+    // Relógio congelado no carregamento: ler Date.now() no render tornaria o
+    // filtro de período instável entre renderizações.
+    const [agora, setAgora] = useState(0)
+
+    const [visao, setVisao] = useState<"cards" | "lista">("cards")
     const [busca, setBusca] = useState("")
-    const [open, setOpen] = useState(false)
-    const [saving, setSaving] = useState(false)
+    const [status, setStatus] = useState(TODOS)
+    const [cliente, setCliente] = useState(TODOS)
+    const [responsavel, setResponsavel] = useState(TODOS)
+    const [periodo, setPeriodo] = useState<BlogPeriodo>("todos")
+    const [prioridade, setPrioridade] = useState(TODOS)
+    const [pagina, setPagina] = useState(1)
+    const [porPagina, setPorPagina] = useState(10)
 
-    const [form, setForm] = useState({
-        cliente_id: "", nome: "", objetivo: "", budget: "",
-        data_inicio: "", data_fim: "", status: "rascunho" as CampanhaStatus,
-    })
+    const [editando, setEditando] = useState<CampanhaDaLista | null>(null)
+    const [dialogAberto, setDialogAberto] = useState(false)
+    const [aberturas, setAberturas] = useState(0)
+    const [excluindo, setExcluindo] = useState<CampanhaDaLista | null>(null)
 
-    const [editing, setEditing] = useState<CampanhaComCliente | null>(null)
-    const [savingEdit, setSavingEdit] = useState(false)
-    const [deleting, setDeleting] = useState<CampanhaComCliente | null>(null)
-    const [editForm, setEditForm] = useState({
-        cliente_id: "", nome: "", objetivo: "", budget: "",
-        data_inicio: "", data_fim: "", status: "rascunho" as CampanhaStatus,
-    })
-
-    async function load() {
+    async function carregar() {
         setLoading(true)
-        const [{ data: camps }, { data: cls }] = await Promise.all([
-            supabase.from("somos_preta_campanhas").select("*, cliente:somos_preta_clientes(nome)").order("created_at", { ascending: false }),
-            supabase.from("somos_preta_clientes").select("*").order("nome"),
+        setAgora(Date.now())
+
+        const [lista, cls, mets] = await Promise.all([
+            supabase.from("somos_preta_campanhas").select(COLUNAS).limit(500),
+            supabase.from("somos_preta_clientes").select("id, nome").order("nome"),
+            supabase.rpc("somos_preta_campanha_metricas"),
         ])
-        setCampanhas((camps as CampanhaComCliente[]) ?? [])
-        setClientes((cls as Cliente[]) ?? [])
+
+        if (lista.error) { setFalhaSchema(true); setLoading(false); return }
+
+        setFalhaSchema(false)
+        setCampanhas((lista.data ?? []) as unknown as CampanhaDaLista[])
+        if (!cls.error) setClientes((cls.data ?? []) as Pick<Cliente, "id" | "nome">[])
+        if (!mets.error) {
+            setMetricas(new Map(((mets.data ?? []) as CampanhaMetrica[]).map((m) => [m.campanha_id, m])))
+        }
         setLoading(false)
     }
 
     useEffect(() => {
-        load()
+        carregar()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    function filtrar<T>(set: (v: T) => void) {
+        return (v: T) => { set(v); setPagina(1) }
+    }
+
+    // ------------------------------------------------------------- derivados
+
     const filtradas = useMemo(() => {
+        let r = campanhas
         const q = busca.trim().toLowerCase()
-        if (!q) return campanhas
-        return campanhas.filter((c) => c.nome.toLowerCase().includes(q) || (c.cliente?.nome ?? "").toLowerCase().includes(q))
-    }, [campanhas, busca])
-
-    async function handleCreate(e: React.FormEvent) {
-        e.preventDefault()
-        if (!form.nome.trim() || !form.cliente_id) {
-            toast.error("Escolha o cliente e informe o nome")
-            return
+        if (q) {
+            r = r.filter((c) =>
+                c.nome.toLowerCase().includes(q)
+                || c.cliente?.nome.toLowerCase().includes(q)
+                || c.tagline?.toLowerCase().includes(q)
+            )
         }
-        setSaving(true)
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error } = await supabase.from("somos_preta_campanhas").insert({
-            cliente_id: form.cliente_id,
-            nome: form.nome.trim(),
-            objetivo: form.objetivo || null,
-            budget: form.budget ? Number(form.budget) : 0,
-            data_inicio: form.data_inicio || null,
-            data_fim: form.data_fim || null,
-            status: form.status,
-            created_by: user?.id ?? null,
-        })
-        setSaving(false)
-        if (error) { toast.error("Não foi possível criar a campanha"); return }
-        toast.success("Campanha criada")
-        setOpen(false)
-        setForm({ cliente_id: "", nome: "", objetivo: "", budget: "", data_inicio: "", data_fim: "", status: "rascunho" })
-        load()
-    }
-
-    function openEdit(c: CampanhaComCliente) {
-        setEditing(c)
-        setEditForm({
-            cliente_id: c.cliente_id ?? "",
-            nome: c.nome,
-            objetivo: c.objetivo ?? "",
-            budget: c.budget != null ? String(c.budget) : "",
-            data_inicio: c.data_inicio ?? "",
-            data_fim: c.data_fim ?? "",
-            status: c.status,
-        })
-    }
-
-    async function handleUpdate(e: React.FormEvent) {
-        e.preventDefault()
-        if (!editing) return
-        if (!editForm.nome.trim() || !editForm.cliente_id) {
-            toast.error("Escolha o cliente e informe o nome")
-            return
+        if (status !== TODOS) r = r.filter((c) => c.status === status)
+        if (cliente !== TODOS) r = r.filter((c) => c.cliente_id === cliente)
+        if (responsavel !== TODOS) r = r.filter((c) => c.responsavel === responsavel)
+        if (prioridade !== TODOS) r = r.filter((c) => c.prioridade === prioridade)
+        if (periodo !== "todos" && agora > 0) {
+            const limite = agora - Number(periodo) * 24 * 60 * 60 * 1000
+            r = r.filter((c) => new Date(c.created_at).getTime() >= limite)
         }
-        setSavingEdit(true)
-        const { error } = await supabase.from("somos_preta_campanhas").update({
-            cliente_id: editForm.cliente_id,
-            nome: editForm.nome.trim(),
-            objetivo: editForm.objetivo || null,
-            budget: editForm.budget ? Number(editForm.budget) : 0,
-            data_inicio: editForm.data_inicio || null,
-            data_fim: editForm.data_fim || null,
-            status: editForm.status,
-        }).eq("id", editing.id)
-        setSavingEdit(false)
-        if (error) { toast.error("Não foi possível atualizar a campanha"); return }
-        toast.success("Campanha atualizada")
-        setEditing(null)
-        load()
+        return r.slice().sort((a, b) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        )
+    }, [campanhas, busca, status, cliente, responsavel, prioridade, periodo, agora])
+
+    const totalPaginas = Math.max(1, Math.ceil(filtradas.length / porPagina))
+    const paginaAtual = Math.min(pagina, totalPaginas)
+    const daPagina = filtradas.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina)
+
+    const filtrosAtivos = busca.trim() !== "" || status !== TODOS || cliente !== TODOS
+        || responsavel !== TODOS || prioridade !== TODOS || periodo !== "todos"
+
+    // --------------------------------------------------------------- métricas
+
+    const ativas = campanhas.filter((c) => CAMPANHA_STATUS_ATIVOS.includes(c.status))
+
+    const criadasNoMes = agora === 0 ? 0 : campanhas.filter(
+        (c) => new Date(c.created_at).getTime() >= agora - 30 * 24 * 60 * 60 * 1000
+    ).length
+    const criadasNoMesAnterior = agora === 0 ? 0 : campanhas.filter((c) => {
+        const t = new Date(c.created_at).getTime()
+        return t >= agora - 60 * 24 * 60 * 60 * 1000 && t < agora - 30 * 24 * 60 * 60 * 1000
+    }).length
+
+    const aguardando = campanhas.filter((c) => c.status === "em_aprovacao")
+    // status_desde (e não updated_at) porque corrigir uma vírgula no briefing
+    // não pode zerar o contador de espera.
+    const paradas = agora === 0 ? 0 : aguardando.filter(
+        (c) => new Date(c.status_desde).getTime() < agora - 7 * 24 * 60 * 60 * 1000
+    ).length
+
+    const entregasNaSemana = agora === 0 ? 0 : campanhas.filter((c) => {
+        const prox = metricas.get(c.id)?.proxima_entrega
+        if (!prox) return false
+        const t = new Date(prox).getTime()
+        return t >= agora && t <= agora + 7 * 24 * 60 * 60 * 1000
+    }).length
+
+    const hoje = new Date(agora || Date.now()).toISOString().slice(0, 10)
+    const atrasadas = campanhas.filter(
+        (c) => c.data_fim && c.data_fim < hoje && CAMPANHA_STATUS_ATIVOS.includes(c.status)
+    ).length
+
+    // ----------------------------------------------------------------- ações
+
+    async function aplicar(c: CampanhaDaLista, patch: Record<string, unknown>, msg: string) {
+        const { data, error } = await supabase
+            .from("somos_preta_campanhas")
+            .update(patch)
+            .eq("id", c.id)
+            .select("id")
+        if (error || !data?.length) { toast.error("Não foi possível atualizar"); return }
+        toast.success(msg)
+        carregar()
     }
 
-    async function handleDelete() {
-        if (!deleting) return
-        const { error } = await supabase.from("somos_preta_campanhas").delete().eq("id", deleting.id)
-        if (error) { toast.error("Não foi possível excluir a campanha"); return }
+    async function excluirCampanha(c: CampanhaDaLista) {
+        const { error } = await supabase.from("somos_preta_campanhas").delete().eq("id", c.id)
+        setExcluindo(null)
+        if (error) { toast.error("Não foi possível excluir"); return }
         toast.success("Campanha excluída")
-        setDeleting(null)
-        load()
+        carregar()
     }
+
+    function abrirDialogo(c: CampanhaDaLista | null) {
+        setEditando(c)
+        setAberturas((n) => n + 1)
+        setDialogAberto(true)
+    }
+
+    /** Responsável + cliente formam a pilha de avatares do card. */
+    function equipeDa(c: CampanhaDaLista) {
+        return c.dono ? [c.dono] : []
+    }
+
+    // ---------------------------------------------------------------- render
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+        <div className="space-y-5 sm:space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
                         <Megaphone className="h-6 w-6 text-primary" /> Campanhas
                     </h1>
-                    <p className="text-muted-foreground text-sm">Cada campanha pertence a um cliente e reúne suas tarefas.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Acompanhe campanhas, entregas, responsáveis e resultados.
+                    </p>
                 </div>
-
-                <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="rounded-xl" disabled={clientes.length === 0}>
-                            <Plus className="h-4 w-4" /> Nova campanha
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-lg">
-                        <form onSubmit={handleCreate}>
-                            <DialogHeader>
-                                <DialogTitle>Nova campanha</DialogTitle>
-                                <DialogDescription>Vincule a campanha a um cliente.</DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                    <Label>Cliente *</Label>
-                                    <Select value={form.cliente_id} onValueChange={(v) => setForm({ ...form, cliente_id: v })}>
-                                        <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-                                        <SelectContent>
-                                            {clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="nome">Nome *</Label>
-                                    <Input id="nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="objetivo">Objetivo</Label>
-                                    <Input id="objetivo" value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="budget">Budget (R$)</Label>
-                                        <Input id="budget" type="number" min="0" step="0.01" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label>Status</Label>
-                                        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as CampanhaStatus })}>
-                                            <SelectTrigger><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(STATUS_META).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="ini">Início</Label>
-                                        <Input id="ini" type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="fim">Fim</Label>
-                                        <Input id="fim" type="date" value={form.data_fim} onChange={(e) => setForm({ ...form, data_fim: e.target.value })} />
-                                    </div>
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button type="submit" disabled={saving} className="rounded-xl">
-                                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar campanha"}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <Button className="rounded-xl" onClick={() => abrirDialogo(null)}>
+                    <Plus className="h-4 w-4" /> Nova campanha
+                </Button>
             </div>
 
-            {clientes.length === 0 && !loading && (
-                <div className="text-sm text-muted-foreground bg-muted/50 rounded-xl p-3">
-                    Cadastre um <Link href="/app/clientes" className="text-primary underline">cliente</Link> antes de criar campanhas.
-                </div>
-            )}
-
-            <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar campanha ou cliente..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9 rounded-xl" />
-            </div>
-
-            {loading ? (
-                <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
-            ) : filtradas.length === 0 ? (
-                <Card><CardContent className="py-14 text-center text-muted-foreground">
-                    <Megaphone className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                    <p className="font-medium">Nenhuma campanha ainda</p>
-                </CardContent></Card>
-            ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {filtradas.map((c) => (
-                        <div key={c.id} className="relative group">
-                            <Link href={`/app/campanhas/${c.id}`}>
-                                <Card className="h-full hover:border-primary/50 transition-colors">
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <CardTitle className="text-base">{c.nome}</CardTitle>
-                                            <Badge className={STATUS_META[c.status].className} variant="secondary">{STATUS_META[c.status].label}</Badge>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{c.cliente?.nome ?? "Sem cliente"}</p>
-                                    </CardHeader>
-                                    <CardContent className="text-sm">
-                                        <p className="font-semibold">{brl(Number(c.budget))}</p>
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                            <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-lg border bg-background/80 p-0.5 opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    aria-label="Editar campanha"
-                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(c) }}
-                                >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-destructive hover:text-destructive"
-                                    aria-label="Excluir campanha"
-                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleting(c) }}
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            <Dialog open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null) }}>
-                <DialogContent className="sm:max-w-lg">
-                    <form onSubmit={handleUpdate}>
-                        <DialogHeader>
-                            <DialogTitle>Editar campanha</DialogTitle>
-                            <DialogDescription>Atualize os dados da campanha.</DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label>Cliente *</Label>
-                                <Select value={editForm.cliente_id} onValueChange={(v) => setEditForm({ ...editForm, cliente_id: v })}>
-                                    <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-                                    <SelectContent>
-                                        {clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-nome">Nome *</Label>
-                                <Input id="edit-nome" value={editForm.nome} onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })} required />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-objetivo">Objetivo</Label>
-                                <Input id="edit-objetivo" value={editForm.objetivo} onChange={(e) => setEditForm({ ...editForm, objetivo: e.target.value })} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit-budget">Budget (R$)</Label>
-                                    <Input id="edit-budget" type="number" min="0" step="0.01" value={editForm.budget} onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })} />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>Status</Label>
-                                    <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v as CampanhaStatus })}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(STATUS_META).map(([k, m]) => <SelectItem key={k} value={k}>{m.label}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit-ini">Início</Label>
-                                    <Input id="edit-ini" type="date" value={editForm.data_inicio} onChange={(e) => setEditForm({ ...editForm, data_inicio: e.target.value })} />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit-fim">Fim</Label>
-                                    <Input id="edit-fim" type="date" value={editForm.data_fim} onChange={(e) => setEditForm({ ...editForm, data_fim: e.target.value })} />
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button type="submit" disabled={savingEdit} className="rounded-xl">
-                                {savingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar alterações"}
+            {falhaSchema ? (
+                <Card className="border-status-atencao/40 bg-status-atencao/5">
+                    <CardContent className="flex items-start gap-3 p-5">
+                        <AlertTriangle className="h-5 w-5 shrink-0 text-status-atencao" />
+                        <div className="text-sm">
+                            <p className="font-medium">A tela precisa das migrations do painel.</p>
+                            <p className="mt-1 text-muted-foreground">
+                                Aplique <code className="rounded bg-muted px-1 py-0.5 text-xs">0019_painel_enums.sql</code> e{" "}
+                                <code className="rounded bg-muted px-1 py-0.5 text-xs">0020_painel_operacao.sql</code>, nessa ordem.
+                            </p>
+                            <Button variant="outline" size="sm" className="mt-3 rounded-xl" onClick={carregar}>
+                                Tentar de novo
                             </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : (
+                <>
+                    <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <MetricaCard
+                            icone={<Megaphone className="h-5 w-5" />}
+                            cor="bg-status-sucesso/12 text-status-sucesso"
+                            valor={ativas.length}
+                            rotulo={ativas.length === 1 ? "Campanha ativa" : "Campanhas ativas"}
+                            variacao={variacaoPercentual(criadasNoMes, criadasNoMesAnterior, "vs. mês anterior")}
+                            detalhe={criadasNoMes > 0 ? `+${criadasNoMes} no último mês` : undefined}
+                        />
+                        <MetricaCard
+                            icone={<Timer className="h-5 w-5" />}
+                            cor="bg-status-atencao/12 text-status-atencao"
+                            valor={aguardando.length}
+                            rotulo="Aguardando aprovação"
+                            detalhe={paradas > 0 ? `${paradas} há mais de 7 dias` : undefined}
+                            destaque={paradas > 0 ? "atencao" : undefined}
+                            onClick={() => filtrar(setStatus)("em_aprovacao")}
+                        />
+                        <MetricaCard
+                            icone={<CalendarClock className="h-5 w-5" />}
+                            cor="bg-status-info/12 text-status-info"
+                            valor={entregasNaSemana}
+                            rotulo="Entregas nesta semana"
+                            href="/tarefas"
+                            hrefLabel="Ver no calendário →"
+                        />
+                        <MetricaCard
+                            icone={<CircleAlert className="h-5 w-5" />}
+                            cor="bg-status-erro/12 text-status-erro"
+                            valor={atrasadas}
+                            rotulo={atrasadas === 1 ? "Campanha atrasada" : "Campanhas atrasadas"}
+                            detalhe={atrasadas > 0 ? "Requer atenção" : undefined}
+                            destaque={atrasadas > 0 ? "erro" : undefined}
+                        />
+                    </div>
 
-            <AlertDialog open={!!deleting} onOpenChange={(o) => { if (!o) setDeleting(null) }}>
+                    <BarraFiltros
+                        busca={busca}
+                        onBusca={filtrar(setBusca)}
+                        placeholder="Buscar campanha ou cliente..."
+                        ativos={filtrosAtivos}
+                        onLimpar={() => {
+                            setBusca(""); setStatus(TODOS); setCliente(TODOS)
+                            setResponsavel(TODOS); setPeriodo("todos"); setPrioridade(TODOS); setPagina(1)
+                        }}
+                        filtros={[
+                            {
+                                chave: "status", label: "Filtrar por status", valor: status,
+                                onChange: filtrar(setStatus),
+                                opcoes: [
+                                    { value: TODOS, label: "Status: todos" },
+                                    ...CAMPANHA_STATUS_ORDEM.map((s) => ({ value: s, label: CAMPANHA_STATUS[s].label })),
+                                ],
+                            },
+                            {
+                                chave: "cliente", label: "Filtrar por cliente", valor: cliente,
+                                onChange: filtrar(setCliente),
+                                opcoes: [
+                                    { value: TODOS, label: "Cliente: todos" },
+                                    ...clientes.map((c) => ({ value: c.id, label: c.nome })),
+                                ],
+                            },
+                            {
+                                chave: "responsavel", label: "Filtrar por responsável", valor: responsavel,
+                                onChange: filtrar(setResponsavel),
+                                opcoes: [
+                                    { value: TODOS, label: "Responsável: todos" },
+                                    ...profiles.map((p) => ({ value: p.id, label: p.nome ?? p.email ?? p.id })),
+                                ],
+                            },
+                            {
+                                chave: "periodo", label: "Filtrar por período", valor: periodo,
+                                onChange: filtrar(setPeriodo) as (v: string) => void,
+                                opcoes: BLOG_PERIODOS.map((p) => ({ value: p.value, label: p.label })),
+                            },
+                            {
+                                chave: "prioridade", label: "Filtrar por prioridade", valor: prioridade,
+                                onChange: filtrar(setPrioridade),
+                                className: "lg:w-[150px]",
+                                opcoes: [
+                                    { value: TODOS, label: "Prioridade: toda" },
+                                    ...(["urgente", "alta", "media", "baixa"] as TarefaPrioridade[])
+                                        .map((p) => ({ value: p, label: TAREFA_PRIORIDADE[p].label })),
+                                ],
+                            },
+                        ]}
+                        extras={
+                            <div className="flex items-center gap-1 rounded-xl border p-1">
+                                <Button
+                                    size="sm"
+                                    variant={visao === "cards" ? "default" : "ghost"}
+                                    className="rounded-lg"
+                                    onClick={() => setVisao("cards")}
+                                    aria-pressed={visao === "cards"}
+                                >
+                                    <LayoutGrid className="h-3.5 w-3.5" /> Cards
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={visao === "lista" ? "default" : "ghost"}
+                                    className="rounded-lg"
+                                    onClick={() => setVisao("lista")}
+                                    aria-pressed={visao === "lista"}
+                                >
+                                    <List className="h-3.5 w-3.5" /> Lista
+                                </Button>
+                            </div>
+                        }
+                    />
+
+                    {loading ? (
+                        <Card><CardContent className="flex items-center justify-center py-16 text-muted-foreground">
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
+                        </CardContent></Card>
+                    ) : filtradas.length === 0 ? (
+                        <Card><CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                            <Megaphone className="mb-3 h-10 w-10 text-muted-foreground/40" />
+                            <p className="font-medium">
+                                {campanhas.length === 0 ? "Nenhuma campanha ainda" : "Nenhuma campanha com esses filtros"}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                {campanhas.length === 0 ? (
+                                    clientes.length === 0
+                                        ? <>Cadastre um <Link href="/clientes" className="text-primary underline">cliente</Link> antes de criar campanhas.</>
+                                        : "Crie a primeira em “Nova campanha”."
+                                ) : "Ajuste a busca, o status, o cliente ou o período."}
+                            </p>
+                        </CardContent></Card>
+                    ) : visao === "cards" ? (
+                        <div className="grid gap-4 xl:grid-cols-2">
+                            {daPagina.map((c) => (
+                                <CardCampanha
+                                    key={c.id}
+                                    campanha={c}
+                                    metrica={metricas.get(c.id)}
+                                    equipe={equipeDa(c)}
+                                    onEditar={abrirDialogo}
+                                    onExcluir={setExcluindo}
+                                    onStatus={(camp, s: CampanhaStatus) =>
+                                        aplicar(camp, { status: s }, `Campanha movida para ${CAMPANHA_STATUS[s].label.toLowerCase()}`)}
+                                    onEtapa={(camp, e: CampanhaEtapa) =>
+                                        aplicar(camp, { etapa: e }, `Etapa: ${CAMPANHA_ETAPA_LABEL[e]}`)}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <Card><CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Campanha</TableHead>
+                                        <TableHead className="hidden md:table-cell">Cliente</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="hidden lg:table-cell">Etapa</TableHead>
+                                        <TableHead className="hidden xl:table-cell">Responsável</TableHead>
+                                        <TableHead className="hidden sm:table-cell">Prazo</TableHead>
+                                        <TableHead className="hidden lg:table-cell text-right">Orçamento</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {daPagina.map((c) => {
+                                        const capa = capaDaCampanha(c)
+                                        const orc = orcamentoDaCampanha(c)
+                                        return (
+                                            <TableRow key={c.id}>
+                                                <TableCell className="max-w-[260px] font-medium whitespace-normal">
+                                                    <Link href={`/campanhas/${c.id}`} className="flex items-center gap-2.5 hover:text-primary">
+                                                        {capa ? (
+                                                            // eslint-disable-next-line @next/next/no-img-element
+                                                            <img src={capa} alt="" className="h-8 w-8 shrink-0 rounded-lg bg-muted object-cover" />
+                                                        ) : (
+                                                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                                                <Megaphone className="h-3.5 w-3.5" />
+                                                            </span>
+                                                        )}
+                                                        <span className="truncate uppercase">{c.nome}</span>
+                                                    </Link>
+                                                </TableCell>
+                                                <TableCell className="hidden md:table-cell text-muted-foreground">
+                                                    {c.cliente?.nome ?? "—"}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary" className={CAMPANHA_STATUS[c.status].className}>
+                                                        {CAMPANHA_STATUS[c.status].label}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="hidden lg:table-cell text-muted-foreground">
+                                                    {CAMPANHA_ETAPA_LABEL[c.etapa]}
+                                                </TableCell>
+                                                <TableCell className="hidden xl:table-cell text-muted-foreground">
+                                                    {c.dono?.nome ?? c.dono?.email ?? "—"}
+                                                </TableCell>
+                                                <TableCell className={cn(
+                                                    "hidden sm:table-cell",
+                                                    c.data_fim && c.data_fim < hoje && "text-status-erro",
+                                                )}>
+                                                    {c.data_fim ? dataCurta(c.data_fim) : "—"}
+                                                </TableCell>
+                                                <TableCell className="hidden lg:table-cell text-right tabular-nums">
+                                                    {orc ? brl(orc.valor) : "—"}
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </CardContent></Card>
+                    )}
+
+                    <Paginacao
+                        total={filtradas.length}
+                        pagina={paginaAtual}
+                        porPagina={porPagina}
+                        onPagina={setPagina}
+                        onPorPagina={(n) => { setPorPagina(n); setPagina(1) }}
+                        substantivo={["campanha", "campanhas"]}
+                    />
+                </>
+            )}
+
+            <CampanhaDialog
+                key={`${editando?.id ?? "nova"}-${aberturas}`}
+                campanha={editando}
+                aberto={dialogAberto}
+                onOpenChange={(v) => { setDialogAberto(v); if (!v) setEditando(null) }}
+                clientes={clientes}
+                profiles={profiles}
+                onSalvo={() => { setDialogAberto(false); setEditando(null); carregar() }}
+            />
+
+            <AlertDialog open={!!excluindo} onOpenChange={(v) => !v && setExcluindo(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
-                        <AlertDialogDescription>As tarefas vinculadas também serão removidas.</AlertDialogDescription>
+                        <AlertDialogDescription>
+                            &quot;{excluindo?.nome}&quot; será removida — e com ela as tarefas, subtarefas,
+                            comentários e anexos vinculados, em cascata. Para tirá-la de circulação
+                            preservando o histórico, mude o status para Cancelada.
+                        </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
+                        <AlertDialogAction
+                            onClick={() => excluindo && excluirCampanha(excluindo)}
+                            className="bg-destructive text-white hover:bg-destructive/90"
+                        >
+                            Excluir mesmo assim
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
