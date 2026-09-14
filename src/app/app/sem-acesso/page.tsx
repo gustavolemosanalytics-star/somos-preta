@@ -11,7 +11,7 @@ export default function SemAcessoPage() {
     async function sair() {
         const supabase = createClient()
         await supabase.auth.signOut()
-        router.push("/app/login")
+        router.push("/login")
         router.refresh()
     }
 

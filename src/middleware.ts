@@ -2,20 +2,51 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { updateSession } from "@/lib/supabase/middleware"
 
-/** Subdomínio dedicado ao painel interno. */
+/**
+ * O painel é servido na RAIZ de um subdomínio próprio: o usuário navega em
+ * /dashboard, /clientes, /tarefas.
+ *
+ * As rotas, porém, moram em src/app/app/(painel)/ e não podem sair de lá: o
+ * /blog do painel colidiria com o /blog do site público, e duas páginas
+ * resolvendo o mesmo caminho é erro de build no Next. O prefixo é, então, um
+ * detalhe físico que este middleware esconde — ele reescreve /clientes para
+ * /app/clientes na entrada e tira o /app de qualquer redirect na saída.
+ *
+ * Qualquer host cujo primeiro rótulo seja "plataforma" conta como painel. Isso
+ * cobre produção (plataforma.somospreta.com), previews com subdomínio próprio e
+ * o desenvolvimento local em plataforma.localhost:3000 — que é como se abre o
+ * painel na máquina, já que localhost:3000 continua servindo o site.
+ */
+function ehHostDaPlataforma(host: string) {
+    return host === "plataforma" || host.startsWith("plataforma.")
+}
+
+/** Domínios do site institucional, onde o painel NÃO é servido. */
+const HOSTS_SITE = ["www.somospreta.com", "somospreta.com"]
+
+/** Subdomínio do painel, destino dos redirects vindos do site. */
 const HOST_PLATAFORMA = "plataforma.somospreta.com"
 
-/** Domínios onde o painel NÃO deve ser servido pelo prefixo /app. */
-const HOSTS_SITE = ["www.somospreta.com", "somospreta.com"]
+/**
+ * Primeiros segmentos que pertencem ao painel.
+ *
+ * Servem para atender bookmarks antigos: quem guardou somospreta.com/clientes
+ * de quando o painel vivia no mesmo domínio é levado ao subdomínio. A lista é
+ * explícita porque há caminho ambíguo — /blog existe nos dois lados e, no site,
+ * é o blog público.
+ */
+const SEGMENTOS_DO_PAINEL = new Set([
+    "dashboard", "clientes", "campanhas", "tarefas", "criadores", "contratos",
+    "mensagens", "relatorios", "usuarios", "configuracoes", "descobrir",
+    "login", "criar-conta", "esqueci-senha", "redefinir-senha", "sem-acesso",
+])
 
 export async function middleware(request: NextRequest) {
     const host = (request.headers.get("host") ?? "").split(":")[0].toLowerCase()
     const { pathname } = request.nextUrl
 
-    // ---- plataforma.somospreta.com serve o painel na raiz ----
-    // O usuário vê /dashboard; internamente continua sendo /app/dashboard, então
-    // nenhuma rota precisou ser movida de lugar.
-    if (host === HOST_PLATAFORMA) {
+    // ---- o subdomínio serve o painel na raiz ----
+    if (ehHostDaPlataforma(host)) {
         // O callback do OAuth é da aplicação inteira, não do painel: reescrevê-lo
         // para /app/auth/callback daria 404 e o login social morreria em silêncio
         // caso alguém chegue por aqui.
@@ -24,7 +55,7 @@ export async function middleware(request: NextRequest) {
         }
 
         if (pathname.startsWith("/app")) {
-            // /app/x no subdomínio é duplicação: manda para a forma limpa.
+            // /app/x aqui é duplicação: manda para a forma limpa, que é a canônica.
             const url = request.nextUrl.clone()
             url.pathname = pathname.replace(/^\/app/, "") || "/"
             return NextResponse.redirect(url)
@@ -59,14 +90,19 @@ export async function middleware(request: NextRequest) {
         return rewrite
     }
 
-    // ---- no site, /app passa a viver no subdomínio ----
-    if (HOSTS_SITE.includes(host) && pathname.startsWith("/app")) {
-        const url = new URL(request.url)
-        url.host = HOST_PLATAFORMA
-        url.protocol = "https:"
-        url.port = ""
-        url.pathname = pathname.replace(/^\/app/, "") || "/"
-        return NextResponse.redirect(url)
+    // ---- no site, o painel vive no subdomínio ----
+    if (HOSTS_SITE.includes(host)) {
+        const primeiro = pathname.split("/")[1] ?? ""
+        const ehDoPainel = pathname.startsWith("/app") || SEGMENTOS_DO_PAINEL.has(primeiro)
+
+        if (ehDoPainel) {
+            const url = new URL(request.url)
+            url.host = HOST_PLATAFORMA
+            url.protocol = "https:"
+            url.port = ""
+            url.pathname = pathname.replace(/^\/app/, "") || "/"
+            return NextResponse.redirect(url)
+        }
     }
 
     return await updateSession(request)
@@ -74,7 +110,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     // Arquivos estáticos de /public também passam pelo middleware e, por não
-    // constarem em PUBLIC_PATHS, eram redirecionados para /app/login — o que
+    // constarem em PUBLIC_PATHS, eram redirecionados para o login — o que
     // quebrava as imagens da landing para quem não estava logado. A extensão
     // no fim do matcher tira todo asset do caminho da autenticação.
     matcher: [

@@ -45,7 +45,7 @@ export default function RegistroPage() {
         // (um admin promove a staff pela tela de Usuários, se for o caso.)
         // Cadastro interno entra como 'pendente' (sem acesso) até um admin liberar.
         if (data.session) {
-            router.push("/app/sem-acesso")
+            router.push("/sem-acesso")
             router.refresh()
             return
         }
@@ -70,7 +70,7 @@ export default function RegistroPage() {
                             Enviamos um link de confirmação para <strong>{email}</strong>. Confirme
                             para acessar a plataforma.
                         </p>
-                        <Link href="/app/login" className="text-primary text-sm font-medium hover:underline inline-block">
+                        <Link href="/login" className="text-primary text-sm font-medium hover:underline inline-block">
                             Voltar para o login
                         </Link>
                     </div>
@@ -132,7 +132,7 @@ export default function RegistroPage() {
 
                 <p className="text-center text-muted-foreground text-sm">
                     Já tem conta?{" "}
-                    <Link href="/app/login" className="text-primary font-medium hover:underline">
+                    <Link href="/login" className="text-primary font-medium hover:underline">
                         Entrar
                     </Link>
                 </p>

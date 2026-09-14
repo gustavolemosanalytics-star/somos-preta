@@ -45,7 +45,7 @@ export async function criarUsuario(input: {
         .update({ nome: input.nome, role: input.role })
         .eq("id", data.user.id)
 
-    revalidatePath("/app/usuarios")
+    revalidatePath("/usuarios")
     return { ok: true }
 }
 
@@ -61,7 +61,7 @@ export async function atualizarPapel(
     const admin = createAdminClient()
     const { error } = await admin.from("somos_preta_profiles").update({ role }).eq("id", userId)
     if (error) return { error: error.message }
-    revalidatePath("/app/usuarios")
+    revalidatePath("/usuarios")
     return { ok: true }
 }
 
@@ -75,6 +75,6 @@ export async function excluirUsuario(id: string): Promise<{ ok?: true; error?: s
     const { error } = await admin.auth.admin.deleteUser(id)
     if (error) return { error: error.message }
 
-    revalidatePath("/app/usuarios")
+    revalidatePath("/usuarios")
     return { ok: true }
 }

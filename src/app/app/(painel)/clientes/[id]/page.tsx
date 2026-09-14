@@ -19,16 +19,8 @@ import {
 } from "@/components/ui/select"
 import { Building2, Plus, Loader2, ArrowLeft, Megaphone, Mail, Phone } from "lucide-react"
 import { toast } from "sonner"
+import { CAMPANHA_STATUS as STATUS_META, brl } from "@/lib/constants/campanhas"
 
-const STATUS_META: Record<CampanhaStatus, { label: string; className: string }> = {
-    rascunho: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
-    planejamento: { label: "Planejamento", className: "bg-status-info/12 text-status-info" },
-    ativa: { label: "Ativa", className: "bg-status-sucesso/12 text-status-sucesso" },
-    concluida: { label: "Concluída", className: "bg-primary/15 text-primary" },
-    cancelada: { label: "Cancelada", className: "bg-status-erro/12 text-status-erro" },
-}
-
-const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 export default function ClienteDetalhePage() {
     const params = useParams<{ id: string }>()
@@ -93,7 +85,7 @@ export default function ClienteDetalhePage() {
     if (!cliente) {
         return (
             <div className="space-y-4">
-                <Link href="/app/clientes" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Clientes</Link>
+                <Link href="/clientes" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Clientes</Link>
                 <p className="text-muted-foreground">Cliente não encontrado.</p>
             </div>
         )
@@ -101,7 +93,7 @@ export default function ClienteDetalhePage() {
 
     return (
         <div className="space-y-6">
-            <Link href="/app/clientes" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
+            <Link href="/clientes" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
                 <ArrowLeft className="h-4 w-4" /> Clientes
             </Link>
 
@@ -201,7 +193,7 @@ export default function ClienteDetalhePage() {
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {campanhas.map((c) => (
-                        <Link key={c.id} href={`/app/campanhas/${c.id}`}>
+                        <Link key={c.id} href={`/campanhas/${c.id}`}>
                             <Card className="h-full hover:border-primary/50 transition-colors">
                                 <CardHeader className="pb-3">
                                     <div className="flex items-start justify-between gap-2">

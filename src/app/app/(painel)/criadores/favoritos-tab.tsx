@@ -67,7 +67,7 @@ export function FavoritosTab() {
                                 <AvatarFallback>{i.nome.slice(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="min-w-0">
-                                <Link href={`/app/criadores/${i.id}`} className="font-medium hover:text-primary truncate block">{i.nome}</Link>
+                                <Link href={`/criadores/${i.id}`} className="font-medium hover:text-primary truncate block">{i.nome}</Link>
                                 <p className="text-xs text-muted-foreground truncate">{i.instagram ?? "—"}</p>
                             </div>
                         </div>

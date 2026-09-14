@@ -40,7 +40,7 @@ export default function LoginPage() {
 
         // /app/login é a porta do sistema interno -> sempre dashboard.
         // O gate do painel decide: staff entra; sem acesso vai para /app/sem-acesso.
-        router.push("/app/dashboard")
+        router.push("/dashboard")
         router.refresh()
     }
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <Label htmlFor="password">Senha</Label>
-                            <Link href="/app/esqueci-senha" className="text-primary text-xs font-medium hover:underline">
+                            <Link href="/esqueci-senha" className="text-primary text-xs font-medium hover:underline">
                                 Esqueci minha senha
                             </Link>
                         </div>
@@ -109,7 +109,7 @@ export default function LoginPage() {
 
                 <p className="text-center text-muted-foreground text-sm">
                     Não tem conta?{" "}
-                    <Link href="/app/criar-conta" className="text-primary font-medium hover:underline">
+                    <Link href="/criar-conta" className="text-primary font-medium hover:underline">
                         Criar conta
                     </Link>
                 </p>

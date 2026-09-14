@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
-import { SITE_URL } from "@/lib/constants/site"
+import { PLATAFORMA_URL, SITE_URL } from "@/lib/constants/site"
 
 /**
  * Callback do login social.
@@ -28,20 +28,24 @@ export async function GET(request: NextRequest) {
     const origem = searchParams.get("origem")
     const erro = searchParams.get("error_description") ?? searchParams.get("error")
 
-    const telaDeEntrada = origem === "creator" ? "/creator/login" : "/app/login"
+    // A equipe entra pelo subdomínio do painel; o criador, pelo site. Guardar a
+    // URL inteira (e não só o caminho) é o que permite os dois conviverem.
+    const telaDeEntrada = origem === "creator"
+        ? `${base}/creator/login`
+        : `${url.hostname === "localhost" ? url.origin : PLATAFORMA_URL}/login`
 
     if (erro) {
-        return NextResponse.redirect(`${base}${telaDeEntrada}?erro=oauth`)
+        return NextResponse.redirect(`${telaDeEntrada}?erro=oauth`)
     }
     if (!code) {
-        return NextResponse.redirect(`${base}${telaDeEntrada}`)
+        return NextResponse.redirect(telaDeEntrada)
     }
 
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-        return NextResponse.redirect(`${base}${telaDeEntrada}?erro=oauth`)
+        return NextResponse.redirect(`${telaDeEntrada}?erro=oauth`)
     }
 
     // O papel é decidido na criação do usuário, pelo trigger em auth.users:

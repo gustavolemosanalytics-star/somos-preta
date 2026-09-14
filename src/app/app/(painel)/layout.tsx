@@ -2,8 +2,8 @@ import { redirect } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { PainelBreadcrumb } from "@/components/dashboard/painel-breadcrumb"
 import { getProfile } from "@/lib/supabase/auth"
 
 const STAFF_ROLES = ["admin", "gestor", "analista"]
@@ -16,10 +16,10 @@ export default async function DashboardLayout({
     const profile = await getProfile()
 
     // Sem perfil (não logado ou schema ainda não aplicado) -> login
-    if (!profile) redirect("/app/login")
+    if (!profile) redirect("/login")
 
     // Sem papel de equipe -> sem acesso ao sistema interno (aguarda liberação de um admin)
-    if (!STAFF_ROLES.includes(profile.role)) redirect("/app/sem-acesso")
+    if (!STAFF_ROLES.includes(profile.role)) redirect("/sem-acesso")
 
     const navUser = {
         name: profile.nome ?? "Usuário",
@@ -36,17 +36,7 @@ export default async function DashboardLayout({
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         <SidebarTrigger className="-ml-1 shrink-0" />
                         <Separator orientation="vertical" className="mr-2 h-4 hidden sm:block" />
-                        <Breadcrumb className="hidden sm:flex">
-                            <BreadcrumbList>
-                                <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="/app/dashboard">Dashboard</BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage className="truncate max-w-[150px] sm:max-w-none">Visão Geral</BreadcrumbPage>
-                                </BreadcrumbItem>
-                            </BreadcrumbList>
-                        </Breadcrumb>
+                        <PainelBreadcrumb />
                     </div>
                     <DashboardHeader />
                 </header>

@@ -67,7 +67,7 @@ export default function CreatorProfilePage() {
     if (!influencer) {
         return (
             <div className="space-y-4">
-                <Link href="/app/criadores" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Criadores</Link>
+                <Link href="/criadores" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Criadores</Link>
                 <p className="text-muted-foreground">Criador não encontrado.</p>
             </div>
         )
@@ -75,7 +75,7 @@ export default function CreatorProfilePage() {
 
     return (
         <div className="space-y-6">
-            <Link href="/app/criadores" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Criadores</Link>
+            <Link href="/criadores" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Criadores</Link>
 
             <Card>
                 <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-6">
@@ -274,7 +274,7 @@ function CampanhasTab({ influencerId }: { influencerId: string }) {
     return (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
             {vinculos.map((v, idx) => (
-                <Link key={idx} href={`/app/campanhas/${v.campanha.id}`}>
+                <Link key={idx} href={`/campanhas/${v.campanha.id}`}>
                     <Card className="hover:shadow-md transition-shadow h-full">
                         <CardContent className="pt-6 space-y-2">
                             <div className="flex items-center justify-between">

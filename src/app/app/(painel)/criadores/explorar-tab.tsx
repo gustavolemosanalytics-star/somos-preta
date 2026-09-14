@@ -397,7 +397,7 @@ export function ExplorarTab() {
                     {selecionados.length > 0 && (
                         <div className="flex items-center gap-2 -mb-4">
                             <span className="text-xs text-muted-foreground">{selecionados.length} selecionado(s)</span>
-                            <Link href="/app/criadores?tab=comparar"><Button size="sm" variant="outline" className="rounded-xl"><Scale className="h-3.5 w-3.5" /> Comparar</Button></Link>
+                            <Link href="/criadores?tab=comparar"><Button size="sm" variant="outline" className="rounded-xl"><Scale className="h-3.5 w-3.5" /> Comparar</Button></Link>
                             <Button size="sm" variant="ghost" onClick={limpar}>Limpar</Button>
                         </div>
                     )}
@@ -418,7 +418,7 @@ export function ExplorarTab() {
                                             aria-label={`Selecionar ${influencer.nome}`}
                                         />
                                     </div>
-                                    <Link href={`/app/criadores/${influencer.id}`}>
+                                    <Link href={`/criadores/${influencer.id}`}>
                                         <div className="aspect-square bg-muted relative overflow-hidden">
                                             {influencer.avatar_url ? (
                                                 <Image src={influencer.avatar_url} alt={influencer.nome} fill className="object-cover" unoptimized />

@@ -144,7 +144,7 @@ function ListaDetalhe({ lista, onVoltar }: { lista: Lista; onVoltar: () => void 
                             {membros.map((m) => (
                                 <TableRow key={m.id}>
                                     <TableCell>
-                                        <Link href={`/app/criadores/${m.influencer.id}`} className="flex items-center gap-2 hover:text-primary font-medium">
+                                        <Link href={`/criadores/${m.influencer.id}`} className="flex items-center gap-2 hover:text-primary font-medium">
                                             <Avatar className="h-7 w-7">{m.influencer.avatar_url && <AvatarImage src={m.influencer.avatar_url} alt={m.influencer.nome} />}<AvatarFallback className="text-[10px]">{m.influencer.nome.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
                                             {m.influencer.nome}
                                         </Link>

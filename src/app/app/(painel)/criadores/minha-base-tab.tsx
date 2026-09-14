@@ -238,7 +238,7 @@ export function MinhaBaseTab() {
                 {selecionados.length > 0 && (
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{selecionados.length} selecionado(s)</span>
-                        <Link href="/app/criadores?tab=comparar"><Button size="sm" variant="outline" className="rounded-xl"><Scale className="h-3.5 w-3.5" /> Comparar</Button></Link>
+                        <Link href="/criadores?tab=comparar"><Button size="sm" variant="outline" className="rounded-xl"><Scale className="h-3.5 w-3.5" /> Comparar</Button></Link>
                         <Button size="sm" variant="ghost" onClick={limpar}>Limpar</Button>
                     </div>
                 )}
@@ -274,7 +274,7 @@ export function MinhaBaseTab() {
                                     <TableRow key={i.id} data-state={selecionados.includes(i.id) ? "selected" : undefined}>
                                         <TableCell><Checkbox checked={selecionados.includes(i.id)} onCheckedChange={() => toggle(i.id)} aria-label={`Selecionar ${i.nome}`} /></TableCell>
                                         <TableCell className="font-medium">
-                                            <Link href={`/app/criadores/${i.id}`} className="flex items-center gap-2 hover:text-primary">
+                                            <Link href={`/criadores/${i.id}`} className="flex items-center gap-2 hover:text-primary">
                                                 <CreatorAvatar i={i} />
                                                 <span className="truncate">
                                                     {i.nome}
@@ -413,7 +413,7 @@ function RowActions({ row, supabase, reload }: {
                         <Detail label="Fonte" value={row.fonte === "app" ? "App" : "Interna"} />
                         {row.email ? <Detail label="E-mail" value={row.email} /> : null}
                         {row.telefone ? <Detail label="Telefone" value={row.telefone} /> : null}
-                        <Detail label="Ficha completa" value={<Link href={`/app/criadores/${row.id}`} className="text-primary hover:underline">Ver ficha</Link>} />
+                        <Detail label="Ficha completa" value={<Link href={`/criadores/${row.id}`} className="text-primary hover:underline">Ver ficha</Link>} />
                     </div>
                 </DialogContent>
             </Dialog>

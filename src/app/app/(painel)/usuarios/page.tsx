@@ -6,7 +6,7 @@ export default async function UsuariosPage() {
     const profile = await getProfile()
     if (!profile) redirect("/login")
     // Tela exclusiva de administradores
-    if (profile.role !== "admin") redirect("/app/dashboard")
+    if (profile.role !== "admin") redirect("/dashboard")
 
     return <UsuariosClient meId={profile.id} />
 }

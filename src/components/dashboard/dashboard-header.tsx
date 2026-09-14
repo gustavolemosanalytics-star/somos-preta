@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Bell, Search, Moon, Sun } from "lucide-react"
+import { Bell, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useTheme } from "next-themes"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,7 +31,6 @@ const NOTIF_LABEL: Record<NotificacaoTipo, (ator: string) => string> = {
 }
 
 export function DashboardHeader() {
-    const { setTheme, theme } = useTheme()
     const [supabase] = useState(() => createClient())
     const [notificacoes, setNotificacoes] = useState<NotificacaoComTarefa[]>([])
 
@@ -67,8 +65,8 @@ export function DashboardHeader() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                     type="search"
-                    placeholder="Buscar..."
-                    className="pl-9 w-[180px] lg:w-[240px] h-9 bg-muted/50 border-transparent focus:border-primary/50 rounded-xl transition-all"
+                    placeholder="Buscar na plataforma..."
+                    className="pl-9 w-[200px] lg:w-[300px] h-9 bg-muted/50 border-transparent focus:border-primary/50 rounded-xl transition-all"
                 />
             </div>
 
@@ -114,8 +112,8 @@ export function DashboardHeader() {
                             const atorNome = n.ator?.nome ?? n.ator?.email ?? "Alguém"
                             const abrirEmAtualizacoes = n.tipo === "mencao" || n.tipo === "comentario" || n.tipo === "solicitacao_revisao"
                             const href = n.tarefa
-                                ? `/app/tarefas/${n.tarefa.id}${abrirEmAtualizacoes ? "?tab=atualizacoes" : ""}`
-                                : "/app/tarefas"
+                                ? `/tarefas/${n.tarefa.id}${abrirEmAtualizacoes ? "?tab=atualizacoes" : ""}`
+                                : "/tarefas"
                             return (
                                 <DropdownMenuItem key={n.id} asChild className="p-0">
                                     <Link
@@ -136,17 +134,6 @@ export function DashboardHeader() {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Theme toggle */}
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-xl"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Alternar tema</span>
-            </Button>
         </div>
     )
 }

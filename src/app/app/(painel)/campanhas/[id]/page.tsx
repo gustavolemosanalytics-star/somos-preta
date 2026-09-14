@@ -20,12 +20,14 @@ import {
 } from "@/components/ui/select"
 import { ArrowLeft, Plus, Loader2, ClipboardList, Megaphone } from "lucide-react"
 import { toast } from "sonner"
+import { CAMPANHA_STATUS } from "@/lib/constants/campanhas"
 
 type CampanhaComCliente = Campanha & { cliente: { id: string; nome: string } | null }
 
-const CAMP_STATUS: Record<CampanhaStatus, string> = {
-    rascunho: "Rascunho", planejamento: "Planejamento", ativa: "Ativa", concluida: "Concluída", cancelada: "Cancelada",
-}
+const STATUS_LABEL: Record<CampanhaStatus, string> =
+    Object.fromEntries(
+        (Object.keys(CAMPANHA_STATUS) as CampanhaStatus[]).map((s) => [s, CAMPANHA_STATUS[s].label])
+    ) as Record<CampanhaStatus, string>
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 export default function CampanhaDetalhePage() {
@@ -101,7 +103,7 @@ export default function CampanhaDetalhePage() {
     if (!campanha) {
         return (
             <div className="space-y-4">
-                <Link href="/app/campanhas" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Campanhas</Link>
+                <Link href="/campanhas" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Campanhas</Link>
                 <p className="text-muted-foreground">Campanha não encontrada.</p>
             </div>
         )
@@ -112,8 +114,8 @@ export default function CampanhaDetalhePage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Link href="/app/campanhas" className="hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Campanhas</Link>
-                {campanha.cliente && (<><span>/</span><Link href={`/app/clientes/${campanha.cliente.id}`} className="hover:text-primary">{campanha.cliente.nome}</Link></>)}
+                <Link href="/campanhas" className="hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Campanhas</Link>
+                {campanha.cliente && (<><span>/</span><Link href={`/clientes/${campanha.cliente.id}`} className="hover:text-primary">{campanha.cliente.nome}</Link></>)}
             </div>
 
             <Card>
@@ -126,7 +128,7 @@ export default function CampanhaDetalhePage() {
                                 <p className="text-sm text-muted-foreground">{campanha.objetivo ?? "—"}</p>
                             </div>
                         </div>
-                        <Badge variant="secondary">{CAMP_STATUS[campanha.status]}</Badge>
+                        <Badge variant="secondary">{STATUS_LABEL[campanha.status]}</Badge>
                     </div>
                     <div className="flex flex-wrap gap-4 pt-2 text-sm text-muted-foreground">
                         <span className="font-semibold text-foreground">{brl(Number(campanha.budget))}</span>
@@ -191,7 +193,7 @@ export default function CampanhaDetalhePage() {
                             <Card key={t.id}>
                                 <CardContent className="flex items-center gap-3 py-3">
                                     <div className="flex-1 min-w-0">
-                                        <Link href={`/app/tarefas/${t.id}`} className="hover:text-primary">
+                                        <Link href={`/tarefas/${t.id}`} className="hover:text-primary">
                                             <p className={`font-medium truncate ${t.status === "concluida" ? "line-through text-muted-foreground" : ""}`}>{t.titulo}</p>
                                         </Link>
                                         <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground mt-0.5">

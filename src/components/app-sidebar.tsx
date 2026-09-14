@@ -4,19 +4,6 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import {
-    LayoutDashboard,
-    Users,
-    Megaphone,
-    Building2,
-    ClipboardList,
-    Newspaper,
-    FileText,
-    MessageSquare,
-    BarChart3,
-    ShieldCheck,
-} from "lucide-react"
-
-import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
@@ -32,29 +19,41 @@ import {
 } from "@/components/ui/sidebar"
 import { NavUser, type NavUserData } from "@/components/nav-user"
 import { SimboloPreta } from "@/components/public/marca"
+import { Badge } from "@/components/ui/badge"
+import { NAV_ADMIN, NAV_PLATAFORMA, rotaLimpa } from "@/lib/constants/navegacao"
+import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 
-// Navegação — hierarquia principal: Cliente > Campanhas > Tarefas
-const navItems = [
-    { title: "Dashboard", url: "/app/dashboard", icon: LayoutDashboard },
-    { title: "Clientes", url: "/app/clientes", icon: Building2 },
-    { title: "Campanhas", url: "/app/campanhas", icon: Megaphone },
-    { title: "Tarefas", url: "/app/tarefas", icon: ClipboardList },
-    { title: "Criadores", url: "/app/criadores", icon: Users },
-    { title: "Contratos", url: "/app/contratos", icon: FileText },
-    { title: "Mensagens", url: "/app/mensagens", icon: MessageSquare },
-    { title: "Blog", url: "/app/blog", icon: Newspaper },
-    { title: "Relatórios", url: "/app/relatorios", icon: BarChart3 },
-]
-
 export function AppSidebar({ user, ...props }: { user: NavUserData } & React.ComponentProps<typeof Sidebar>) {
-    const pathname = usePathname()
+    // Normaliza /app/... para a forma limpa: o item ativo precisa acender tanto
+    // no subdomínio (onde a URL já é limpa) quanto em acesso direto à rota física.
+    const pathname = rotaLimpa(usePathname())
     const { setOpenMobile } = useSidebar()
+
+    /**
+     * Quantas tarefas pedem atenção hoje — o número que o menu mostra.
+     *
+     * Consulta só a contagem (head: true), sem trazer linha nenhuma: o menu
+     * aparece em toda tela e não pode custar uma listagem a cada navegação.
+     */
+    const [pendentes, setPendentes] = React.useState(0)
+
+    React.useEffect(() => {
+        const supabase = createClient()
+        const hoje = new Date().toISOString().slice(0, 10)
+        supabase
+            .from("somos_preta_tarefas")
+            .select("id", { count: "exact", head: true })
+            .eq("arquivada", false)
+            .not("status", "in", "(concluida,cancelada)")
+            .lte("data_entrega", hoje)
+            .then(({ count, error }) => { if (!error) setPendentes(count ?? 0) })
+    }, [])
 
     // "Usuários" só aparece para admins
     const items = user.role === "admin"
-        ? [...navItems, { title: "Usuários", url: "/app/usuarios", icon: ShieldCheck }]
-        : navItems
+        ? [...NAV_PLATAFORMA, NAV_ADMIN]
+        : NAV_PLATAFORMA
 
     const handleNavClick = () => {
         // Close mobile sidebar when navigating
@@ -67,10 +66,15 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="hover:bg-sidebar-accent/50">
-                            <Link href="/app/dashboard" onClick={handleNavClick}>
+                            <Link href="/dashboard" onClick={handleNavClick}>
                                 <SimboloPreta className="size-8" />
-                                <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-semibold tracking-tight text-sidebar-foreground">Creator Hub</span>
+                                <div className="grid flex-1 text-left leading-tight">
+                                    <span className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
+                                        Somos Preta
+                                    </span>
+                                    <span className="truncate text-[9px] uppercase tracking-[0.14em] text-sidebar-foreground/50">
+                                        Criadores que movem o Nordeste
+                                    </span>
                                 </div>
                             </Link>
                         </SidebarMenuButton>
@@ -101,9 +105,13 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
                                                     isActive ? "text-primary" : "text-sidebar-foreground/70"
                                                 )} />
                                                 <span>{item.title}</span>
-                                                {isActive && (
+                                                {item.url === "/tarefas" && pendentes > 0 ? (
+                                                    <Badge className="ml-auto h-5 min-w-5 justify-center px-1 bg-primary text-primary-foreground">
+                                                        {pendentes > 99 ? "99+" : pendentes}
+                                                    </Badge>
+                                                ) : isActive ? (
                                                     <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
-                                                )}
+                                                ) : null}
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>

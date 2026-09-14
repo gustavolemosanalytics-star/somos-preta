@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getProfile } from "@/lib/supabase/auth"
+import { PLATAFORMA_URL } from "@/lib/constants/site"
 import { LogoPreta } from "@/components/public/marca"
 import { LogoutButton } from "../logout-button"
 
@@ -19,8 +20,9 @@ export default async function CreatorLayout({
     if (!profile) redirect("/creator/login")
 
     if (profile.role !== "creator") {
-        if (STAFF_ROLES.includes(profile.role)) redirect("/app/dashboard")
-        redirect("/app/sem-acesso")
+        // Absolutos: o painel está noutro host.
+        if (STAFF_ROLES.includes(profile.role)) redirect(`${PLATAFORMA_URL}/dashboard`)
+        redirect(`${PLATAFORMA_URL}/sem-acesso`)
     }
 
     // O id vai na URL, então precisa ser conferido: sem isto qualquer criador

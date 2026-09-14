@@ -213,7 +213,7 @@ function TarefaDetalheConteudo() {
         const { error } = await supabase.from("somos_preta_tarefas").delete().eq("id", tarefaId)
         if (error) { toast.error("Erro ao excluir"); return }
         toast.success("Tarefa excluída")
-        router.push("/app/tarefas")
+        router.push("/tarefas")
     }
 
     async function salvarTags() {
@@ -245,7 +245,7 @@ function TarefaDetalheConteudo() {
         }).select("id").single()
         if (error || !novaTarefa) { toast.error("Erro ao duplicar"); return }
         toast.success("Tarefa duplicada")
-        router.push(`/app/tarefas/${novaTarefa.id}`)
+        router.push(`/tarefas/${novaTarefa.id}`)
     }
 
     function abrirMover() {
@@ -269,7 +269,7 @@ function TarefaDetalheConteudo() {
             <Card><CardContent className="py-14 text-center text-muted-foreground">
                 <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-40" />
                 <p className="font-medium">Tarefa não encontrada</p>
-                <Link href="/app/tarefas" className="text-primary text-sm hover:underline">Voltar para Tarefas</Link>
+                <Link href="/tarefas" className="text-primary text-sm hover:underline">Voltar para Tarefas</Link>
             </CardContent></Card>
         )
     }
@@ -279,7 +279,7 @@ function TarefaDetalheConteudo() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between gap-2">
-                <Link href="/app/tarefas" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
+                <Link href="/tarefas" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
                     <ArrowLeft className="h-4 w-4" /> Tarefas
                 </Link>
                 <div className="flex items-center gap-1">
@@ -497,12 +497,12 @@ function TarefaDetalheConteudo() {
                         <CardHeader><CardTitle className="text-sm">Vínculos</CardTitle></CardHeader>
                         <CardContent className="space-y-2 text-sm">
                             {tarefa.campanha?.cliente && (
-                                <Link href={`/app/clientes/${tarefa.campanha.cliente.id}`} className="flex items-center gap-2 hover:text-primary">
+                                <Link href={`/clientes/${tarefa.campanha.cliente.id}`} className="flex items-center gap-2 hover:text-primary">
                                     <Building2 className="h-4 w-4 text-muted-foreground" /> {tarefa.campanha.cliente.nome}
                                 </Link>
                             )}
                             {tarefa.campanha && (
-                                <Link href={`/app/campanhas/${tarefa.campanha.id}`} className="flex items-center gap-2 hover:text-primary">
+                                <Link href={`/campanhas/${tarefa.campanha.id}`} className="flex items-center gap-2 hover:text-primary">
                                     <Megaphone className="h-4 w-4 text-muted-foreground" /> {tarefa.campanha.nome}
                                 </Link>
                             )}
