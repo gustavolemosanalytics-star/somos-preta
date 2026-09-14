@@ -23,8 +23,19 @@ import {
 } from "@/components/ui/alert-dialog"
 import { FileText, Plus, Loader2, ExternalLink, Eye, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { confirmarEscrita, lidos } from "@/lib/supabase/resultado"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
 
 type ContratoRow = Contrato & { influencer: { nome: string } | null; campanha: { nome: string } | null }
+
+// Radix recusa SelectItem com value vazio, mas influenciador e campanha são opcionais
+// no banco: este valor sentinela é o que permite desvincular depois de escolher.
+const SEM_VALOR = "__nenhum__"
+
+/** O input de data só entende YYYY-MM-DD, e a coluna é timestamptz: chega em ISO completo. */
+function paraCampoData(valor: string | null) {
+    return valor ? valor.slice(0, 10) : ""
+}
 
 const STATUS_META: Record<ContratoStatus, { label: string; className: string }> = {
     pendente: { label: "Pendente", className: "bg-status-atencao/12 text-status-atencao" },
@@ -50,7 +61,7 @@ function RowActions({ row, influencers, campanhas, supabase, reload }: {
         influencer_id: row.influencer_id ?? "",
         campanha_id: row.campanha_id ?? "",
         status: row.status,
-        expira_em: row.expira_em ?? "",
+        expira_em: paraCampoData(row.expira_em),
         pdf_url: row.pdf_url ?? "",
     })
 
@@ -60,7 +71,7 @@ function RowActions({ row, influencers, campanhas, supabase, reload }: {
             influencer_id: row.influencer_id ?? "",
             campanha_id: row.campanha_id ?? "",
             status: row.status,
-            expira_em: row.expira_em ?? "",
+            expira_em: paraCampoData(row.expira_em),
             pdf_url: row.pdf_url ?? "",
         })
         setEditOpen(true)
@@ -70,17 +81,22 @@ function RowActions({ row, influencers, campanhas, supabase, reload }: {
         e.preventDefault()
         if (!form.titulo.trim()) return
         setSaving(true)
-        const { error } = await supabase.from("somos_preta_contratos").update({
-            titulo: form.titulo.trim(),
-            influencer_id: form.influencer_id || null,
-            campanha_id: form.campanha_id || null,
-            status: form.status,
-            expira_em: form.expira_em || null,
-            assinado_em: form.status === "assinado" ? new Date().toISOString() : null,
-            pdf_url: form.pdf_url || null,
-        }).eq("id", row.id)
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_contratos").update({
+                titulo: form.titulo.trim(),
+                influencer_id: form.influencer_id || null,
+                campanha_id: form.campanha_id || null,
+                status: form.status,
+                expira_em: form.expira_em || null,
+                // A assinatura é um fato datado: carimba-se na primeira vez e não se
+                // recarimba nem se apaga quando o status muda depois.
+                assinado_em: row.assinado_em ?? (form.status === "assinado" ? new Date().toISOString() : null),
+                pdf_url: form.pdf_url || null,
+            }).eq("id", row.id).select("id"),
+            "Não foi possível atualizar o contrato",
+        )
         setSaving(false)
-        if (error) { toast.error("Não foi possível atualizar o contrato"); return }
+        if (!ok) return
         toast.success("Contrato atualizado")
         setEditOpen(false)
         reload()
@@ -88,9 +104,12 @@ function RowActions({ row, influencers, campanhas, supabase, reload }: {
 
     async function handleDelete() {
         setDeleting(true)
-        const { error } = await supabase.from("somos_preta_contratos").delete().eq("id", row.id)
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_contratos").delete().eq("id", row.id).select("id"),
+            "Não foi possível excluir o contrato",
+        )
         setDeleting(false)
-        if (error) { toast.error("Não foi possível excluir o contrato"); return }
+        if (!ok) return
         toast.success("Contrato excluído")
         setDeleteOpen(false)
         reload()
@@ -156,16 +175,22 @@ function RowActions({ row, influencers, campanhas, supabase, reload }: {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
                                     <Label>Influenciador</Label>
-                                    <Select value={form.influencer_id} onValueChange={(v) => setForm({ ...form, influencer_id: v })}>
+                                    <Select value={form.influencer_id} onValueChange={(v) => setForm({ ...form, influencer_id: v === SEM_VALOR ? "" : v })}>
                                         <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
-                                        <SelectContent>{influencers.map((i) => <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>)}</SelectContent>
+                                        <SelectContent>
+                                            <SelectItem value={SEM_VALOR}>Nenhum</SelectItem>
+                                            {influencers.map((i) => <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>)}
+                                        </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="grid gap-2">
                                     <Label>Campanha</Label>
-                                    <Select value={form.campanha_id} onValueChange={(v) => setForm({ ...form, campanha_id: v })}>
+                                    <Select value={form.campanha_id} onValueChange={(v) => setForm({ ...form, campanha_id: v === SEM_VALOR ? "" : v })}>
                                         <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
-                                        <SelectContent>{campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                                        <SelectContent>
+                                            <SelectItem value={SEM_VALOR}>Nenhum</SelectItem>
+                                            {campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                                        </SelectContent>
                                     </Select>
                                 </div>
                             </div>
@@ -222,6 +247,7 @@ export default function ContractsPage() {
     const [influencers, setInfluencers] = useState<Influencer[]>([])
     const [campanhas, setCampanhas] = useState<Campanha[]>([])
     const [loading, setLoading] = useState(true)
+    const [erroCarga, setErroCarga] = useState(false)
     const [open, setOpen] = useState(false)
     const [saving, setSaving] = useState(false)
 
@@ -232,14 +258,21 @@ export default function ContractsPage() {
 
     async function load() {
         setLoading(true)
-        const [{ data: cs }, { data: infl }, { data: camps }] = await Promise.all([
+        setErroCarga(false)
+        const [respostaContratos, respostaInfluencers, respostaCampanhas] = await Promise.all([
             supabase.from("somos_preta_contratos").select("*, influencer:somos_preta_influencers(nome), campanha:somos_preta_campanhas(nome)").order("created_at", { ascending: false }),
             supabase.from("somos_preta_influencers").select("*").order("nome"),
             supabase.from("somos_preta_campanhas").select("*").order("nome"),
         ])
-        setContratos((cs as unknown as ContratoRow[]) ?? [])
-        setInfluencers((infl as Influencer[]) ?? [])
-        setCampanhas((camps as Campanha[]) ?? [])
+        const cs = lidos(respostaContratos) as ContratoRow[] | null
+        const infl = lidos(respostaInfluencers) as Influencer[] | null
+        const camps = lidos(respostaCampanhas) as Campanha[] | null
+        // Basta uma das três falhar: sem influenciadores e campanhas os formulários
+        // ficam vazios e enganam tanto quanto uma tabela vazia.
+        setErroCarga(cs === null || infl === null || camps === null)
+        setContratos(cs ?? [])
+        setInfluencers(infl ?? [])
+        setCampanhas(camps ?? [])
         setLoading(false)
     }
 
@@ -308,16 +341,22 @@ export default function ContractsPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label>Influenciador</Label>
-                                        <Select value={form.influencer_id} onValueChange={(v) => setForm({ ...form, influencer_id: v })}>
+                                        <Select value={form.influencer_id} onValueChange={(v) => setForm({ ...form, influencer_id: v === SEM_VALOR ? "" : v })}>
                                             <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
-                                            <SelectContent>{influencers.map((i) => <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>)}</SelectContent>
+                                            <SelectContent>
+                                                <SelectItem value={SEM_VALOR}>Nenhum</SelectItem>
+                                                {influencers.map((i) => <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>)}
+                                            </SelectContent>
                                         </Select>
                                     </div>
                                     <div className="grid gap-2">
                                         <Label>Campanha</Label>
-                                        <Select value={form.campanha_id} onValueChange={(v) => setForm({ ...form, campanha_id: v })}>
+                                        <Select value={form.campanha_id} onValueChange={(v) => setForm({ ...form, campanha_id: v === SEM_VALOR ? "" : v })}>
                                             <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
-                                            <SelectContent>{campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+                                            <SelectContent>
+                                                <SelectItem value={SEM_VALOR}>Nenhum</SelectItem>
+                                                {campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                                            </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
@@ -347,62 +386,70 @@ export default function ContractsPage() {
                 </Dialog>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {stats.map((s) => (
-                    <Card key={s.label}><CardContent className="py-4">
-                        <p className={`text-2xl font-bold ${s.className}`}>{s.value}</p>
-                        <p className="text-xs text-muted-foreground">{s.label}</p>
-                    </CardContent></Card>
-                ))}
-            </div>
+            {erroCarga ? (
+                <ErroDeCarregamento recurso="os contratos" onTentarDeNovo={load} />
+            ) : (
+                <>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {stats.map((s) => (
+                            <Card key={s.label}><CardContent className="py-4">
+                                <p className={`text-2xl font-bold ${s.className}`}>{s.value}</p>
+                                <p className="text-xs text-muted-foreground">{s.label}</p>
+                            </CardContent></Card>
+                        ))}
+                    </div>
 
-            <Card>
-                <CardContent className="p-0">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
-                    ) : contratos.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                            <p className="font-medium">Nenhum contrato ainda</p>
-                        </div>
-                    ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Título</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Influenciador</TableHead>
-                                    <TableHead className="hidden md:table-cell">Campanha</TableHead>
-                                    <TableHead className="hidden lg:table-cell">Expira</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">PDF</TableHead>
-                                    <TableHead className="text-right">Ações</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {contratos.map((c) => (
-                                    <TableRow key={c.id}>
-                                        <TableCell className="font-medium">{c.titulo}</TableCell>
-                                        <TableCell className="hidden sm:table-cell text-muted-foreground">{c.influencer?.nome ?? "—"}</TableCell>
-                                        <TableCell className="hidden md:table-cell text-muted-foreground">{c.campanha?.nome ?? "—"}</TableCell>
-                                        <TableCell className="hidden lg:table-cell text-muted-foreground">{c.expira_em ?? "—"}</TableCell>
-                                        <TableCell><Badge className={STATUS_META[c.status].className} variant="secondary">{STATUS_META[c.status].label}</Badge></TableCell>
-                                        <TableCell className="text-right">
-                                            {c.pdf_url ? (
-                                                <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="text-primary inline-flex items-center gap-1 text-sm hover:underline">
-                                                    abrir <ExternalLink className="h-3.5 w-3.5" />
-                                                </a>
-                                            ) : "—"}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <RowActions row={c} influencers={influencers} campanhas={campanhas} supabase={supabase} reload={load} />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    )}
-                </CardContent>
-            </Card>
+                    <Card>
+                        <CardContent className="p-0">
+                            {loading ? (
+                                <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+                            ) : contratos.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                                    <p className="font-medium">Nenhum contrato ainda</p>
+                                    <p className="mt-1 text-sm text-muted-foreground">Registre o primeiro contrato para acompanhar assinaturas e prazos.</p>
+                                    <Button className="mt-4 rounded-xl" onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Novo contrato</Button>
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Título</TableHead>
+                                            <TableHead className="hidden sm:table-cell">Influenciador</TableHead>
+                                            <TableHead className="hidden md:table-cell">Campanha</TableHead>
+                                            <TableHead className="hidden lg:table-cell">Expira</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead className="text-right">PDF</TableHead>
+                                            <TableHead className="text-right">Ações</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {contratos.map((c) => (
+                                            <TableRow key={c.id}>
+                                                <TableCell className="font-medium">{c.titulo}</TableCell>
+                                                <TableCell className="hidden sm:table-cell text-muted-foreground">{c.influencer?.nome ?? "—"}</TableCell>
+                                                <TableCell className="hidden md:table-cell text-muted-foreground">{c.campanha?.nome ?? "—"}</TableCell>
+                                                <TableCell className="hidden lg:table-cell text-muted-foreground">{c.expira_em ?? "—"}</TableCell>
+                                                <TableCell><Badge className={STATUS_META[c.status].className} variant="secondary">{STATUS_META[c.status].label}</Badge></TableCell>
+                                                <TableCell className="text-right">
+                                                    {c.pdf_url ? (
+                                                        <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="text-primary inline-flex items-center gap-1 text-sm hover:underline">
+                                                            abrir <ExternalLink className="h-3.5 w-3.5" />
+                                                        </a>
+                                                    ) : "—"}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <RowActions row={c} influencers={influencers} campanhas={campanhas} supabase={supabase} reload={load} />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </CardContent>
+                    </Card>
+                </>
+            )}
         </div>
     )
 }

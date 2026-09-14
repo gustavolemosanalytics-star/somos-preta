@@ -13,6 +13,8 @@ import { Timeline } from "@/components/tarefas/timeline"
 import { SubtarefasSection } from "@/components/tarefas/subtarefas-section"
 import { AnexosSection } from "@/components/tarefas/anexos-section"
 import { ComentariosSection } from "@/components/tarefas/comentarios-section"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
+import { confirmarEscrita, lido, lidos } from "@/lib/supabase/resultado"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -51,7 +53,7 @@ function ConcluirDialog({ tarefaId, obrigatoria, open, onOpenChange, onConfirmar
     obrigatoria: boolean
     open: boolean
     onOpenChange: (o: boolean) => void
-    onConfirmar: (observacao: string) => Promise<void>
+    onConfirmar: (observacao: string) => Promise<boolean>
 }) {
     const [observacao, setObservacao] = useState("")
     const [evidencias, setEvidencias] = useState<TarefaAnexo[]>([])
@@ -63,8 +65,10 @@ function ConcluirDialog({ tarefaId, obrigatoria, open, onOpenChange, onConfirmar
             return
         }
         setSalvando(true)
-        await onConfirmar(observacao)
+        const concluiu = await onConfirmar(observacao)
         setSalvando(false)
+        // Fechar mesmo quando falha jogaria fora a observação que a pessoa acabou de escrever.
+        if (!concluiu) return
         setObservacao("")
         onOpenChange(false)
     }
@@ -127,24 +131,37 @@ function TarefaDetalheConteudo() {
     const [moverOpen, setMoverOpen] = useState(false)
     const [campanhas, setCampanhas] = useState<CampanhaOpcao[]>([])
     const [novaCampanhaId, setNovaCampanhaId] = useState("")
+    const [erroCarga, setErroCarga] = useState(false)
+    const [erroCampanhas, setErroCampanhas] = useState(false)
+    const [erroColaboradores, setErroColaboradores] = useState(false)
 
     async function load() {
-        const [{ data: t }, { data: colabs }, { data: evts }, { data: camps }] = await Promise.all([
+        const [respostaTarefa, respostaColaboradores, respostaEventos, respostaCampanhas] = await Promise.all([
             supabase
                 .from("somos_preta_tarefas")
                 .select("*, campanha:somos_preta_campanhas(id, nome, cliente:somos_preta_clientes(id, nome)), influencer:somos_preta_influencers(id, nome)")
                 .eq("id", tarefaId)
-                .single(),
+                // maybeSingle para que "não existe" volte como linha nula, e não como erro
+                // indistinguível de falha de leitura — são duas telas diferentes.
+                .maybeSingle(),
             supabase.from("somos_preta_tarefa_colaboradores").select("profile_id").eq("tarefa_id", tarefaId),
             supabase.from("somos_preta_tarefa_eventos").select("*").eq("tarefa_id", tarefaId).order("created_at", { ascending: false }),
             supabase.from("somos_preta_campanhas").select("id, nome").order("nome"),
         ])
-        const td = t as TarefaDetalhe | null
+
+        const resultadoTarefa = lido<TarefaDetalhe>(respostaTarefa)
+        const td = resultadoTarefa.ok ? resultadoTarefa.valor : null
+        setErroCarga(!resultadoTarefa.ok)
         setTarefa(td)
         if (td) { setTitulo(td.titulo); setDescricao(td.descricao ?? ""); setTagsInput((td.tags ?? []).join(", ")) }
-        setColaboradores(((colabs as { profile_id: string }[]) ?? []).map((c) => c.profile_id))
-        setEventos((evts as TarefaEvento[]) ?? [])
-        setCampanhas((camps as CampanhaOpcao[]) ?? [])
+
+        const colabs = lidos<{ profile_id: string }>(respostaColaboradores)
+        setErroColaboradores(!colabs)
+        setColaboradores((colabs ?? []).map((c) => c.profile_id))
+        setEventos(lidos<TarefaEvento>(respostaEventos) ?? [])
+        const camps = lidos<CampanhaOpcao>(respostaCampanhas)
+        setErroCampanhas(!camps)
+        setCampanhas(camps ?? [])
         setLoading(false)
     }
 
@@ -154,13 +171,23 @@ function TarefaDetalheConteudo() {
     }, [tarefaId])
 
     async function atualizar(patch: Partial<Tarefa>) {
-        const { error } = await supabase.from("somos_preta_tarefas").update(patch).eq("id", tarefaId)
-        if (error) { toast.error("Erro ao salvar"); return }
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_tarefas").update(patch).eq("id", tarefaId).select("id"),
+            "Não foi possível salvar a tarefa",
+        )
+        // Recarrega nos dois casos: quando falha, é o que devolve o campo ao valor real.
         await load()
+        return ok
     }
 
     async function salvarTitulo() {
-        if (!tarefa || !titulo.trim() || titulo === tarefa.titulo) return
+        if (!tarefa) return
+        if (!titulo.trim()) {
+            toast.error("O título não pode ficar vazio")
+            setTitulo(tarefa.titulo)
+            return
+        }
+        if (titulo === tarefa.titulo) return
         await atualizar({ titulo: titulo.trim() })
     }
 
@@ -170,13 +197,30 @@ function TarefaDetalheConteudo() {
     }
 
     async function alterarColaboradores(ids: string[]) {
+        // Sem a lista atual não dá para saber quem sai: gravaria duplicata e nunca removeria ninguém.
+        if (erroColaboradores) {
+            toast.error("Não foi possível ler os colaboradores atuais. Recarregue a página antes de alterar.")
+            return
+        }
         const adicionar = ids.filter((id) => !colaboradores.includes(id))
         const remover = colaboradores.filter((id) => !ids.includes(id))
         if (adicionar.length) {
-            await supabase.from("somos_preta_tarefa_colaboradores").insert(adicionar.map((profile_id) => ({ tarefa_id: tarefaId, profile_id })))
+            // upsert porque outra aba pode ter incluído a mesma pessoa, e a unique (tarefa_id, profile_id) derrubaria o lote inteiro.
+            const ok = await confirmarEscrita(
+                supabase
+                    .from("somos_preta_tarefa_colaboradores")
+                    .upsert(adicionar.map((profile_id) => ({ tarefa_id: tarefaId, profile_id })), { onConflict: "tarefa_id,profile_id" })
+                    .select("profile_id"),
+                "Não foi possível adicionar o colaborador",
+            )
+            if (!ok) { await load(); return }
         }
         for (const profile_id of remover) {
-            await supabase.from("somos_preta_tarefa_colaboradores").delete().eq("tarefa_id", tarefaId).eq("profile_id", profile_id)
+            const ok = await confirmarEscrita(
+                supabase.from("somos_preta_tarefa_colaboradores").delete().eq("tarefa_id", tarefaId).eq("profile_id", profile_id).select("profile_id"),
+                "Não foi possível remover o colaborador",
+            )
+            if (!ok) break
         }
         await load()
     }
@@ -187,17 +231,27 @@ function TarefaDetalheConteudo() {
 
     async function confirmarConclusao(observacao: string) {
         const { data: { user } } = await supabase.auth.getUser()
-        await supabase.from("somos_preta_tarefas").update({
-            status: "concluida",
-            concluida_em: new Date().toISOString(),
-        }).eq("id", tarefaId)
+        const concluiu = await confirmarEscrita(
+            supabase.from("somos_preta_tarefas").update({
+                status: "concluida",
+                concluida_em: new Date().toISOString(),
+            }).eq("id", tarefaId).select("id"),
+            "Não foi possível concluir a tarefa",
+        )
+        if (!concluiu) return false
+        let observacaoSalva = true
         if (observacao.trim()) {
-            await supabase.from("somos_preta_tarefa_comentarios").insert({
-                tarefa_id: tarefaId, autor_id: user?.id ?? null, conteudo: observacao.trim(), tipo: "atualizacao",
-            })
+            observacaoSalva = await confirmarEscrita(
+                supabase.from("somos_preta_tarefa_comentarios").insert({
+                    tarefa_id: tarefaId, autor_id: user?.id ?? null, conteudo: observacao.trim(), tipo: "atualizacao",
+                }).select("id"),
+                "Tarefa concluída, mas a observação final não foi salva",
+            )
         }
-        toast.success("Tarefa concluída")
+        if (observacaoSalva) toast.success("Tarefa concluída")
         await load()
+        // Falso mantém o diálogo aberto com a observação à vista, para não perder o texto.
+        return observacaoSalva
     }
 
     async function reabrir() {
@@ -210,8 +264,11 @@ function TarefaDetalheConteudo() {
     }
 
     async function excluir() {
-        const { error } = await supabase.from("somos_preta_tarefas").delete().eq("id", tarefaId)
-        if (error) { toast.error("Erro ao excluir"); return }
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_tarefas").delete().eq("id", tarefaId).select("id"),
+            "Não foi possível excluir a tarefa",
+        )
+        if (!ok) return
         toast.success("Tarefa excluída")
         router.push("/tarefas")
     }
@@ -225,8 +282,10 @@ function TarefaDetalheConteudo() {
 
     async function toggleArquivar() {
         if (!tarefa) return
-        await atualizar({ arquivada: !tarefa.arquivada })
-        toast.success(tarefa.arquivada ? "Tarefa desarquivada" : "Tarefa arquivada")
+        const arquivar = !tarefa.arquivada
+        if (await atualizar({ arquivada: arquivar })) {
+            toast.success(arquivar ? "Tarefa arquivada" : "Tarefa desarquivada")
+        }
     }
 
     async function duplicar() {
@@ -240,7 +299,12 @@ function TarefaDetalheConteudo() {
             solicitante_id: tarefa.solicitante_id,
             responsavel: tarefa.responsavel,
             influencer_id: tarefa.influencer_id,
+            data_inicio: tarefa.data_inicio,
             data_entrega: tarefa.data_entrega,
+            horario: tarefa.horario,
+            duracao_minutos: tarefa.duracao_minutos,
+            evidencia_obrigatoria: tarefa.evidencia_obrigatoria,
+            area_id: tarefa.area_id,
             tags: tarefa.tags,
         }).select("id").single()
         if (error || !novaTarefa) { toast.error("Erro ao duplicar"); return }
@@ -255,13 +319,18 @@ function TarefaDetalheConteudo() {
 
     async function confirmarMover() {
         if (!novaCampanhaId) return
-        await atualizar({ campanha_id: novaCampanhaId })
+        // O diálogo só fecha quando moveu mesmo; fechado, a pessoa acreditaria que moveu.
+        if (!(await atualizar({ campanha_id: novaCampanhaId }))) return
         setMoverOpen(false)
         toast.success("Tarefa movida")
     }
 
     if (loading) {
         return <div className="flex items-center justify-center py-24 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+    }
+
+    if (erroCarga) {
+        return <ErroDeCarregamento recurso="esta tarefa" onTentarDeNovo={load} />
     }
 
     if (!tarefa) {
@@ -341,12 +410,16 @@ function TarefaDetalheConteudo() {
                         <DialogTitle>Mover tarefa</DialogTitle>
                         <DialogDescription>Escolha a campanha de destino.</DialogDescription>
                     </DialogHeader>
-                    <DropdownSelect
-                        value={novaCampanhaId}
-                        onValueChange={setNovaCampanhaId}
-                        options={campanhas.map((c) => ({ value: c.id, label: c.nome }))}
-                        placeholder="Selecionar campanha"
-                    />
+                    {erroCampanhas ? (
+                        <ErroDeCarregamento recurso="as campanhas" onTentarDeNovo={load} />
+                    ) : (
+                        <DropdownSelect
+                            value={novaCampanhaId}
+                            onValueChange={setNovaCampanhaId}
+                            options={campanhas.map((c) => ({ value: c.id, label: c.nome }))}
+                            placeholder="Selecionar campanha"
+                        />
+                    )}
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setMoverOpen(false)}>Cancelar</Button>
                         <Button onClick={confirmarMover} disabled={!novaCampanhaId || novaCampanhaId === tarefa.campanha_id}>Mover</Button>

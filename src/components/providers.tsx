@@ -5,6 +5,8 @@ import { SessionProvider } from "next-auth/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 
+import { Toaster } from "@/components/ui/sonner"
+
 function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {
     return <NextThemesProvider {...props}>{children}</NextThemesProvider>
 }
@@ -31,6 +33,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     disableTransitionOnChange
                 >
                     {children}
+                    {/*
+                      O Toaster precisa estar montado para QUALQUER toast()
+                      aparecer. Ele existia em components/ui/sonner.tsx e nunca
+                      foi colocado na árvore: as 144 chamadas espalhadas pelo app
+                      — "salvo", "não foi possível excluir", tudo — caíam no
+                      vazio, e cada ação dava a impressão de não ter feito nada.
+                    */}
+                    <Toaster position="bottom-right" richColors closeButton />
                 </ThemeProvider>
             </QueryClientProvider>
         </SessionProvider>

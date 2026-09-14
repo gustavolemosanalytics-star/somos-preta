@@ -40,7 +40,12 @@ export default async function DashboardLayout({
                     </div>
                     <DashboardHeader />
                 </header>
-                <main className="flex flex-1 flex-col gap-4 p-3 sm:p-4 lg:p-6 overflow-x-hidden">
+                {/*
+                  `painel` liga o sistema de superfícies do globals.css: a
+                  atmosfera de fundo que o vidro refrata e o tratamento único de
+                  todo Card daqui para dentro.
+                */}
+                <main className="painel flex flex-1 flex-col gap-5 overflow-x-hidden p-4 sm:p-5 lg:p-6">
                     {children}
                 </main>
             </SidebarInset>

@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, Star } from "lucide-react"
+import { toast } from "sonner"
+import { confirmarEscrita, lidos } from "@/lib/supabase/resultado"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
 
 const fmt = (n: number) => n.toLocaleString("pt-BR")
 
@@ -16,17 +19,22 @@ export function FavoritosTab() {
     const [supabase] = useState(() => createClient())
     const [favoritos, setFavoritos] = useState<Influencer[]>([])
     const [loading, setLoading] = useState(true)
+    const [erroCarga, setErroCarga] = useState(false)
+    const [semSessao, setSemSessao] = useState(false)
 
     async function load() {
         setLoading(true)
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { setLoading(false); return }
-        const { data } = await supabase
+        if (!user) { setSemSessao(true); setLoading(false); return }
+        setSemSessao(false)
+        const resposta = await supabase
             .from("somos_preta_favoritos")
             .select("influencer:somos_preta_influencers(*)")
             .eq("profile_id", user.id)
             .order("created_at", { ascending: false })
-        setFavoritos(((data as unknown as { influencer: Influencer }[]) ?? []).map((d) => d.influencer).filter(Boolean))
+        const linhas = lidos(resposta) as unknown as { influencer: Influencer }[] | null
+        setErroCarga(linhas === null)
+        setFavoritos((linhas ?? []).map((d) => d.influencer).filter(Boolean))
         setLoading(false)
     }
 
@@ -37,13 +45,32 @@ export function FavoritosTab() {
 
     async function remover(id: string) {
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        await supabase.from("somos_preta_favoritos").delete().eq("influencer_id", id).eq("profile_id", user.id)
+        if (!user) { toast.error("Faça login novamente para mexer nos favoritos"); return }
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_favoritos").delete().eq("influencer_id", id).eq("profile_id", user.id).select("id"),
+            "Não foi possível remover dos favoritos",
+        )
+        if (!ok) return
         setFavoritos((prev) => prev.filter((f) => f.id !== id))
+        toast.success("Removido dos favoritos")
     }
 
     if (loading) {
         return <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+    }
+
+    if (semSessao) {
+        return (
+            <Card className="text-center py-16 border border-border/60 shadow-sm rounded-2xl mt-4">
+                <Star className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="font-medium">Sessão expirada</p>
+                <p className="text-sm text-muted-foreground">Faça login novamente para ver os criadores que você favoritou.</p>
+            </Card>
+        )
+    }
+
+    if (erroCarga) {
+        return <div className="pt-4"><ErroDeCarregamento recurso="seus favoritos" onTentarDeNovo={load} /></div>
     }
 
     if (favoritos.length === 0) {

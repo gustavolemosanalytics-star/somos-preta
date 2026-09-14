@@ -1,56 +1,22 @@
 "use client"
 
-import type { ReactNode } from "react"
 import { CalendarClock, CalendarDays, Eye, PencilLine } from "lucide-react"
 
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import {
+    MetricaCard, variacaoDeEstoque, variacaoPercentual,
+} from "@/components/painel/metrica-card"
 import type { PostDaLista } from "./tipos"
 
 const fmt = (n: number) => n.toLocaleString("pt-BR")
 
-function Metrica({ icone, cor, valor, rotulo, variacao }: {
-    icone: ReactNode
-    cor: string
-    valor: string
-    rotulo: string
-    variacao?: { texto: string; sentido: "alta" | "baixa" | "estavel" } | null
-}) {
-    return (
-        <Card className="rounded-2xl border-border/60 shadow-sm">
-            <CardContent className="p-4 sm:p-5">
-                <div className="flex items-center gap-3 sm:gap-4">
-                    <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl sm:h-12 sm:w-12", cor)}>
-                        {icone}
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-2xl font-semibold leading-none tracking-tight sm:text-3xl">{valor}</p>
-                        <p className="mt-1.5 truncate text-sm text-muted-foreground">{rotulo}</p>
-                    </div>
-                </div>
-                {variacao && (
-                    <p className={cn(
-                        "mt-3 flex items-center gap-1 text-xs font-medium",
-                        variacao.sentido === "alta" ? "text-status-sucesso"
-                            : variacao.sentido === "baixa" ? "text-status-erro"
-                                : "text-muted-foreground"
-                    )}>
-                        <span aria-hidden>
-                            {variacao.sentido === "alta" ? "↑" : variacao.sentido === "baixa" ? "↓" : "→"}
-                        </span>
-                        {variacao.texto}
-                    </p>
-                )}
-            </CardContent>
-        </Card>
-    )
-}
-
 /**
- * Os quatro números do topo da tela.
+ * Os quatro números do topo da tela de blog.
  *
- * Tudo é derivado da lista já carregada, exceto a audiência, que vem da RPC
- * somos_preta_blog_metricas() — a contagem vive em tabela própria justamente
+ * Usa o MetricaCard compartilhado — esta tela tinha um card próprio, quase
+ * igual, e as duas versões já estavam divergindo em altura e espaçamento.
+ *
+ * Tudo vem da lista já carregada, exceto a audiência, que sai da RPC
+ * somos_preta_blog_metricas(): a contagem vive em tabela separada justamente
  * para não marcar o post como editado a cada visita.
  */
 export function Estatisticas({ posts, viewsMes, viewsMesAnterior, agora }: {
@@ -72,47 +38,38 @@ export function Estatisticas({ posts, viewsMes, viewsMesAnterior, agora }: {
         (p) => p.publicado_em && new Date(p.publicado_em).getTime() >= limite
     ).length
 
-    // Sem mês anterior não há percentual honesto a mostrar — nesse caso o card
-    // fica só com o número absoluto.
-    const variacaoViews = viewsMesAnterior > 0
-        ? Math.round(((viewsMes - viewsMesAnterior) / viewsMesAnterior) * 100)
-        : null
-
     return (
-        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Metrica
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricaCard
                 icone={<CalendarDays className="h-5 w-5" />}
                 cor="bg-status-sucesso/12 text-status-sucesso"
                 valor={fmt(publicados.length)}
                 rotulo="Publicados"
-                variacao={noUltimoMes > 0 ? { texto: `+${noUltimoMes} no último mês`, sentido: "alta" } : null}
+                // Estoque: o percentual descreve o próprio acervo, e não a
+                // diferença entre duas janelas de publicação.
+                variacao={variacaoDeEstoque(publicados.length, noUltimoMes)}
+                detalhe={noUltimoMes > 0 ? `+${noUltimoMes} no último mês` : undefined}
             />
-            <Metrica
+            <MetricaCard
                 icone={<PencilLine className="h-5 w-5" />}
                 cor="bg-status-atencao/12 text-status-atencao"
                 valor={fmt(rascunhos)}
                 rotulo="Rascunhos"
             />
-            <Metrica
+            <MetricaCard
                 icone={<CalendarClock className="h-5 w-5" />}
                 cor="bg-status-info/12 text-status-info"
                 valor={fmt(agendados)}
                 rotulo="Agendados"
             />
-            <Metrica
+            <MetricaCard
                 icone={<Eye className="h-5 w-5" />}
                 cor="bg-primary/12 text-primary"
                 valor={fmt(viewsMes)}
                 rotulo="Visualizações (mês)"
-                variacao={variacaoViews === null ? null : variacaoViews === 0 ? {
-                    // Empate não é crescimento: pintar de verde com seta para
-                    // cima faria o card mentir num mês parado.
-                    texto: "estável vs. mês anterior",
-                    sentido: "estavel",
-                } : {
-                    texto: `${variacaoViews > 0 ? "+" : ""}${variacaoViews}% vs. mês anterior`,
-                    sentido: variacaoViews > 0 ? "alta" : "baixa",
-                }}
+                // Aqui o número JÁ É contagem de período, então comparar com o
+                // mês anterior é a leitura certa.
+                variacao={variacaoPercentual(viewsMes, viewsMesAnterior)}
             />
         </div>
     )

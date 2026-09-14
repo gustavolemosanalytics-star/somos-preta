@@ -124,8 +124,8 @@ export function PainelCliente({
     ]
 
     return (
-        <Card className="rounded-2xl">
-            <CardContent className="grid gap-6 p-4 sm:p-5 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,280px)]">
+        <Card>
+            <CardContent className="grid gap-6 p-5 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,280px)]">
                 {/* ---------- identidade ---------- */}
                 <div className="space-y-4">
                     <div className="flex items-start gap-3">

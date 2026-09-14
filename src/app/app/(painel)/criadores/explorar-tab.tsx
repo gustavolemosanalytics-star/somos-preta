@@ -3,14 +3,17 @@
 import { useState, useMemo } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import type { Influencer } from "@/lib/db/types"
 import { UFS } from "@/lib/constants/uf"
 import { ORDENACAO_OPCOES, ordenarInfluencers, type OrdenacaoValor } from "@/lib/constants/criadores"
 import { useCreatorSelection } from "@/lib/stores/creator-selection"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { lido } from "@/lib/supabase/resultado"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
 import { useInstagramSearch, useTikTokSearch } from "@/hooks/use-social-search"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,6 +65,9 @@ const FAIXA_MAX = { seguidores: 2_000_000, engajamento: 20, views: 1_000_000, ca
 
 export function ExplorarTab() {
     const [supabase] = useState(() => createClient())
+    const router = useRouter()
+    const queryClient = useQueryClient()
+    const [salvandoPerfil, setSalvandoPerfil] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedState, setSelectedState] = useState<string | null>(null)
     const [isMapLoaded, setIsMapLoaded] = useState(false)
@@ -92,12 +98,15 @@ export function ExplorarTab() {
     const { data: trabalhadosIds } = useQuery({
         queryKey: ["influencer-ids-trabalhados"],
         queryFn: async () => {
-            const { data } = await supabase.from("somos_preta_campanha_influencers").select("influencer_id")
+            const { data, error } = await supabase.from("somos_preta_campanha_influencers").select("influencer_id")
+            // Conjunto vazio por falha responderia "ninguém trabalhou com ninguém"; o
+            // filtro que depende disto fica desabilitado até haver resposta de verdade.
+            if (error) throw error
             return new Set((data ?? []).map((d) => d.influencer_id as string))
         },
     })
 
-    const { data: influencers, isLoading } = useQuery({
+    const { data: influencers, isLoading, isError, refetch } = useQuery({
         queryKey: ["influencers-search", searchTerm, selectedState, filtros],
         queryFn: async () => {
             let q = supabase.from("somos_preta_influencers").select("*").order("followers", { ascending: false })
@@ -109,7 +118,8 @@ export function ExplorarTab() {
             q = q.gte("followers", filtros.seguidores[0]).lte("followers", filtros.seguidores[1])
             q = q.gte("engagement", filtros.engajamento[0]).lte("engagement", filtros.engajamento[1])
             q = q.gte("views_medias", filtros.views[0]).lte("views_medias", filtros.views[1])
-            const { data } = await q
+            const { data, error } = await q
+            if (error) throw error
             return (data as Influencer[]) ?? []
         },
         enabled: !isSocialQuery,
@@ -129,7 +139,24 @@ export function ExplorarTab() {
     )
 
     async function adicionarInfluencer() {
-        if (!igProfile) return
+        if (!igProfile || salvandoPerfil) return
+        setSalvandoPerfil(true)
+        // Não existe unique em username no banco: sem esta conferência, dois cliques
+        // viram dois criadores iguais na base.
+        const existente = lido<{ id: string }>(await supabase.from("somos_preta_influencers").select("id").eq("username", igProfile.username).maybeSingle())
+        if (!existente.ok) {
+            setSalvandoPerfil(false)
+            toast.error("Não foi possível conferir se este perfil já está na base")
+            return
+        }
+        if (existente.valor) {
+            const idExistente = existente.valor.id
+            setSalvandoPerfil(false)
+            toast.info("Este criador já está na base", {
+                action: { label: "Ver ficha", onClick: () => router.push(`/criadores/${idExistente}`) },
+            })
+            return
+        }
         const { error } = await supabase.from("somos_preta_influencers").insert({
             nome: igProfile.full_name || igProfile.username,
             username: igProfile.username,
@@ -142,8 +169,10 @@ export function ExplorarTab() {
             avg_comments: igProfile.avg_comments ?? 0,
             status: "ativo",
         })
-        if (error) toast.error("Não foi possível adicionar")
-        else toast.success("Influenciador adicionado à base")
+        setSalvandoPerfil(false)
+        if (error) { toast.error("Não foi possível adicionar"); return }
+        toast.success("Influenciador adicionado à base")
+        queryClient.invalidateQueries({ queryKey: ["influencers-search"] })
     }
 
     const creatorsPerState = useMemo(() => {
@@ -282,8 +311,8 @@ export function ExplorarTab() {
                                 <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="todos">Todos</SelectItem>
-                                    <SelectItem value="sim">Já trabalhado</SelectItem>
-                                    <SelectItem value="nao">Ainda não utilizado</SelectItem>
+                                    <SelectItem value="sim" disabled={!trabalhadosIds}>Já trabalhado</SelectItem>
+                                    <SelectItem value="nao" disabled={!trabalhadosIds}>Ainda não utilizado</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -383,7 +412,9 @@ export function ExplorarTab() {
                                     </div>
                                     <div className="flex gap-3">
                                         <Button className="rounded-full" onClick={() => window.open(`https://instagram.com/${igProfile.username}`, "_blank")}><Instagram className="mr-2 h-4 w-4" /> Ver no Instagram</Button>
-                                        <Button variant="outline" className="rounded-full" onClick={adicionarInfluencer}><UserPlus className="mr-2 h-4 w-4" /> Adicionar à Plataforma</Button>
+                                        <Button variant="outline" className="rounded-full" onClick={adicionarInfluencer} disabled={salvandoPerfil}>
+                                        {salvandoPerfil ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />} Adicionar à Plataforma
+                                    </Button>
                                     </div>
                                 </CardContent>
                             </div>
@@ -406,6 +437,8 @@ export function ExplorarTab() {
                             <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
                             <span className="font-bold tracking-widest text-muted-foreground">MAPEANDO TALENTOS...</span>
                         </div>
+                    ) : isError ? (
+                        <ErroDeCarregamento recurso="os criadores" onTentarDeNovo={() => refetch()} />
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {paginados.map((influencer) => (
@@ -458,7 +491,7 @@ export function ExplorarTab() {
                         </div>
                     )}
 
-                    {filtradosPorTrabalho.length === 0 && !isLoading && (
+                    {filtradosPorTrabalho.length === 0 && !isLoading && !isError && (
                         <Card className="text-center py-24 border border-border/60 shadow-sm rounded-2xl">
                             <Star className="h-12 w-12 text-muted mx-auto mb-4" />
                             <h3 className="text-2xl font-semibold tracking-tight">Nenhum talento encontrado</h3>

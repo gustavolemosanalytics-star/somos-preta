@@ -39,11 +39,15 @@ export async function criarUsuario(input: {
     })
     if (error) return { error: error.message }
 
-    // Ajusta nome/papel do perfil criado pelo trigger.
-    await admin
+    // O trigger cria o perfil com role "pendente": sem este UPDATE a pessoa entra sem acesso a nada.
+    const { data: perfil, error: erroPerfil } = await admin
         .from("somos_preta_profiles")
-        .update({ nome: input.nome, role: input.role })
+        .update({ nome: input.nome.trim() || null, role: input.role })
         .eq("id", data.user.id)
+        .select("id")
+    if (erroPerfil || perfil?.length !== 1) {
+        return { error: "Usuário criado no acesso, mas o papel não foi aplicado — ajuste o papel na lista." }
+    }
 
     revalidatePath("/usuarios")
     return { ok: true }
@@ -59,8 +63,13 @@ export async function atualizarPapel(
         return { error: "Sem permissão (RLS) e a SUPABASE_SERVICE_ROLE_KEY não está configurada. Rode a migração 0003 no Supabase ou configure a secret key na Vercel." }
     }
     const admin = createAdminClient()
-    const { error } = await admin.from("somos_preta_profiles").update({ role }).eq("id", userId)
+    const { data, error } = await admin
+        .from("somos_preta_profiles")
+        .update({ role })
+        .eq("id", userId)
+        .select("id")
     if (error) return { error: error.message }
+    if (!data?.length) return { error: "Usuário não encontrado — a lista pode estar desatualizada." }
     revalidatePath("/usuarios")
     return { ok: true }
 }

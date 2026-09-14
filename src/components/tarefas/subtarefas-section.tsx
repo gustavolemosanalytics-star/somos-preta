@@ -4,6 +4,12 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Subtarefa } from "@/lib/db/types"
 import { UserPicker } from "./user-picker"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
+import { confirmarEscrita, lidos } from "@/lib/supabase/resultado"
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -15,15 +21,18 @@ export function SubtarefasSection({ tarefaId }: { tarefaId: string }) {
     const [supabase] = useState(() => createClient())
     const [subtarefas, setSubtarefas] = useState<Subtarefa[]>([])
     const [novoTitulo, setNovoTitulo] = useState("")
+    const [erroCarga, setErroCarga] = useState(false)
 
     async function load() {
-        const { data } = await supabase
+        const resposta = await supabase
             .from("somos_preta_subtarefas")
             .select("*")
             .eq("tarefa_id", tarefaId)
             .order("ordem")
             .order("created_at")
-        setSubtarefas((data as Subtarefa[]) ?? [])
+        const lista = lidos<Subtarefa>(resposta)
+        setErroCarga(!lista)
+        setSubtarefas(lista ?? [])
     }
 
     useEffect(() => {
@@ -44,8 +53,12 @@ export function SubtarefasSection({ tarefaId }: { tarefaId: string }) {
 
     async function atualizar(s: Subtarefa, patch: Partial<Subtarefa>) {
         setSubtarefas((prev) => prev.map((x) => (x.id === s.id ? { ...x, ...patch } : x)))
-        const { error } = await supabase.from("somos_preta_subtarefas").update(patch).eq("id", s.id)
-        if (error) { toast.error("Erro ao salvar"); load() }
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_subtarefas").update(patch).eq("id", s.id).select("id"),
+            "Não foi possível salvar a subtarefa",
+        )
+        // Desfaz o otimismo: sem isso a tela guardaria para sempre um prazo que nunca foi gravado.
+        if (!ok) load()
     }
 
     async function toggle(s: Subtarefa, concluida: boolean) {
@@ -53,13 +66,20 @@ export function SubtarefasSection({ tarefaId }: { tarefaId: string }) {
     }
 
     async function excluir(id: string) {
-        const { error } = await supabase.from("somos_preta_subtarefas").delete().eq("id", id)
-        if (error) { toast.error("Erro ao excluir"); return }
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_subtarefas").delete().eq("id", id).select("id"),
+            "Não foi possível excluir a subtarefa",
+        )
+        if (!ok) return
         setSubtarefas((prev) => prev.filter((x) => x.id !== id))
     }
 
     const concluidas = subtarefas.filter((s) => s.concluida).length
     const progresso = subtarefas.length > 0 ? Math.round((concluidas / subtarefas.length) * 100) : 0
+
+    if (erroCarga) {
+        return <ErroDeCarregamento recurso="as subtarefas" onTentarDeNovo={load} />
+    }
 
     return (
         <div className="space-y-3">
@@ -87,12 +107,29 @@ export function SubtarefasSection({ tarefaId }: { tarefaId: string }) {
                         <div className="w-[160px]">
                             <UserPicker value={s.responsavel_id} onChange={(v) => atualizar(s, { responsavel_id: v })} placeholder="Responsável" allowClear />
                         </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-status-erro" onClick={() => excluir(s.id)} aria-label="Excluir subtarefa" title="Excluir subtarefa">
-                            <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-status-erro" aria-label="Excluir subtarefa" title="Excluir subtarefa">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir subtarefa?</AlertDialogTitle>
+                                    <AlertDialogDescription>&quot;{s.titulo}&quot; será removida. Esta ação não pode ser desfeita.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => excluir(s.id)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </li>
                 ))}
             </ul>
+            {subtarefas.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma subtarefa ainda.</p>
+            )}
             <div className="flex items-center gap-2">
                 <Input
                     placeholder="Nova subtarefa..."

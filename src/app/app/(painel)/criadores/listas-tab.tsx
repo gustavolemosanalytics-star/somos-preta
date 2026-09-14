@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import type { Lista, ListaCriador, Influencer, PipelineEtapa, Cliente, Campanha } from "@/lib/db/types"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,8 +16,14 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, ListChecks, Loader2, Plus, Trash2, UserPlus } from "lucide-react"
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { ArrowLeft, ListChecks, Loader2, Pencil, Plus, Trash2, UserPlus } from "lucide-react"
 import { toast } from "sonner"
+import { confirmarEscrita, lidos } from "@/lib/supabase/resultado"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
 
 export const PIPELINE_ETAPAS: PipelineEtapa[] = [
     "mapeado", "em_analise", "contatado", "interessado", "negociacao",
@@ -37,24 +43,28 @@ export const PIPELINE_LABEL: Record<PipelineEtapa, string> = {
     publicado: "Publicado",
 }
 
-type ListaComContagem = Lista & { total: number; cliente: { nome: string } | null; campanha: { nome: string } | null }
+/** `total` é null quando a contagem falhou — 0 diria que a lista está vazia. */
+type ListaComContagem = Lista & { total: number | null; cliente: { nome: string } | null; campanha: { nome: string } | null }
 
 function ListaDetalhe({ lista, onVoltar }: { lista: Lista; onVoltar: () => void }) {
     const [supabase] = useState(() => createClient())
     const [membros, setMembros] = useState<(ListaCriador & { influencer: Influencer })[]>([])
     const [loading, setLoading] = useState(true)
+    const [erroCarga, setErroCarga] = useState(false)
     const [adicionarOpen, setAdicionarOpen] = useState(false)
     const [busca, setBusca] = useState("")
     const [resultados, setResultados] = useState<Influencer[]>([])
 
     async function load() {
         setLoading(true)
-        const { data } = await supabase
+        const resposta = await supabase
             .from("somos_preta_lista_criadores")
             .select("*, influencer:somos_preta_influencers(*)")
             .eq("lista_id", lista.id)
             .order("added_at", { ascending: false })
-        setMembros((data as unknown as (ListaCriador & { influencer: Influencer })[]) ?? [])
+        const linhas = lidos(resposta) as unknown as (ListaCriador & { influencer: Influencer })[] | null
+        setErroCarga(linhas === null)
+        setMembros(linhas ?? [])
         setLoading(false)
     }
 
@@ -81,13 +91,25 @@ function ListaDetalhe({ lista, onVoltar }: { lista: Lista; onVoltar: () => void 
     }
 
     async function mudarEtapa(membroId: string, etapa: PipelineEtapa) {
+        const anterior = membros.find((m) => m.id === membroId)?.etapa
         setMembros((prev) => prev.map((m) => (m.id === membroId ? { ...m, etapa } : m)))
-        await supabase.from("somos_preta_lista_criadores").update({ etapa }).eq("id", membroId)
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_lista_criadores").update({ etapa }).eq("id", membroId).select("id"),
+            "Não foi possível mudar a etapa",
+        )
+        if (!ok && anterior) {
+            setMembros((prev) => prev.map((m) => (m.id === membroId ? { ...m, etapa: anterior } : m)))
+        }
     }
 
     async function remover(membroId: string) {
-        await supabase.from("somos_preta_lista_criadores").delete().eq("id", membroId)
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_lista_criadores").delete().eq("id", membroId).select("id"),
+            "Não foi possível remover o criador da lista",
+        )
+        if (!ok) return
         setMembros((prev) => prev.filter((m) => m.id !== membroId))
+        toast.success("Criador removido da lista")
     }
 
     const porEtapa = useMemo(() => {
@@ -132,6 +154,8 @@ function ListaDetalhe({ lista, onVoltar }: { lista: Lista; onVoltar: () => void 
 
             {loading ? (
                 <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+            ) : erroCarga ? (
+                <ErroDeCarregamento recurso="os criadores desta lista" onTentarDeNovo={load} />
             ) : membros.length === 0 ? (
                 <Card><CardContent className="py-14 text-center text-muted-foreground">Nenhum criador nesta lista ainda.</CardContent></Card>
             ) : (
@@ -156,7 +180,23 @@ function ListaDetalhe({ lista, onVoltar }: { lista: Lista; onVoltar: () => void 
                                         </Select>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => remover(m.id)}><Trash2 className="h-4 w-4" /></Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label={`Remover ${m.influencer.nome} da lista`}><Trash2 className="h-4 w-4" /></Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Remover da lista?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        <span className="font-medium text-foreground">{m.influencer.nome}</span> sai desta lista e a etapa de pipeline dele aqui é perdida. O criador continua na base.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => remover(m.id)} className="bg-destructive text-white hover:bg-destructive/90">Remover</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -174,26 +214,33 @@ export function ListasTab() {
     const [clientes, setClientes] = useState<Cliente[]>([])
     const [campanhas, setCampanhas] = useState<Campanha[]>([])
     const [loading, setLoading] = useState(true)
+    const [erroCarga, setErroCarga] = useState(false)
     const [open, setOpen] = useState(false)
     const [saving, setSaving] = useState(false)
     const [ativa, setAtiva] = useState<Lista | null>(null)
+    const [editando, setEditando] = useState<Lista | null>(null)
     const [form, setForm] = useState({ nome: "", descricao: "", cliente_id: "", campanha_id: "" })
 
     async function load() {
         setLoading(true)
-        const [{ data: ls }, { data: cs }, { data: camps }] = await Promise.all([
+        const [respostaListas, respostaClientes, respostaCampanhas] = await Promise.all([
             supabase.from("somos_preta_listas").select("*, cliente:somos_preta_clientes(nome), campanha:somos_preta_campanhas(nome)").order("created_at", { ascending: false }),
             supabase.from("somos_preta_clientes").select("*").order("nome"),
             supabase.from("somos_preta_campanhas").select("*").order("nome"),
         ])
-        const listasBase = (ls as (Lista & { cliente: { nome: string } | null; campanha: { nome: string } | null })[]) ?? []
-        const comContagem = await Promise.all(listasBase.map(async (l) => {
-            const { count } = await supabase.from("somos_preta_lista_criadores").select("id", { count: "exact", head: true }).eq("lista_id", l.id)
-            return { ...l, total: count ?? 0 }
+        const ls = lidos(respostaListas) as unknown as (Lista & { cliente: { nome: string } | null; campanha: { nome: string } | null })[] | null
+        const cs = lidos(respostaClientes) as Cliente[] | null
+        const camps = lidos(respostaCampanhas) as Campanha[] | null
+        // Cliente e campanha alimentam os Selects do formulário: sem eles a lista até
+        // aparece, mas o vínculo some do diálogo sem nenhum aviso.
+        setErroCarga(ls === null || cs === null || camps === null)
+        const comContagem = await Promise.all((ls ?? []).map(async (l) => {
+            const { count, error } = await supabase.from("somos_preta_lista_criadores").select("id", { count: "exact", head: true }).eq("lista_id", l.id)
+            return { ...l, total: error ? null : count ?? 0 }
         }))
         setListas(comContagem)
-        setClientes((cs as Cliente[]) ?? [])
-        setCampanhas((camps as Campanha[]) ?? [])
+        setClientes(cs ?? [])
+        setCampanhas(camps ?? [])
         setLoading(false)
     }
 
@@ -202,22 +249,61 @@ export function ListasTab() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    async function criar() {
+    function abrirDialogo(o: boolean) {
+        // O gatilho "Nova lista" e o lápis de cada card compartilham o mesmo diálogo;
+        // abrir pelo gatilho precisa limpar a edição anterior.
+        if (o) { setEditando(null); setForm({ nome: "", descricao: "", cliente_id: "", campanha_id: "" }) }
+        setOpen(o)
+    }
+
+    function abrirEdicao(lista: ListaComContagem) {
+        setEditando(lista)
+        setForm({
+            nome: lista.nome,
+            descricao: lista.descricao ?? "",
+            cliente_id: lista.cliente_id ?? "",
+            campanha_id: lista.campanha_id ?? "",
+        })
+        setOpen(true)
+    }
+
+    async function salvar() {
         if (!form.nome.trim()) return
         setSaving(true)
-        const { data: { user } } = await supabase.auth.getUser()
-        const { error } = await supabase.from("somos_preta_listas").insert({
+        const valores = {
             nome: form.nome.trim(),
             descricao: form.descricao || null,
             cliente_id: form.cliente_id || null,
             campanha_id: form.campanha_id || null,
-            criado_por: user?.id ?? null,
-        })
-        setSaving(false)
-        if (error) { toast.error("Erro ao criar lista"); return }
-        toast.success("Lista criada")
+        }
+        if (editando) {
+            const ok = await confirmarEscrita(
+                supabase.from("somos_preta_listas").update(valores).eq("id", editando.id).select("id"),
+                "Não foi possível salvar a lista",
+            )
+            setSaving(false)
+            if (!ok) return
+            toast.success("Lista atualizada")
+        } else {
+            const { data: { user } } = await supabase.auth.getUser()
+            const { error } = await supabase.from("somos_preta_listas").insert({ ...valores, criado_por: user?.id ?? null })
+            setSaving(false)
+            if (error) { toast.error("Erro ao criar lista"); return }
+            toast.success("Lista criada")
+        }
         setOpen(false)
+        setEditando(null)
         setForm({ nome: "", descricao: "", cliente_id: "", campanha_id: "" })
+        load()
+    }
+
+    async function excluir(lista: ListaComContagem) {
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_listas").delete().eq("id", lista.id).select("id"),
+            "Não foi possível excluir a lista",
+        )
+        if (!ok) return
+        toast.success("Lista excluída")
         load()
     }
 
@@ -226,11 +312,11 @@ export function ListasTab() {
     return (
         <div className="space-y-4 pt-4">
             <div className="flex items-center justify-end">
-                <Dialog open={open} onOpenChange={setOpen}>
+                <Dialog open={open} onOpenChange={abrirDialogo}>
                     <DialogTrigger asChild><Button className="rounded-xl"><Plus className="h-4 w-4" /> Nova lista</Button></DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Nova lista</DialogTitle>
+                            <DialogTitle>{editando ? "Editar lista" : "Nova lista"}</DialogTitle>
                             <DialogDescription>Mapeamento por campanha, cliente, região ou finalidade.</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-2">
@@ -260,7 +346,7 @@ export function ListasTab() {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button onClick={criar} disabled={saving || !form.nome.trim()}>{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Criar</Button>
+                            <Button onClick={salvar} disabled={saving || !form.nome.trim()}>{saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}{editando ? "Salvar" : "Criar"}</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -268,6 +354,8 @@ export function ListasTab() {
 
             {loading ? (
                 <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+            ) : erroCarga ? (
+                <ErroDeCarregamento recurso="as listas" onTentarDeNovo={load} />
             ) : listas.length === 0 ? (
                 <Card className="text-center py-16 border border-border/60 shadow-sm rounded-2xl">
                     <ListChecks className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
@@ -280,6 +368,30 @@ export function ListasTab() {
                         <Card key={l.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setAtiva(l)}>
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-base">{l.nome}</CardTitle>
+                                <CardAction className="flex items-center gap-0.5">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Editar ${l.nome}`} onClick={(e) => { e.stopPropagation(); abrirEdicao(l) }}>
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label={`Excluir ${l.nome}`} onClick={(e) => e.stopPropagation()}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Excluir lista?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta ação não pode ser desfeita. A lista <span className="font-medium text-foreground">{l.nome}</span> some junto com {l.total === null ? "o mapeamento dos criadores nela e as etapas de pipeline" : `o mapeamento de ${l.total} criador(es) e as etapas de pipeline`}. Os criadores continuam na base.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => excluir(l)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </CardAction>
                             </CardHeader>
                             <CardContent className="space-y-2">
                                 {l.descricao && <p className="text-sm text-muted-foreground line-clamp-2">{l.descricao}</p>}
@@ -287,7 +399,7 @@ export function ListasTab() {
                                     {l.cliente && <Badge variant="outline">{l.cliente.nome}</Badge>}
                                     {l.campanha && <Badge variant="outline">{l.campanha.nome}</Badge>}
                                 </div>
-                                <p className="text-sm font-medium">{l.total} criador(es)</p>
+                                <p className="text-sm font-medium">{l.total === null ? "Contagem indisponível" : `${l.total} criador(es)`}</p>
                             </CardContent>
                         </Card>
                     ))}

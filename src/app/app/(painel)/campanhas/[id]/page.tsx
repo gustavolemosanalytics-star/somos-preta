@@ -13,14 +13,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog"
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { ArrowLeft, Plus, Loader2, ClipboardList, Megaphone } from "lucide-react"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
+import { ArrowLeft, Plus, Loader2, ClipboardList, Megaphone, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { CAMPANHA_STATUS } from "@/lib/constants/campanhas"
+import { CAMPANHA_STATUS, brl, orcamentoDaCampanha } from "@/lib/constants/campanhas"
+import { confirmarEscrita, lido, lidos } from "@/lib/supabase/resultado"
 
 type CampanhaComCliente = Campanha & { cliente: { id: string; nome: string } | null }
 
@@ -28,7 +34,6 @@ const STATUS_LABEL: Record<CampanhaStatus, string> =
     Object.fromEntries(
         (Object.keys(CAMPANHA_STATUS) as CampanhaStatus[]).map((s) => [s, CAMPANHA_STATUS[s].label])
     ) as Record<CampanhaStatus, string>
-const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 export default function CampanhaDetalhePage() {
     const params = useParams<{ id: string }>()
@@ -40,6 +45,9 @@ export default function CampanhaDetalhePage() {
     const [loading, setLoading] = useState(true)
     const [open, setOpen] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [erroCampanha, setErroCampanha] = useState(false)
+    const [erroTarefas, setErroTarefas] = useState(false)
+    const [excluindo, setExcluindo] = useState<Tarefa | null>(null)
 
     const [form, setForm] = useState({
         titulo: "", descricao: "", prioridade: "media" as TarefaPrioridade,
@@ -48,12 +56,21 @@ export default function CampanhaDetalhePage() {
 
     async function load() {
         setLoading(true)
-        const [{ data: c }, { data: ts }] = await Promise.all([
-            supabase.from("somos_preta_campanhas").select("*, cliente:somos_preta_clientes(id, nome)").eq("id", campanhaId).single(),
-            supabase.from("somos_preta_tarefas").select("*").eq("campanha_id", campanhaId).order("ordem").order("created_at", { ascending: false }),
+        // maybeSingle: campanha inexistente é data null, não erro — assim "não achei"
+        // não se confunde com "não consegui ler".
+        const [respostaCampanha, respostaTarefas] = await Promise.all([
+            supabase.from("somos_preta_campanhas").select("*, cliente:somos_preta_clientes(id, nome)").eq("id", campanhaId).maybeSingle(),
+            supabase.from("somos_preta_tarefas").select("*").eq("campanha_id", campanhaId).eq("arquivada", false).order("ordem").order("created_at", { ascending: false }),
         ])
-        setCampanha((c as CampanhaComCliente) ?? null)
-        setTarefas((ts as Tarefa[]) ?? [])
+
+        const leitura = lido<CampanhaComCliente>(respostaCampanha)
+        setErroCampanha(!leitura.ok)
+        setCampanha(leitura.ok ? leitura.valor : null)
+
+        const lista = lidos<Tarefa>(respostaTarefas)
+        setErroTarefas(lista === null)
+        setTarefas(lista ?? [])
+
         setLoading(false)
     }
 
@@ -64,7 +81,7 @@ export default function CampanhaDetalhePage() {
 
     async function handleCreate(e: React.FormEvent) {
         e.preventDefault()
-        if (!form.titulo.trim()) return
+        if (!form.titulo.trim()) { toast.error("Informe o título da tarefa"); return }
         setSaving(true)
         const { data: { user } } = await supabase.auth.getUser()
         const { error } = await supabase.from("somos_preta_tarefas").insert({
@@ -89,16 +106,40 @@ export default function CampanhaDetalhePage() {
             toast.error("Esta tarefa exige evidência de conclusão — abra-a para concluir")
             return
         }
+        // Otimista: o badge responde no clique; se não gravou, o load() abaixo desfaz.
         setTarefas((prev) => prev.map((x) => x.id === t.id ? { ...x, status } : x))
-        const { error } = await supabase.from("somos_preta_tarefas").update({
-            status,
-            concluida_em: status === "concluida" ? new Date().toISOString() : null,
-        }).eq("id", t.id)
-        if (error) { toast.error("Erro ao atualizar"); load() }
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_tarefas").update({
+                status,
+                concluida_em: status === "concluida" ? new Date().toISOString() : null,
+            }).eq("id", t.id).select("id"),
+            "Não foi possível mudar o status",
+        )
+        if (!ok) { load(); return }
+        toast.success(`Movida para ${TAREFA_STATUS[status].label}`)
+    }
+
+    async function excluirTarefa(t: Tarefa) {
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_tarefas").delete().eq("id", t.id).select("id"),
+            "Não foi possível excluir a tarefa",
+        )
+        setExcluindo(null)
+        if (!ok) return
+        toast.success("Tarefa excluída")
+        load()
     }
 
     if (loading) {
         return <div className="flex items-center justify-center py-24 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+    }
+    if (erroCampanha) {
+        return (
+            <div className="space-y-4">
+                <Link href="/campanhas" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Campanhas</Link>
+                <ErroDeCarregamento recurso="a campanha" onTentarDeNovo={load} />
+            </div>
+        )
     }
     if (!campanha) {
         return (
@@ -110,6 +151,7 @@ export default function CampanhaDetalhePage() {
     }
 
     const feitas = tarefas.filter((t) => t.status === "concluida").length
+    const orcamento = orcamentoDaCampanha(campanha)
 
     return (
         <div className="space-y-6">
@@ -131,9 +173,11 @@ export default function CampanhaDetalhePage() {
                         <Badge variant="secondary">{STATUS_LABEL[campanha.status]}</Badge>
                     </div>
                     <div className="flex flex-wrap gap-4 pt-2 text-sm text-muted-foreground">
-                        <span className="font-semibold text-foreground">{brl(Number(campanha.budget))}</span>
+                        {orcamento
+                            ? <span>{orcamento.rotulo} <span className="font-semibold text-foreground">{brl(orcamento.valor)}</span></span>
+                            : <span>Orçamento não definido</span>}
                         {(campanha.data_inicio || campanha.data_fim) && <span>{[campanha.data_inicio, campanha.data_fim].filter(Boolean).join(" → ")}</span>}
-                        <span>{feitas}/{tarefas.length} tarefas concluídas</span>
+                        {!erroTarefas && <span>{feitas}/{tarefas.length} tarefas concluídas</span>}
                     </div>
                     {campanha.briefing && <p className="text-sm pt-2">{campanha.briefing}</p>}
                 </CardHeader>
@@ -180,7 +224,9 @@ export default function CampanhaDetalhePage() {
                 </Dialog>
             </div>
 
-            {tarefas.length === 0 ? (
+            {erroTarefas ? (
+                <ErroDeCarregamento recurso="as tarefas" onTentarDeNovo={load} />
+            ) : tarefas.length === 0 ? (
                 <Card><CardContent className="py-14 text-center text-muted-foreground">
                     <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-40" />
                     <p className="font-medium">Nenhuma tarefa ainda</p>
@@ -208,12 +254,42 @@ export default function CampanhaDetalhePage() {
                                         </SelectTrigger>
                                         <SelectContent>{TAREFA_STATUS_ORDEM.map((s) => <SelectItem key={s} value={s}>{TAREFA_STATUS[s].label}</SelectItem>)}</SelectContent>
                                     </Select>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                        onClick={() => setExcluindo(t)}
+                                        aria-label={`Excluir tarefa ${t.titulo}`}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
                                 </CardContent>
                             </Card>
                         )
                     })}
                 </div>
             )}
+
+            <AlertDialog open={!!excluindo} onOpenChange={(v) => !v && setExcluindo(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            &quot;{excluindo?.titulo}&quot; será removida — e com ela as subtarefas,
+                            comentários e anexos vinculados, em cascata.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => excluindo && excluirTarefa(excluindo)}
+                            className="bg-destructive text-white hover:bg-destructive/90"
+                        >
+                            Excluir mesmo assim
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

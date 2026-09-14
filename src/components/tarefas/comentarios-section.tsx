@@ -6,6 +6,8 @@ import type { TarefaComentario, TarefaComentarioTipo } from "@/lib/db/types"
 import { useProfiles } from "@/hooks/use-profiles"
 import { MentionTextarea, TextoComMencoes, extrairMencoes } from "./mention-textarea"
 import { UserAvatar } from "./user-picker"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
+import { lidos } from "@/lib/supabase/resultado"
 import { Button } from "@/components/ui/button"
 import { DropdownSelect } from "@/components/ui/dropdown-select"
 import { Badge } from "@/components/ui/badge"
@@ -31,9 +33,10 @@ export function ComentariosSection({ tarefaId }: { tarefaId: string }) {
     const [tipo, setTipo] = useState<TarefaComentarioTipo>("comentario")
     const [enviando, setEnviando] = useState(false)
     const [filtroTipo, setFiltroTipo] = useState<TarefaComentarioTipo | "todos">("todos")
+    const [erroCarga, setErroCarga] = useState(false)
 
     async function load() {
-        const [{ data }, { data: { user } }] = await Promise.all([
+        const [resposta, { data: { user } }] = await Promise.all([
             supabase
                 .from("somos_preta_tarefa_comentarios")
                 .select("*")
@@ -42,15 +45,16 @@ export function ComentariosSection({ tarefaId }: { tarefaId: string }) {
                 .order("created_at"),
             supabase.auth.getUser(),
         ])
-        const lista = (data as TarefaComentario[]) ?? []
-        setComentarios(lista)
-        if (user && lista.length > 0) {
-            const { data: mencoes } = await supabase
+        const lista = lidos<TarefaComentario>(resposta)
+        setErroCarga(!lista)
+        setComentarios(lista ?? [])
+        if (user && lista && lista.length > 0) {
+            const respostaMencoes = await supabase
                 .from("somos_preta_tarefa_mencoes")
                 .select("comentario_id")
                 .eq("profile_id", user.id)
                 .in("comentario_id", lista.map((c) => c.id))
-            setMencionadoEm(new Set(((mencoes as { comentario_id: string }[]) ?? []).map((m) => m.comentario_id)))
+            setMencionadoEm(new Set((lidos<{ comentario_id: string }>(respostaMencoes) ?? []).map((m) => m.comentario_id)))
         } else {
             setMencionadoEm(new Set())
         }
@@ -97,6 +101,7 @@ export function ComentariosSection({ tarefaId }: { tarefaId: string }) {
 
     return (
         <div className="space-y-4">
+            {erroCarga && <ErroDeCarregamento recurso="as atualizações" onTentarDeNovo={load} />}
             {comentarios.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                     <Badge
@@ -148,7 +153,7 @@ export function ComentariosSection({ tarefaId }: { tarefaId: string }) {
                         </li>
                     )
                 })}
-                {comentariosFiltrados.length === 0 && (
+                {comentariosFiltrados.length === 0 && !erroCarga && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                         {comentarios.length === 0 ? "Nenhuma atualização ainda." : "Nenhuma atualização deste tipo."}
                     </p>

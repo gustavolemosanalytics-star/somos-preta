@@ -4,6 +4,12 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { TarefaAnexo } from "@/lib/db/types"
 import { FileUploader } from "./file-uploader"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
+import { confirmarEscrita, lidos } from "@/lib/supabase/resultado"
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FileText, Film, Image as ImageIcon, Link as LinkIcon, Trash2 } from "lucide-react"
@@ -22,15 +28,18 @@ export function AnexosSection({ tarefaId, apenasEvidencia, onChange }: {
     const [anexos, setAnexos] = useState<(TarefaAnexo & { signedUrl?: string })[]>([])
     const [linkAberto, setLinkAberto] = useState(false)
     const [link, setLink] = useState("")
+    const [erroCarga, setErroCarga] = useState(false)
 
     async function load() {
-        const { data } = await supabase
+        const resposta = await supabase
             .from("somos_preta_tarefa_anexos")
             .select("*")
             .eq("tarefa_id", tarefaId)
             .is("subtarefa_id", null)
             .order("created_at", { ascending: false })
-        const lista = (data as TarefaAnexo[]) ?? []
+        const lista = lidos<TarefaAnexo>(resposta)
+        setErroCarga(!lista)
+        if (!lista) { setAnexos([]); return }
         const comUrl = await Promise.all(lista.map(async (a) => {
             if (a.storage_path) {
                 const { data: signed } = await supabase.storage.from("tarefa-anexos").createSignedUrl(a.storage_path, 3600)
@@ -39,7 +48,9 @@ export function AnexosSection({ tarefaId, apenasEvidencia, onChange }: {
             return a
         }))
         setAnexos(comUrl)
-        onChange?.(lista)
+        // A trava de evidência conta o que sai daqui: mandar a lista inteira deixaria
+        // um briefing qualquer valer como evidência de conclusão.
+        onChange?.(lista.filter((a) => a.is_evidencia))
     }
 
     useEffect(() => {
@@ -61,13 +72,22 @@ export function AnexosSection({ tarefaId, apenasEvidencia, onChange }: {
         load()
     }
 
-    async function excluir(id: string) {
-        const { error } = await supabase.from("somos_preta_tarefa_anexos").delete().eq("id", id)
-        if (error) { toast.error("Erro ao excluir"); return }
+    async function excluir(anexo: TarefaAnexo) {
+        const ok = await confirmarEscrita(
+            supabase.from("somos_preta_tarefa_anexos").delete().eq("id", anexo.id).select("id"),
+            "Não foi possível excluir o anexo",
+        )
+        if (!ok) return
+        // O arquivo não sai junto com a linha; sem isto ele fica órfão no bucket para sempre.
+        if (anexo.storage_path) await supabase.storage.from("tarefa-anexos").remove([anexo.storage_path])
         load()
     }
 
     const visiveis = apenasEvidencia ? anexos.filter((a) => a.is_evidencia) : anexos
+
+    if (erroCarga) {
+        return <ErroDeCarregamento recurso="os anexos" onTentarDeNovo={load} />
+    }
 
     return (
         <div className="space-y-3">
@@ -104,13 +124,32 @@ export function AnexosSection({ tarefaId, apenasEvidencia, onChange }: {
                                     {a.nome ?? a.link_externo}
                                 </a>
                                 {a.is_evidencia && <span className="text-[10px] uppercase text-status-sucesso font-medium shrink-0">Evidência</span>}
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-status-erro shrink-0" onClick={() => excluir(a.id)} aria-label="Excluir anexo" title="Excluir anexo">
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-status-erro shrink-0" aria-label="Excluir anexo" title="Excluir anexo">
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Excluir anexo?</AlertDialogTitle>
+                                            <AlertDialogDescription>&quot;{a.nome ?? a.link_externo}&quot; sai da tarefa e o arquivo é apagado. Esta ação não pode ser desfeita.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => excluir(a)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </li>
                         )
                     })}
                 </ul>
+            )}
+            {visiveis.length === 0 && (
+                <p className="text-sm text-muted-foreground py-2">
+                    {apenasEvidencia ? "Nenhuma evidência anexada ainda." : "Nenhum anexo ainda."}
+                </p>
             )}
         </div>
     )

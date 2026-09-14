@@ -65,14 +65,17 @@ export function AppSidebar({ user, ...props }: { user: NavUserData } & React.Com
             <SidebarHeader className="border-b border-sidebar-border/50">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild className="hover:bg-sidebar-accent/50">
+                        <SidebarMenuButton size="lg" asChild className="h-auto py-2 hover:bg-sidebar-accent/50">
                             <Link href="/dashboard" onClick={handleNavClick}>
                                 <SimboloPreta className="size-8" />
                                 <div className="grid flex-1 text-left leading-tight">
                                     <span className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
                                         Somos Preta
                                     </span>
-                                    <span className="truncate text-[9px] uppercase tracking-[0.14em] text-sidebar-foreground/50">
+                                    {/* Sem truncate: na largura da sidebar a
+                                        assinatura cortava em "…MOVEM O NOR…".
+                                        Duas linhas cabem e ainda respiram. */}
+                                    <span className="text-[9px] uppercase leading-[1.35] tracking-[0.12em] text-sidebar-foreground/50">
                                         Criadores que movem o Nordeste
                                     </span>
                                 </div>

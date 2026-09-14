@@ -107,8 +107,8 @@ export default function ConfiguracoesPage() {
 
             <div className="grid gap-4 xl:grid-cols-2">
                 {/* ---------- perfil ---------- */}
-                <Card className="rounded-2xl">
-                    <CardContent className="p-4 sm:p-5">
+                <Card>
+                    <CardContent className="p-5">
                         <p className="text-sm font-semibold">Seu perfil</p>
                         <p className="text-xs text-muted-foreground">
                             O cargo aparece ao lado do seu nome nas contas que você atende.
@@ -161,8 +161,8 @@ export default function ConfiguracoesPage() {
             </div>
 
             {/* ---------- equipe ---------- */}
-            <Card className="rounded-2xl">
-                <CardContent className="p-4 sm:p-5">
+            <Card>
+                <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-2">
                         <div>
                             <p className="text-sm font-semibold">Equipe</p>

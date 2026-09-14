@@ -67,8 +67,8 @@ export function CardCampanha({ campanha, metrica, equipe, onEditar, onExcluir, o
     const aprovados = Number(metrica?.creators_aprovados ?? 0)
 
     return (
-        <Card className="rounded-2xl border-border/60 transition-colors hover:border-primary/40">
-            <CardContent className="space-y-4 p-4 sm:p-5">
+        <Card className="transition-colors hover:border-primary/40">
+            <CardContent className="space-y-4 p-5">
                 {/* ---------- identidade ---------- */}
                 <div className="flex items-start gap-3">
                     {capa ? (

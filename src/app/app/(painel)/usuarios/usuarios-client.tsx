@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Profile, Role } from "@/lib/db/types"
+import { lidos } from "@/lib/supabase/resultado"
 import { criarUsuario, excluirUsuario, atualizarPapel } from "./actions"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,6 +47,7 @@ export function UsuariosClient({ meId }: { meId: string }) {
     const [supabase] = useState(() => createClient())
     const [usuarios, setUsuarios] = useState<Profile[]>([])
     const [loading, setLoading] = useState(true)
+    const [erroCarga, setErroCarga] = useState(false)
     const [busca, setBusca] = useState("")
     const [open, setOpen] = useState(false)
     const [saving, setSaving] = useState(false)
@@ -52,11 +55,14 @@ export function UsuariosClient({ meId }: { meId: string }) {
 
     async function load() {
         setLoading(true)
-        const { data } = await supabase
+        setErroCarga(false)
+        const lista = lidos<Profile>(await supabase
             .from("somos_preta_profiles")
             .select("*")
-            .order("created_at", { ascending: false })
-        setUsuarios((data as Profile[]) ?? [])
+            .order("created_at", { ascending: false }))
+        // Lista antiga na tela é menos enganosa que uma tabela vazia depois de uma leitura que falhou.
+        if (lista) setUsuarios(lista)
+        else setErroCarga(true)
         setLoading(false)
     }
 
@@ -103,7 +109,12 @@ export function UsuariosClient({ meId }: { meId: string }) {
         setSaving(true)
         const res = await criarUsuario({ ...form, email: form.email.trim() })
         setSaving(false)
-        if (res.error) { toast.error(res.error); return }
+        if (res.error) {
+            toast.error(res.error)
+            // O acesso pode ter sido criado mesmo com o perfil incompleto: a lista precisa mostrar quem entrou.
+            load()
+            return
+        }
         toast.success("Usuário criado")
         setOpen(false)
         setForm({ nome: "", email: "", senha: "", role: "analista" })
@@ -173,72 +184,93 @@ export function UsuariosClient({ meId }: { meId: string }) {
                 <Input placeholder="Buscar por nome ou email..." value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9 rounded-xl" />
             </div>
 
-            <Card>
-                <CardContent className="p-0">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
-                    ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Nome</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Email</TableHead>
-                                    <TableHead>Papel</TableHead>
-                                    <TableHead className="text-right">Ações</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filtrados.map((u) => {
-                                    const isMe = u.id === meId
-                                    return (
-                                        <TableRow key={u.id}>
-                                            <TableCell className="font-medium">
-                                                {u.nome ?? "—"} {isMe && <span className="text-xs text-muted-foreground">(você)</span>}
-                                            </TableCell>
-                                            <TableCell className="hidden sm:table-cell text-muted-foreground">{u.email ?? "—"}</TableCell>
-                                            <TableCell>
-                                                {isMe ? (
-                                                    <Badge className={roleClass[u.role]} variant="secondary">{roleLabel(u.role)}</Badge>
+            {erroCarga ? (
+                <ErroDeCarregamento recurso="os usuários" onTentarDeNovo={load} />
+            ) : (
+                <Card>
+                    <CardContent className="p-0">
+                        {loading ? (
+                            <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Nome</TableHead>
+                                        <TableHead className="hidden sm:table-cell">Email</TableHead>
+                                        <TableHead>Papel</TableHead>
+                                        <TableHead className="text-right">Ações</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filtrados.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="py-14 text-center text-muted-foreground">
+                                                {busca.trim() ? (
+                                                    <>
+                                                        Nenhum usuário para “{busca.trim()}”.
+                                                        <Button variant="outline" size="sm" className="ml-3 rounded-xl" onClick={() => setBusca("")}>Limpar busca</Button>
+                                                    </>
                                                 ) : (
-                                                    <Select value={u.role} onValueChange={(v) => mudarRole(u, v as Role)}>
-                                                        <SelectTrigger className="w-[180px] h-9">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
-                                                    </Select>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {!isMe && (
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    Isso remove o acesso de <strong>{u.nome ?? u.email}</strong> permanentemente.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDelete(u)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
+                                                    <>
+                                                        Nenhum usuário cadastrado ainda.
+                                                        <Button variant="outline" size="sm" className="ml-3 rounded-xl" onClick={() => setOpen(true)}>Novo usuário</Button>
+                                                    </>
                                                 )}
                                             </TableCell>
                                         </TableRow>
-                                    )
-                                })}
-                            </TableBody>
-                        </Table>
-                    )}
-                </CardContent>
-            </Card>
+                                    )}
+                                    {filtrados.map((u) => {
+                                        const isMe = u.id === meId
+                                        return (
+                                            <TableRow key={u.id}>
+                                                <TableCell className="font-medium">
+                                                    {u.nome ?? "—"} {isMe && <span className="text-xs text-muted-foreground">(você)</span>}
+                                                </TableCell>
+                                                <TableCell className="hidden sm:table-cell text-muted-foreground">{u.email ?? "—"}</TableCell>
+                                                <TableCell>
+                                                    {isMe ? (
+                                                        <Badge className={roleClass[u.role]} variant="secondary">{roleLabel(u.role)}</Badge>
+                                                    ) : (
+                                                        <Select value={u.role} onValueChange={(v) => mudarRole(u, v as Role)}>
+                                                            <SelectTrigger className="w-[180px] h-9">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
+                                                        </Select>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {!isMe && (
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Isso remove o acesso de <strong>{u.nome ?? u.email}</strong> permanentemente.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleDelete(u)} className="bg-destructive text-white hover:bg-destructive/90">Excluir</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
         </div>
     )
 }

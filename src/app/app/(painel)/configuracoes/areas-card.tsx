@@ -122,8 +122,8 @@ export function AreasCard({ areas, onMudou }: { areas: Area[]; onMudou: () => Pr
     }
 
     return (
-        <Card className="rounded-2xl">
-            <CardContent className="space-y-3 p-4 sm:p-5">
+        <Card>
+            <CardContent className="space-y-3 p-5">
                 <div>
                     <p className="text-sm font-semibold">Áreas</p>
                     <p className="text-xs text-muted-foreground">

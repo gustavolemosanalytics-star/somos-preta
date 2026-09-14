@@ -140,7 +140,7 @@ export function Calendario({ tarefas, areas, agora, filtros, onFiltro, areaFiltr
         <div className="grid gap-4 xl:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
             {/* ---------- coluna esquerda ---------- */}
             <div className="space-y-4">
-                <Card className="rounded-2xl">
+                <Card>
                     <CardContent className="flex justify-center p-2">
                         <Calendar
                             mode="single"
@@ -154,7 +154,7 @@ export function Calendario({ tarefas, areas, agora, filtros, onFiltro, areaFiltr
                     </CardContent>
                 </Card>
 
-                <Card className="rounded-2xl">
+                <Card>
                     <CardContent className="space-y-3 p-4">
                         <p className="text-sm font-semibold">Filtros rápidos</p>
                         <ul className="space-y-2">
@@ -189,8 +189,8 @@ export function Calendario({ tarefas, areas, agora, filtros, onFiltro, areaFiltr
             </div>
 
             {/* ---------- grade ---------- */}
-            <Card className="rounded-2xl">
-                <CardContent className="space-y-3 p-3 sm:p-4">
+            <Card>
+                <CardContent className="space-y-3 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                             <Button variant="outline" size="icon-sm" className="rounded-lg" onClick={() => navegar(-1)} aria-label="Período anterior">

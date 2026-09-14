@@ -508,8 +508,8 @@ export default function TarefasPage() {
                             />
 
                             <div className="grid gap-4 xl:grid-cols-2">
-                                <Card className="rounded-2xl">
-                                    <CardContent className="p-4 sm:p-5">
+                                <Card>
+                                    <CardContent className="p-5">
                                         <div className="flex items-center justify-between gap-2">
                                             <p className="text-sm font-semibold">Tarefas próximas do prazo</p>
                                             <button
@@ -555,8 +555,8 @@ export default function TarefasPage() {
                                     </CardContent>
                                 </Card>
 
-                                <Card className="rounded-2xl">
-                                    <CardContent className="p-4 sm:p-5">
+                                <Card>
+                                    <CardContent className="p-5">
                                         <p className="text-sm font-semibold">Atividade recente</p>
                                         <div className="mt-3">
                                             <FeedAtividade itens={atividades} vazio="Nenhuma movimentação registrada ainda." />

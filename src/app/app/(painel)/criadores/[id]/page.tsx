@@ -20,6 +20,8 @@ import {
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { toast } from "sonner"
+import { confirmarEscrita, lido } from "@/lib/supabase/resultado"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
 
 const fmt = (n: number) => n.toLocaleString("pt-BR")
 
@@ -31,15 +33,21 @@ export default function CreatorProfilePage() {
     const [influencer, setInfluencer] = useState<Influencer | null>(null)
     const [favorito, setFavorito] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [erroCarga, setErroCarga] = useState(false)
 
     async function load() {
         setLoading(true)
         const { data: { user } } = await supabase.auth.getUser()
-        const [{ data: inf }, { data: fav }] = await Promise.all([
-            supabase.from("somos_preta_influencers").select("*").eq("id", id).single(),
+        // maybeSingle em vez de single: linha inexistente vira `valor` nulo, e só uma
+        // falha de verdade acende o erro — "não encontrado" e "não consegui ler" são
+        // conclusões diferentes para quem está olhando a ficha.
+        const [respostaInfluencer, { data: fav }] = await Promise.all([
+            supabase.from("somos_preta_influencers").select("*").eq("id", id).maybeSingle(),
             user ? supabase.from("somos_preta_favoritos").select("id").eq("influencer_id", id).eq("profile_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
         ])
-        setInfluencer((inf as Influencer) ?? null)
+        const leitura = lido(respostaInfluencer)
+        setErroCarga(!leitura.ok)
+        setInfluencer(leitura.ok ? ((leitura.valor as Influencer | null) ?? null) : null)
         setFavorito(!!fav)
         setLoading(false)
     }
@@ -51,17 +59,31 @@ export default function CreatorProfilePage() {
 
     async function toggleFavorito() {
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        if (favorito) {
-            await supabase.from("somos_preta_favoritos").delete().eq("influencer_id", id).eq("profile_id", user.id)
-        } else {
-            await supabase.from("somos_preta_favoritos").insert({ influencer_id: id, profile_id: user.id })
-        }
+        if (!user) { toast.error("Faça login novamente para favoritar"); return }
+        const ok = favorito
+            ? await confirmarEscrita(
+                supabase.from("somos_preta_favoritos").delete().eq("influencer_id", id).eq("profile_id", user.id).select("id"),
+                "Não foi possível remover dos favoritos",
+            )
+            : await confirmarEscrita(
+                supabase.from("somos_preta_favoritos").insert({ influencer_id: id, profile_id: user.id }).select("id"),
+                "Não foi possível favoritar",
+            )
+        if (!ok) return
         setFavorito(!favorito)
     }
 
     if (loading) {
         return <div className="flex items-center justify-center py-24 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...</div>
+    }
+
+    if (erroCarga) {
+        return (
+            <div className="space-y-4">
+                <Link href="/criadores" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Criadores</Link>
+                <ErroDeCarregamento recurso="este criador" onTentarDeNovo={load} />
+            </div>
+        )
     }
 
     if (!influencer) {

@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { AlertTriangle, Building2, CheckSquare, Loader2, Megaphone, Plus, Users } from "lucide-react"
 import { toast } from "sonner"
 
@@ -37,7 +38,24 @@ const COLUNAS = `
     *, responsavel:somos_preta_profiles!responsavel_id(id, nome, email, avatar_url, cargo)
 `
 
+/**
+ * A rota antiga /clientes/<id> redireciona para cá com ?aberto=<id>. Ler o
+ * parâmetro obriga a um limite de Suspense, porque useSearchParams suspende
+ * durante a renderização estática.
+ */
 export default function ClientesPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
+            </div>
+        }>
+            <Clientes />
+        </Suspense>
+    )
+}
+
+function Clientes() {
     const [supabase] = useState(() => createClient())
     const { profiles } = useProfiles()
 
@@ -58,7 +76,9 @@ export default function ClientesPage() {
     const [pagina, setPagina] = useState(1)
     const [porPagina, setPorPagina] = useState(10)
 
-    const [selecionado, setSelecionado] = useState<string | null>(null)
+    // Abre já na conta que o link pedia; depois disso a seleção é do usuário.
+    const paramAberto = useSearchParams().get("aberto")
+    const [selecionado, setSelecionado] = useState<string | null>(paramAberto)
     const [editando, setEditando] = useState<ClienteDaLista | null>(null)
     const [dialogAberto, setDialogAberto] = useState(false)
     // Conta as aberturas para compor a `key` do diálogo: remontar é o que faz o

@@ -16,9 +16,8 @@ import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import { FeedAtividade, type ItemAtividade } from "@/components/painel/feed-atividade"
-import { MetricaCard, variacaoPercentual } from "@/components/painel/metrica-card"
+import { MetricaCard, variacaoDeEstoque } from "@/components/painel/metrica-card"
 import { UserAvatar } from "@/components/tarefas/user-picker"
-import { MapaTerritorio } from "@/components/public/mapa-territorio"
 import { useProfiles } from "@/hooks/use-profiles"
 import { dataCurta } from "@/lib/constants/blog"
 import { CAMPANHA_STATUS, CAMPANHA_STATUS_ATIVOS } from "@/lib/constants/campanhas"
@@ -113,7 +112,6 @@ export default function DashboardPage() {
     const profilesById = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles])
     const hoje = useMemo(() => new Date(agora || 0).toISOString().slice(0, 10), [agora])
     const trintaDias = agora - 30 * 24 * 60 * 60 * 1000
-    const sessentaDias = agora - 60 * 24 * 60 * 60 * 1000
 
     // --------------------------------------------------------------- métricas
 
@@ -286,20 +284,14 @@ export default function DashboardPage() {
                         <MetricaCard
                             icone={<Building2 className="h-5 w-5" />} cor="bg-status-sucesso/12 text-status-sucesso"
                             valor={clientesAtivos} rotulo="Clientes ativos"
-                            variacao={variacaoPercentual(
-                                novosNoPeriodo(clientes, trintaDias, agora),
-                                novosNoPeriodo(clientes, sessentaDias, trintaDias),
-                            )}
-                            detalhe={`${clientesAtivos === 1 ? "1 conta ativa" : `${clientesAtivos} contas ativas`}`}
+                            variacao={variacaoDeEstoque(clientes.length, novosNoPeriodo(clientes, trintaDias, agora))}
+                            detalhe={clientesAtivos === 1 ? "1 conta ativa" : `${clientesAtivos} contas ativas`}
                             href="/clientes" hrefLabel="Ver clientes →"
                         />
                         <MetricaCard
                             icone={<Megaphone className="h-5 w-5" />} cor="bg-primary/12 text-primary"
                             valor={campanhasAtivas.length} rotulo="Campanhas ativas"
-                            variacao={variacaoPercentual(
-                                novosNoPeriodo(campanhas, trintaDias, agora),
-                                novosNoPeriodo(campanhas, sessentaDias, trintaDias),
-                            )}
+                            variacao={variacaoDeEstoque(campanhas.length, novosNoPeriodo(campanhas, trintaDias, agora))}
                             detalhe={campanhasAtivas.length === 0 ? "Nenhuma em andamento" : undefined}
                             href="/campanhas" hrefLabel="Ver campanhas →"
                         />
@@ -313,9 +305,9 @@ export default function DashboardPage() {
                         <MetricaCard
                             icone={<Users className="h-5 w-5" />} cor="bg-status-progresso/12 text-status-progresso"
                             valor={criadoresDaRegiao.length.toLocaleString("pt-BR")} rotulo="Criadores na base"
-                            variacao={variacaoPercentual(
+                            variacao={variacaoDeEstoque(
+                                criadoresDaRegiao.length,
                                 novosNoPeriodo(criadoresDaRegiao, trintaDias, agora),
-                                novosNoPeriodo(criadoresDaRegiao, sessentaDias, trintaDias),
                             )}
                             detalhe={`+${novosNoPeriodo(criadoresDaRegiao, trintaDias, agora)} este mês`}
                             href="/criadores" hrefLabel="Ver criadores →"
@@ -330,8 +322,8 @@ export default function DashboardPage() {
 
                     <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
                         {/* ---------- prioridades ---------- */}
-                        <Card className="rounded-2xl">
-                            <CardContent className="p-4 sm:p-5">
+                        <Card>
+                            <CardContent className="p-5">
                                 <div className="flex items-start justify-between gap-2">
                                     <div>
                                         <p className="flex items-center gap-2 text-sm font-semibold">
@@ -374,8 +366,8 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* ---------- campanhas em andamento ---------- */}
-                        <Card className="rounded-2xl">
-                            <CardContent className="p-4 sm:p-5">
+                        <Card>
+                            <CardContent className="p-5">
                                 <div className="flex items-start justify-between gap-2">
                                     <div>
                                         <p className="text-sm font-semibold">Campanhas em andamento</p>
@@ -460,8 +452,8 @@ export default function DashboardPage() {
 
                     <div className="grid gap-4 xl:grid-cols-2">
                         {/* ---------- densidade regional ---------- */}
-                        <Card className="rounded-2xl">
-                            <CardContent className="p-4 sm:p-5">
+                        <Card>
+                            <CardContent className="p-5">
                                 <p className="text-sm font-semibold">Densidade regional</p>
                                 <p className="text-xs text-muted-foreground">
                                     Criadores por estado • {densidade.total.toLocaleString("pt-BR")} no total
@@ -472,15 +464,10 @@ export default function DashboardPage() {
                                         Nenhum criador com estado preenchido nesta região.
                                     </p>
                                 ) : (
-                                    <div className="mt-4 grid gap-4 sm:grid-cols-[120px_minmax(0,1fr)]">
-                                        {/*
-                                          Silhueta do território, não um mapa por estado: o projeto
-                                          não tem geometria estadual, e desenhar um choropleth
-                                          aproximado seria dizer um dado que não existe. O número
-                                          fica nas barras, que é onde ele é legível mesmo.
-                                        */}
-                                        <MapaTerritorio className="mx-auto hidden h-32 w-auto text-primary/25 sm:block" />
-
+                                    // Sem mapa por estado: o projeto não tem geometria estadual, e
+                                    // um choropleth aproximado diria um dado que não existe. A
+                                    // silhueta decorativa que estava aqui só competia com as barras.
+                                    <div className="mt-4">
                                         <ul className="space-y-2.5">
                                             {densidade.linhas.map((l) => (
                                                 <li key={l.uf} className="flex items-center gap-3">
@@ -499,8 +486,8 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* ---------- atividade recente ---------- */}
-                        <Card className="rounded-2xl">
-                            <CardContent className="p-4 sm:p-5">
+                        <Card>
+                            <CardContent className="p-5">
                                 <div className="flex items-start justify-between gap-2">
                                     <div>
                                         <p className="text-sm font-semibold">Atividade recente</p>

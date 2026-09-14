@@ -42,8 +42,15 @@ next-env.d.ts
 
 /src/generated/prisma
 
-# seed com dados pessoais de criadores — não versionar
-supabase/seeds/
+# Seeds com dados pessoais de criadores — não versionar.
+# O padrão exclui o CONTEÚDO da pasta (supabase/seeds/*) e não a pasta em si:
+# o git não reinclui arquivo cujo diretório está excluído, então `supabase/seeds/`
+# tornaria a exceção abaixo inútil.
+supabase/seeds/*
+# Exceção: o seed de demonstração é 100% inventado — contatos em domínio .test,
+# reservado por RFC 6761 para nunca existir — e precisa acompanhar o repositório
+# para qualquer pessoa conseguir subir o painel com conteúdo.
+!supabase/seeds/demo.sql
 
 # planilhas com dados pessoais
 *.xlsx

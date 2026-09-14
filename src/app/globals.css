@@ -502,3 +502,111 @@ html {
 .recorte-d {
   clip-path: polygon(0% 6%, 94% 0%, 100% 92%, 50% 100%, 6% 96%);
 }
+
+/* ============================================================================
+   SUPERFÍCIES DO PAINEL
+   ============================================================================
+   Um tratamento só para todo quadro do painel, aplicado por baixo do `.painel`
+   que o layout põe no <main>. Antes cada tela resolvia borda, sombra e respiro
+   por conta própria, e o resultado era traço sobre traço — card dentro de card,
+   cada um com sua moldura.
+
+   As regras abaixo ficam FORA de @layer de propósito: precisam vencer o
+   `bg-card`, o `border` e o `py-6` que o componente Card já traz na classe.
+   O respiro interno continua com o CardContent de cada tela, que é onde a
+   diferença entre uma tabela (p-0) e um painel de texto (p-5) importa.
+   ============================================================================ */
+
+/* Vidro só existe se houver o que desfocar. O painel vive sobre um off-white
+   chapado, então o blur não teria nada atrás — daí a atmosfera: três halos
+   muito suaves da paleta, presos à viewport, que as superfícies refratam. */
+.painel {
+  position: relative;
+  isolation: isolate;
+}
+
+.painel::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(55rem 38rem at 10% -10%,
+      color-mix(in oklab, var(--brand-terracota) 14%, transparent), transparent 70%),
+    radial-gradient(45rem 34rem at 95% 4%,
+      color-mix(in oklab, var(--brand-oliva) 10%, transparent), transparent 68%),
+    radial-gradient(42rem 32rem at 72% 104%,
+      color-mix(in oklab, var(--brand-bege) 26%, transparent), transparent 72%);
+}
+
+.painel [data-slot="card"] {
+  /* Translúcido o bastante para a atmosfera atravessar, opaco o bastante para
+     texto pequeno continuar legível por cima. */
+  background-color: color-mix(in oklab, var(--card) 68%, transparent);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+
+  /* Fio de borda quase invisível: define a quina sem desenhar uma grade. */
+  border-color: color-mix(in oklab, var(--brand-carvao) 7%, transparent);
+  border-radius: var(--radius-xl);
+
+  /* O py-6 do shadcn somava com o p-5 do CardContent e dava 44px no topo.
+     Quem manda no respiro é o CardContent. */
+  padding-block: 0;
+
+  box-shadow:
+    0 1px 2px color-mix(in oklab, var(--brand-carvao) 4%, transparent),
+    0 12px 32px -20px color-mix(in oklab, var(--brand-carvao) 28%, transparent);
+}
+
+/* Respiro vertical padrão do conteúdo.
+   Fica em @layer components, e não solto, de propósito: assim qualquer utility
+   escrita na tela (p-0 numa tabela, py-16 num estado vazio) continua vencendo.
+   Sem esta regra, zerar o padding-block do Card acima deixaria o texto colado
+   na quina em todo CardContent que não declara o próprio respiro. */
+@layer components {
+  .painel [data-slot="card-content"] {
+    padding-block: 1.25rem;
+  }
+}
+
+/* Card dentro de card não repete a moldura: vira bloco de conteúdo. Sem isto,
+   o painel de detalhe do cliente desenha três molduras concêntricas. */
+.painel [data-slot="card"] [data-slot="card"] {
+  background-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  border-color: color-mix(in oklab, var(--brand-carvao) 6%, transparent);
+}
+
+/* Blocos com borda solta dentro de um card (fieldset, linha de categoria,
+   item de lista) seguem o mesmo fio, para não competirem com a superfície. */
+.painel [data-slot="card"] :where(fieldset, .rounded-xl) {
+  border-color: color-mix(in oklab, var(--brand-carvao) 8%, transparent);
+}
+
+.dark .painel [data-slot="card"] {
+  background-color: color-mix(in oklab, var(--card) 62%, transparent);
+  border-color: color-mix(in oklab, var(--brand-offwhite) 9%, transparent);
+}
+
+.dark .painel::before {
+  background:
+    radial-gradient(55rem 38rem at 10% -10%,
+      color-mix(in oklab, var(--brand-terracota) 18%, transparent), transparent 70%),
+    radial-gradient(45rem 34rem at 95% 4%,
+      color-mix(in oklab, var(--brand-oliva) 16%, transparent), transparent 68%);
+}
+
+/* Quem não quer desfoque (economia de bateria, preferência do SO) recebe a
+   superfície opaca — o contraste do texto não pode depender do efeito. */
+@media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce) {
+  .painel [data-slot="card"] {
+    background-color: var(--card);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .painel::before { display: none; }
+}

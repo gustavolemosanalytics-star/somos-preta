@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Scale, X } from "lucide-react"
 import { toast } from "sonner"
+import { lidos } from "@/lib/supabase/resultado"
+import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
 
 const fmt = (n: number) => n.toLocaleString("pt-BR")
 
@@ -29,20 +31,25 @@ export function CompararTab() {
     const [influencers, setInfluencers] = useState<Influencer[]>([])
     const [campanhas, setCampanhas] = useState<Campanha[]>([])
     const [campanhaId, setCampanhaId] = useState("")
+    const [erroCarga, setErroCarga] = useState(false)
+    const [tentativa, setTentativa] = useState(0)
 
     useEffect(() => {
         let cancelado = false
         async function run() {
             if (selecionados.length === 0) {
-                if (!cancelado) setInfluencers([])
+                if (!cancelado) { setInfluencers([]); setErroCarga(false) }
                 return
             }
-            const { data } = await supabase.from("somos_preta_influencers").select("*").in("id", selecionados)
-            if (!cancelado) setInfluencers((data as Influencer[]) ?? [])
+            const resposta = await supabase.from("somos_preta_influencers").select("*").in("id", selecionados)
+            const linhas = lidos(resposta) as Influencer[] | null
+            if (cancelado) return
+            setErroCarga(linhas === null)
+            setInfluencers(linhas ?? [])
         }
         run()
         return () => { cancelado = true }
-    }, [selecionados, supabase])
+    }, [selecionados, supabase, tentativa])
 
     useEffect(() => {
         supabase.from("somos_preta_campanhas").select("*").order("nome").then(({ data }) => setCampanhas((data as Campanha[]) ?? []))
@@ -55,6 +62,10 @@ export function CompararTab() {
         )
         if (error) { toast.error("Alguns já estavam na campanha ou houve erro"); return }
         toast.success("Adicionados à campanha")
+    }
+
+    if (selecionados.length > 0 && erroCarga) {
+        return <div className="pt-4"><ErroDeCarregamento recurso="os criadores selecionados" onTentarDeNovo={() => setTentativa((t) => t + 1)} /></div>
     }
 
     if (selecionados.length === 0) {
