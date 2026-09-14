@@ -16,6 +16,9 @@ type EngajamentoData = {
     avg_comments: number | null
     median_comments: number | null
     engagement_rate: number | null
+    /** Quantas publicações entraram no cálculo (não é o total do perfil). */
+    analisados: number
+    destaques: Destaque[]
     source: "hikerapi" | "scraper"
 }
 
@@ -35,6 +38,15 @@ function median(nums: number[]): number {
 
 // Best-effort: busca posts recentes na HikerAPI para calcular engajamento.
 // Se o endpoint/schema não bater, retorna null e o chamador segue sem posts.
+/** Uma publicação recente, para a faixa de destaques. */
+type Destaque = {
+    id: string
+    thumb: string | null
+    likes: number
+    comentarios: number
+    link: string | null
+}
+
 async function fetchHikerMediaStats(userId: string, accessKey: string) {
     try {
         const res = await fetch(
@@ -51,11 +63,30 @@ async function fetchHikerMediaStats(userId: string, accessKey: string) {
 
         if (likes.length === 0) return null
 
+        // A miniatura vem em formatos diferentes conforme o tipo de mídia;
+        // sem ela o destaque ainda serve, só aparece sem imagem.
+        const destaques: Destaque[] = items
+            .filter((it) => typeof it?.like_count === "number")
+            .slice(0, 6)
+            .map((it, i) => ({
+                id: String(it?.id ?? it?.pk ?? i),
+                thumb:
+                    it?.thumbnail_url ??
+                    it?.image_versions2?.candidates?.[0]?.url ??
+                    it?.display_uri ??
+                    null,
+                likes: it.like_count,
+                comentarios: typeof it?.comment_count === "number" ? it.comment_count : 0,
+                link: it?.code ? `https://www.instagram.com/p/${it.code}/` : null,
+            }))
+
         return {
             avg_likes: average(likes),
             median_likes: median(likes),
             avg_comments: comments.length > 0 ? average(comments) : 0,
             median_comments: comments.length > 0 ? median(comments) : 0,
+            analisados: likes.length,
+            destaques,
         }
     } catch (err) {
         console.log("HikerAPI medias error:", err)
@@ -115,6 +146,8 @@ async function fetchViaHikerApi(username: string, accessKey: string): Promise<En
         avg_comments: mediaStats?.avg_comments ?? null,
         median_comments: mediaStats?.median_comments ?? null,
         engagement_rate,
+        analisados: mediaStats?.analisados ?? 0,
+        destaques: mediaStats?.destaques ?? [],
         source: "hikerapi",
     }
 }
@@ -151,6 +184,9 @@ export async function GET(req: Request) {
                 avg_comments: null,
                 median_comments: null,
                 engagement_rate: null,
+                // O scraper não devolve as publicações, só o perfil.
+                analisados: 0,
+                destaques: [],
                 source: "scraper",
             }
         } catch (error) {
@@ -168,6 +204,10 @@ export async function GET(req: Request) {
             }
             return NextResponse.json({ error: "Erro ao buscar dados do Instagram" }, { status: 500 })
         }
+    }
+
+    if (!data) {
+        return NextResponse.json({ error: "Erro ao buscar dados do Instagram" }, { status: 500 })
     }
 
     if (data.is_private) {
