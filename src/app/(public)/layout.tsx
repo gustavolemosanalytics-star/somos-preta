@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ArrowRight, Menu, X } from "lucide-react"
+import { ArrowRight, Instagram, Menu, X } from "lucide-react"
 
 import { PillNav, type PillNavItem } from "@/components/public/pill-nav"
 import { LogoPreta, SimboloTerritorio } from "@/components/public/marca"
@@ -15,6 +15,7 @@ const navItems: PillNavItem[] = [
     { label: "Quem somos", href: "/#quem-somos", id: "quem-somos" },
     { label: "Sou criador", href: "/#criadores", id: "criadores" },
     { label: "Blog", href: "/#conteudos", id: "conteudos" },
+    { label: "Engajamento", href: "/#engajamento", id: "engajamento" },
 ]
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -160,14 +161,15 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                     <div className="flex items-center gap-2.5">
                         <LogoPreta className="h-6 w-auto" />
                     </div>
-                    <div className="flex gap-6 text-sm text-muted-foreground">
-                        <Link href="/blog" className="transition-colors hover:text-foreground">
-                            Blog
-                        </Link>
-                        <Link href="/engajamento" className="transition-colors hover:text-foreground">
-                            Checar engajamento
-                        </Link>
-                    </div>
+                    <a
+                        href="https://www.instagram.com/somospreta/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                        <Instagram className="h-4 w-4" aria-hidden />
+                        @somospreta
+                    </a>
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                         Ideias que movem pessoas.
                     </p>
