@@ -66,7 +66,11 @@ export default function CriadorCriarContaPage() {
         setErro("")
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
-            options: { redirectTo: `${window.location.origin}/creator` },
+            options: {
+                // O Supabase devolve um `code` que precisa virar sessão no
+                // servidor antes de a área do criador ser renderizada.
+                redirectTo: `${window.location.origin}/auth/callback?origem=creator`,
+            },
         })
         if (error) {
             // Acontece quando o provider Google ainda não foi habilitado no Supabase.

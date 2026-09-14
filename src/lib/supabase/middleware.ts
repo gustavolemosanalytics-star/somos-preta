@@ -10,6 +10,10 @@ const PUBLIC_PATHS = [
     "/app/criar-conta",
     "/app/esqueci-senha",
     "/app/redefinir-senha",
+    // O callback do OAuth chega SEM sessão — é ele que a cria. Sem estar aqui,
+    // o middleware o trataria como rota protegida e mandaria para o login,
+    // descartando o code antes da troca.
+    "/auth/callback",
     "/creator/login",
     "/creator/criar-conta",
     "/creator/esqueci-senha",

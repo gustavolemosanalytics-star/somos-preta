@@ -16,6 +16,13 @@ export async function middleware(request: NextRequest) {
     // O usuário vê /dashboard; internamente continua sendo /app/dashboard, então
     // nenhuma rota precisou ser movida de lugar.
     if (host === HOST_PLATAFORMA) {
+        // O callback do OAuth é da aplicação inteira, não do painel: reescrevê-lo
+        // para /app/auth/callback daria 404 e o login social morreria em silêncio
+        // caso alguém chegue por aqui.
+        if (pathname.startsWith("/auth/")) {
+            return await updateSession(request)
+        }
+
         if (pathname.startsWith("/app")) {
             // /app/x no subdomínio é duplicação: manda para a forma limpa.
             const url = request.nextUrl.clone()
