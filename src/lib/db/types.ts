@@ -2,9 +2,15 @@
 
 export type Role = "admin" | "gestor" | "analista" | "creator" | "pendente"
 export type InfluencerStatus = "ativo" | "inativo" | "negociando" | "bloqueado"
-export type CampanhaStatus = "rascunho" | "planejamento" | "ativa" | "concluida" | "cancelada"
+export type CampanhaStatus =
+    | "rascunho" | "planejamento" | "em_aprovacao" | "ativa" | "concluida" | "cancelada"
+
+/** Funil de entrega da campanha — ortogonal ao status administrativo. */
+export type CampanhaEtapa = "briefing" | "mapeamento" | "aprovacao" | "producao" | "relatorio"
+
+export type ClienteStatus = "prospeccao" | "ativo" | "pausado" | "encerrado"
 export type TarefaStatus =
-    | "backlog" | "a_fazer" | "em_andamento" | "aguardando_terceiro"
+    | "backlog" | "a_fazer" | "em_andamento" | "em_revisao" | "aguardando_terceiro"
     | "aguardando_aprovacao" | "bloqueada" | "concluida" | "cancelada"
 export type TarefaPrioridade = "baixa" | "media" | "alta" | "urgente"
 export type TarefaEventoTipo =
@@ -15,14 +21,22 @@ export type TarefaComentarioTipo = "comentario" | "duvida" | "bloqueio" | "atual
 export type TarefaAnexoTipo = "imagem" | "pdf_documento" | "video" | "link"
 export type NotificacaoTipo = "tarefa_atribuida" | "mencao" | "comentario" | "solicitacao_revisao" | "conclusao"
 export type ContratoStatus = "pendente" | "assinado" | "expirado" | "cancelado"
-export type BlogStatus = "rascunho" | "publicado"
+// Etapas do fluxo editorial do blog (ver 0018_blog_editorial.sql). A ordem aqui
+// é a do funil: escreve → manda revisar → agenda → publica; despublicado e
+// arquivado são as duas saídas de quem já esteve no ar.
+export type BlogStatus =
+    | "rascunho" | "em_revisao" | "agendado"
+    | "publicado" | "despublicado" | "arquivado"
 
 export type Profile = {
     id: string
     nome: string | null
     email: string | null
     avatar_url: string | null
+    /** Permissão: quem pode o quê. Não é como a pessoa se apresenta. */
     role: Role
+    /** Como a pessoa aparece para o cliente ("Account Manager"). */
+    cargo: string | null
     created_at: string
     updated_at: string
 }
@@ -37,7 +51,14 @@ export type Cliente = {
     segmento: string | null
     cidade: string | null
     estado: string | null
+    site: string | null
     observacoes: string | null
+    status: ClienteStatus
+    /** Quem atende a conta hoje — diferente de created_by, que não se reatribui. */
+    responsavel_id: string | null
+    contato_nome: string | null
+    contato_cargo: string | null
+    contato_avatar_url: string | null
     created_by: string | null
     created_at: string
     updated_at: string
@@ -86,6 +107,18 @@ export type Campanha = {
     data_inicio: string | null
     data_fim: string | null
     status: CampanhaStatus
+    /** Posição no funil de entrega; o stepper do card desenha isto. */
+    etapa: CampanhaEtapa
+    responsavel: string | null
+    prioridade: TarefaPrioridade
+    /** `budget` é o campo legado; os três abaixo são os momentos do valor. */
+    orcamento_estimado: number | null
+    orcamento_aprovado: number | null
+    orcamento_final: number | null
+    capa_url: string | null
+    tagline: string | null
+    /** Quando o status mudou pela última vez — não confundir com updated_at. */
+    status_desde: string
     share_token: string
     created_by: string | null
     created_at: string
@@ -109,6 +142,9 @@ export type Tarefa = {
     evidencia_obrigatoria: boolean
     tags: string[]
     arquivada: boolean
+    area_id: string | null
+    /** Altura do bloco na grade do calendário; data_entrega + horario dão a posição. */
+    duracao_minutos: number
     ordem: number
     created_by: string | null
     created_at: string
@@ -280,7 +316,95 @@ export type BlogPost = {
     tags: string[]
     status: BlogStatus
     autor_id: string | null
+    destaque: boolean
+    // Separado de publicado_em de propósito: agendar um post que já esteve no
+    // ar não pode apagar a data em que ele foi publicado da primeira vez.
+    agendado_para: string | null
     publicado_em: string | null
     created_at: string
     updated_at: string
+}
+
+/** Catálogo de categorias do blog — editável pela tela de publicações. */
+export type BlogCategoria = {
+    id: string
+    nome: string
+    slug: string
+    /** Token da paleta (terracota, oliva, info...), não um hex. */
+    cor: string
+    ordem: number
+    created_at: string
+}
+
+/** Retorno de somos_preta_blog_metricas(): audiência por post. */
+export type BlogMetrica = {
+    post_id: string
+    total: number
+    mes_atual: number
+    mes_anterior: number
+}
+
+/** Área da PRETA — organiza as tarefas e colore os blocos do calendário. */
+export type Area = {
+    id: string
+    nome: string
+    slug: string
+    /** Token da paleta (terracota, sucesso, info...), não um hex. */
+    cor: string
+    ordem: number
+    created_at: string
+}
+
+/**
+ * Linha do feed de atividade do painel.
+ *
+ * Separada de somos_preta_tarefa_eventos porque aquela tem tarefa_id NOT NULL e
+ * só descreve campos de tarefa; aqui entram cliente, campanha, criador e contrato.
+ */
+export type Atividade = {
+    id: string
+    entidade: string
+    entidade_id: string | null
+    tipo: string
+    autor_id: string | null
+    resumo: string
+    created_at: string
+}
+
+export type ClienteNota = {
+    id: string
+    cliente_id: string
+    conteudo: string
+    autor_id: string | null
+    created_at: string
+}
+
+export type ClienteArquivo = {
+    id: string
+    cliente_id: string
+    nome: string
+    tipo: TarefaAnexoTipo
+    storage_path: string | null
+    link_externo: string | null
+    autor_id: string | null
+    created_at: string
+}
+
+/** Retorno de somos_preta_tarefa_metricas(). */
+export type TarefaMetrica = {
+    tarefa_id: string
+    subtarefas_total: number
+    subtarefas_concluidas: number
+    comentarios: number
+    anexos: number
+}
+
+/** Retorno de somos_preta_campanha_metricas(). */
+export type CampanhaMetrica = {
+    campanha_id: string
+    tarefas_pendentes: number
+    tarefas_vencidas: number
+    proxima_entrega: string | null
+    creators_mapeados: number
+    creators_aprovados: number
 }

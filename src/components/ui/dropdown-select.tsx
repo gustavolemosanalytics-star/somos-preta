@@ -14,7 +14,10 @@ import { cn } from "@/lib/utils"
  * isso causa o dropdown abrir e fechar no mesmo gesto. O DropdownMenu
  * não tem essa lógica, então reaproveitamos ele aqui.
  */
-export function DropdownSelect({ value, onValueChange, options, placeholder, disabled, className, size = "default" }: {
+export function DropdownSelect({
+    value, onValueChange, options, placeholder, disabled, className, size = "default",
+    id, "aria-label": ariaLabel,
+}: {
     value: string
     onValueChange: (v: string) => void
     options: { value: string; label: string }[]
@@ -22,6 +25,9 @@ export function DropdownSelect({ value, onValueChange, options, placeholder, dis
     disabled?: boolean
     className?: string
     size?: "sm" | "default"
+    /** Repassados ao gatilho para que <Label htmlFor> e leitores de tela o alcancem. */
+    id?: string
+    "aria-label"?: string
 }) {
     const selecionado = options.find((o) => o.value === value)
 
@@ -29,6 +35,8 @@ export function DropdownSelect({ value, onValueChange, options, placeholder, dis
         <DropdownMenu>
             <DropdownMenuTrigger asChild disabled={disabled}>
                 <Button
+                    id={id}
+                    aria-label={ariaLabel}
                     type="button"
                     variant="outline"
                     className={cn(
