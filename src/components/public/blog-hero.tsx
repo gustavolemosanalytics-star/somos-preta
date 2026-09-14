@@ -52,12 +52,16 @@ export function BlogConteudo({
     termoBusca,
     /** Na home a dobra é só vitrine; a listagem completa vive em /blog. */
     mostrarListagem = true,
+    categorias,
 }: {
     posts: PostResumo[]
     termoBusca?: string
     mostrarListagem?: boolean
+    /** Catálogo vindo do banco; sem ele, a lista de reserva das constantes. */
+    categorias?: string[]
 }) {
     const [categoria, setCategoria] = useState("Todos")
+    const filtros = categorias?.length ? ["Todos", ...categorias] : BLOG_FILTROS
 
     const filtrados = useMemo(() => {
         let r = posts
@@ -127,7 +131,7 @@ export function BlogConteudo({
                         </p>
 
                         <ul className="mt-8 flex flex-wrap gap-2.5">
-                            {BLOG_FILTROS.map((c) => {
+                            {filtros.map((c) => {
                                 const ativa = c === categoria
                                 return (
                                     <li key={c}>

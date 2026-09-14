@@ -4,7 +4,9 @@ import { notFound } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
+import { publicarAgendados } from "@/lib/blog-agendados"
 import { MapaTerritorio } from "@/components/public/mapa-territorio"
+import { RegistrarVisualizacao } from "@/components/public/registrar-visualizacao"
 
 export const revalidate = 60
 
@@ -53,6 +55,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     const { slug } = await params
     const supabase = await createClient()
 
+    // Quem chega por link direto (newsletter, redes) não passa por /blog: sem
+    // isto, um post agendado responderia 404 até alguém abrir a listagem.
+    await publicarAgendados(supabase)
+
     const { data: post } = await supabase
         .from("somos_preta_blog_posts")
         .select("*")
@@ -77,6 +83,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
     return (
         <div className="flex flex-col">
+            <RegistrarVisualizacao slug={slug} />
+
             {/* ---------- abertura ---------- */}
             <header className="mx-auto w-full max-w-[1600px] px-6 pt-10 lg:pt-12">
                 <Link

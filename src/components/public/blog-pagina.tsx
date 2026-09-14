@@ -31,12 +31,16 @@ function formatarData(iso: string | null) {
 export function BlogPagina({
     posts,
     termoInicial,
+    categorias,
 }: {
     posts: (PostResumo & { minutos?: number })[]
     termoInicial?: string
+    /** Catálogo vindo do banco; sem ele, a lista de reserva das constantes. */
+    categorias?: string[]
 }) {
     const [categoria, setCategoria] = useState("Todos")
     const [termo, setTermo] = useState(termoInicial ?? "")
+    const filtros = categorias?.length ? ["Todos", ...categorias] : BLOG_FILTROS
 
     const filtrados = useMemo(() => {
         let r = posts
@@ -134,7 +138,7 @@ export function BlogPagina({
             <section className="mx-auto w-full max-w-[1600px] px-6 pt-10">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <ul className="flex flex-wrap gap-2">
-                        {BLOG_FILTROS.map((c) => {
+                        {filtros.map((c) => {
                             const ativa = c === categoria
                             return (
                                 <li key={c}>

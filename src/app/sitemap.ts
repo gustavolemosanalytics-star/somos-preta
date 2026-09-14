@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
 
 import { createClient } from "@/lib/supabase/server"
+import { publicarAgendados } from "@/lib/blog-agendados"
 import { SITE_URL } from "@/lib/constants/site"
 
 export const revalidate = 3600
@@ -8,6 +9,10 @@ export const revalidate = 3600
 /** Só o que é público: landing, blog, posts publicados e os media kits no ar. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const supabase = await createClient()
+
+    // Um post que acabou de vencer o agendamento precisa entrar no sitemap na
+    // mesma passada, senão fica fora do índice até a próxima geração.
+    await publicarAgendados(supabase)
 
     const [{ data: posts }, { data: kits }] = await Promise.all([
         supabase
