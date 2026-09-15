@@ -74,7 +74,15 @@
 }
 
 :root {
-  --radius: 1rem;
+  /* Raio-base de toda a interface. A escala do @theme deriva daqui, então este
+     número sozinho governa botão, input, badge e card — não há 220 classes para
+     acertar uma a uma.
+
+     Estava em 1rem, o que dava 24px no `rounded-xl` usado na maioria dos botões:
+     num botão de 36px de altura isso é quase uma pílula, e o conjunto ficava
+     borrachudo. Em 0.5rem a escala inteira cai pela metade e as quinas voltam
+     a ter canto. */
+  --radius: 0.5rem;
 
   /* Identidade "Conexões que Transformam" — clara, humana e acessível.
      Estes sete hex são a fonte da verdade; todo token abaixo deriva deles. */
@@ -549,7 +557,9 @@ html {
 
   /* Fio de borda quase invisível: define a quina sem desenhar uma grade. */
   border-color: color-mix(in oklab, var(--brand-carvao) 7%, transparent);
-  border-radius: var(--radius-xl);
+  /* Um pouco acima do raio-base: superfície grande pede quina um pouco mais
+     macia que a de um input, mas nada perto do arredondamento anterior. */
+  border-radius: 0.75rem;
 
   /* O py-6 do shadcn somava com o p-5 do CardContent e dava 44px no topo.
      Quem manda no respiro é o CardContent. */
