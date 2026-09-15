@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Loader2 } from "lucide-react"
+import { useRef, useState } from "react"
+import { Building2, Loader2, Trash2, Upload } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,7 @@ import type { ClienteDaLista } from "./tipos"
 const SEM_VALOR = "__nenhum__"
 
 type Formulario = {
+    logo_url: string
     nome: string
     empresa: string
     segmento: string
@@ -39,6 +40,7 @@ type Formulario = {
 }
 
 const VAZIO: Formulario = {
+    logo_url: "",
     nome: "", empresa: "", segmento: "", segmentoOutro: "", cidade: "", estado: "",
     site: "", email: "", telefone: "", status: "ativo", responsavel_id: SEM_VALOR,
     contato_nome: "", contato_cargo: "", observacoes: "",
@@ -59,6 +61,7 @@ function inicial(cliente: ClienteDaLista | null): Formulario {
     // preservado, senão editar o cliente apagaria o que estava lá.
     const conhecido = SEGMENTOS.includes(cliente.segmento as never)
     return {
+        logo_url: cliente.logo_url ?? "",
         nome: cliente.nome,
         empresa: cliente.empresa ?? "",
         segmento: cliente.segmento ? (conhecido ? cliente.segmento : SEGMENTO_OUTRO) : "",
@@ -87,11 +90,43 @@ export function ClienteDialog({ cliente, aberto, onOpenChange, profiles, onSalvo
     const [supabase] = useState(() => createClient())
     const [form, setForm] = useState<Formulario>(() => inicial(cliente))
     const [salvando, setSalvando] = useState(false)
+    const [enviandoLogo, setEnviandoLogo] = useState(false)
     const [erro, setErro] = useState<string | null>(null)
+    const entradaDeArquivo = useRef<HTMLInputElement>(null)
+
+    async function enviarLogo(arquivo: File) {
+        if (arquivo.size > 2 * 1024 * 1024) {
+            setErro("A imagem precisa ter menos de 2 MB.")
+            return
+        }
+
+        setEnviandoLogo(true)
+        setErro(null)
+
+        // Nome com carimbo de tempo: o Supabase recusa sobrescrever por padrão,
+        // e reusar o nome faria a segunda troca de logo falhar em silêncio.
+        const extensao = arquivo.name.split(".").pop()?.toLowerCase() ?? "png"
+        const caminho = `${cliente?.id ?? "novo"}/${Date.now()}.${extensao}`
+
+        const { error } = await supabase.storage
+            .from("clientes-logos")
+            .upload(caminho, arquivo, { cacheControl: "3600" })
+
+        if (error) {
+            setEnviandoLogo(false)
+            setErro("Não foi possível enviar a imagem. Tente de novo.")
+            return
+        }
+
+        const { data } = supabase.storage.from("clientes-logos").getPublicUrl(caminho)
+        setForm((f) => ({ ...f, logo_url: data.publicUrl }))
+        setEnviandoLogo(false)
+    }
 
     function campos() {
         const segmento = form.segmento === SEGMENTO_OUTRO ? form.segmentoOutro.trim() : form.segmento
         return {
+            logo_url: form.logo_url.trim() || null,
             nome: form.nome.trim(),
             empresa: form.empresa.trim() || null,
             segmento: segmento || null,
@@ -151,6 +186,64 @@ export function ClienteDialog({ cliente, aberto, onOpenChange, profiles, onSalvo
                     </DialogHeader>
 
                     <div className="grid gap-4 py-4">
+                        <div className="flex items-center gap-4">
+                            {form.logo_url ? (
+                                // <img> e não next/image: a URL vem do storage e o
+                                // projeto não declara images.remotePatterns.
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={form.logo_url}
+                                    alt=""
+                                    className="h-16 w-16 shrink-0 rounded-xl bg-muted object-contain"
+                                />
+                            ) : (
+                                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                                    <Building2 className="h-6 w-6" />
+                                </span>
+                            )}
+
+                            <div className="min-w-0">
+                                <p className="text-sm font-medium">Logo do cliente</p>
+                                <p className="text-xs text-muted-foreground">
+                                    PNG, JPG, WEBP ou SVG, até 2 MB.
+                                </p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    <Button
+                                        type="button" variant="outline" size="sm" className="rounded-lg"
+                                        disabled={enviandoLogo}
+                                        onClick={() => entradaDeArquivo.current?.click()}
+                                    >
+                                        {enviandoLogo
+                                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            : <Upload className="h-3.5 w-3.5" />}
+                                        {form.logo_url ? "Trocar" : "Enviar imagem"}
+                                    </Button>
+                                    {form.logo_url && (
+                                        <Button
+                                            type="button" variant="ghost" size="sm"
+                                            className="rounded-lg text-muted-foreground hover:text-destructive"
+                                            onClick={() => setForm({ ...form, logo_url: "" })}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" /> Remover
+                                        </Button>
+                                    )}
+                                </div>
+                                <input
+                                    ref={entradaDeArquivo}
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const arquivo = e.target.files?.[0]
+                                        if (arquivo) enviarLogo(arquivo)
+                                        // Zera para o mesmo arquivo poder ser
+                                        // escolhido de novo depois de um erro.
+                                        e.target.value = ""
+                                    }}
+                                />
+                            </div>
+                        </div>
+
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="grid gap-2">
                                 <Label htmlFor="nome">Nome *</Label>
@@ -294,7 +387,7 @@ export function ClienteDialog({ cliente, aberto, onOpenChange, profiles, onSalvo
                         <Button type="button" variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={salvando} className="rounded-xl">
+                        <Button type="submit" disabled={salvando || enviandoLogo} className="rounded-xl">
                             {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : cliente ? "Salvar alterações" : "Cadastrar cliente"}
                         </Button>
                     </DialogFooter>

@@ -115,7 +115,12 @@ export function Calendario({ tarefas, areas, agora, filtros, onFiltro, areaFiltr
         return mapa
     }, [tarefas])
 
-    const horas = Array.from({ length: HORA_FIM - HORA_INICIO + 1 }, (_, i) => HORA_INICIO + i)
+    // Uma faixa é o espaço de uma hora; uma marca é a linha do relógio. De 08h
+    // às 18h são 10 faixas e 11 marcas — confundir as duas era o que deixava
+    // rótulo e linha defasados em uma hora.
+    const faixas = Array.from({ length: HORA_FIM - HORA_INICIO }, (_, i) => HORA_INICIO + i)
+    const marcas = Array.from({ length: HORA_FIM - HORA_INICIO + 1 }, (_, i) => HORA_INICIO + i)
+    const alturaDaGrade = faixas.length * ALTURA_HORA
     const chaveHoje = chaveDoDia(hojeRef)
     const minutosAgora = hojeRef.getHours() * 60 + hojeRef.getMinutes()
     const dentroDaFaixa = minutosAgora >= HORA_INICIO * 60 && minutosAgora <= HORA_FIM * 60
@@ -258,14 +263,19 @@ export function Calendario({ tarefas, areas, agora, filtros, onFiltro, areaFiltr
                                 </div>
 
                                 {/* grade por hora */}
-                                <div className="relative grid grid-cols-[56px_repeat(7,minmax(0,1fr))]">
-                                    <div>
-                                        {horas.map((h) => (
-                                            <div key={h} style={{ height: ALTURA_HORA }} className="relative">
-                                                <span className="absolute -top-2 right-2 text-[10px] text-muted-foreground">
-                                                    {String(h).padStart(2, "0")}:00
-                                                </span>
-                                            </div>
+                                {/* pt-3 dá o espaço em que o rótulo das 08:00 se
+                                    apoia; sem ele, o primeiro rótulo sobe para
+                                    cima da faixa "Dia todo". */}
+                                <div className="relative grid grid-cols-[56px_repeat(7,minmax(0,1fr))] pt-3">
+                                    <div className="relative" style={{ height: alturaDaGrade }}>
+                                        {marcas.map((h) => (
+                                            <span
+                                                key={h}
+                                                className="absolute right-2 -translate-y-1/2 text-[10px] tabular-nums text-muted-foreground"
+                                                style={{ top: (h - HORA_INICIO) * ALTURA_HORA }}
+                                            >
+                                                {String(h).padStart(2, "0")}:00
+                                            </span>
                                         ))}
                                     </div>
 
@@ -275,18 +285,30 @@ export function Calendario({ tarefas, areas, agora, filtros, onFiltro, areaFiltr
                                         const eHoje = chave === chaveHoje
 
                                         return (
-                                            <div key={d.toISOString()} className="relative border-l">
-                                                {horas.map((h) => (
-                                                    <div key={h} style={{ height: ALTURA_HORA }} className="border-b border-border/50" />
+                                            <div
+                                                key={d.toISOString()}
+                                                // border-b fecha a grade na última marca; sem ele
+                                                // as 18:00 ficariam sem linha.
+                                                className="relative border-b border-l"
+                                                style={{ height: alturaDaGrade }}
+                                            >
+                                                {faixas.map((h) => (
+                                                    <div
+                                                        key={h}
+                                                        style={{ height: ALTURA_HORA }}
+                                                        // A linha vai no TOPO da faixa, que é onde o
+                                                        // rótulo está: assim 09:00 é a linha das 09:00.
+                                                        className="border-t border-border/50"
+                                                    />
                                                 ))}
 
                                                 {comHora.map((t) => {
                                                     const min = minutosDe(t) ?? 0
                                                     const topo = ((min - HORA_INICIO * 60) / 60) * ALTURA_HORA
-                                                    const altura = Math.max(24, (t.duracao_minutos / 60) * ALTURA_HORA - 2)
-                                                    // Fora da faixa 08–18 o bloco seria desenhado
-                                                    // fora da caixa; grudá-lo na borda o mantém visível.
-                                                    const topoFinal = Math.max(0, Math.min(topo, horas.length * ALTURA_HORA - altura))
+                                                    const altura = Math.max(22, (t.duracao_minutos / 60) * ALTURA_HORA - 2)
+                                                    // Fora da faixa 08–18 o bloco seria desenhado fora
+                                                    // da caixa; grudá-lo na borda o mantém visível.
+                                                    const topoFinal = Math.max(0, Math.min(topo, alturaDaGrade - altura))
                                                     return (
                                                         <div
                                                             key={t.id}
