@@ -1,14 +1,12 @@
 import { redirect } from "next/navigation"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+
+import { Navbar } from "@/components/painel/navbar"
 import { PainelBreadcrumb } from "@/components/dashboard/painel-breadcrumb"
 import { getProfile } from "@/lib/supabase/auth"
 
 const STAFF_ROLES = ["admin", "gestor", "analista"]
 
-export default async function DashboardLayout({
+export default async function PainelLayout({
     children,
 }: {
     children: React.ReactNode
@@ -29,26 +27,22 @@ export default async function DashboardLayout({
     }
 
     return (
-        <SidebarProvider>
-            <AppSidebar user={navUser} />
-            <SidebarInset>
-                <header className="sticky top-0 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-2 transition-all ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b bg-background/80 backdrop-blur-md px-3 sm:px-4">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <SidebarTrigger className="-ml-1 shrink-0" />
-                        <Separator orientation="vertical" className="mr-2 h-4 hidden sm:block" />
-                        <PainelBreadcrumb />
-                    </div>
-                    <DashboardHeader />
-                </header>
-                {/*
-                  `painel` liga o sistema de superfícies do globals.css: a
-                  atmosfera de fundo que o vidro refrata e o tratamento único de
-                  todo Card daqui para dentro.
-                */}
-                <main className="painel flex flex-1 flex-col gap-5 overflow-x-hidden p-4 sm:p-5 lg:p-6">
-                    {children}
-                </main>
-            </SidebarInset>
-        </SidebarProvider>
+        <div className="flex min-h-svh flex-col">
+            <Navbar user={navUser} />
+
+            {/*
+              `painel` liga o sistema de superfícies do globals.css: a atmosfera
+              de fundo que o vidro refrata e o tratamento único de todo Card
+              daqui para dentro.
+
+              O max-w existe porque, sem a barra lateral, o conteúdo esticaria de
+              ponta a ponta num monitor largo e a tabela viraria uma linha de
+              horizonte — difícil de varrer com o olho.
+            */}
+            <main className="painel mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-5 p-4 sm:p-5 lg:p-6">
+                <PainelBreadcrumb />
+                {children}
+            </main>
+        </div>
     )
 }

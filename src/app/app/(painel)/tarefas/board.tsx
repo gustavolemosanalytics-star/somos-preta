@@ -7,26 +7,110 @@ import {
     useDroppable, useSensor, useSensors,
     type DragEndEvent, type DragStartEvent,
 } from "@dnd-kit/core"
-import { CalendarDays, MessageSquare, Paperclip, Plus } from "lucide-react"
+import {
+    Archive, ArchiveRestore, CalendarDays, Copy, MessageSquare, MoreHorizontal,
+    Paperclip, Pencil, Plus, Trash2,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+    DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Progress } from "@/components/ui/progress"
 import { UserAvatar } from "@/components/tarefas/user-picker"
-import { dataCurta } from "@/lib/constants/blog"
-import { classeDaCor } from "@/lib/constants/blog"
+import { classeDaCor, dataCurta } from "@/lib/constants/blog"
 import {
-    STATUS_PADRAO_DA_COLUNA, TAREFA_BOARD_COLUNAS, tarefaPrazoBadge,
+    STATUS_PADRAO_DA_COLUNA, TAREFA_BOARD_COLUNAS, TAREFA_STATUS,
+    TAREFA_STATUS_ORDEM, tarefaPrazoBadge,
 } from "@/lib/constants/tarefas"
 import type { Profile, TarefaStatus } from "@/lib/db/types"
 import { cn } from "@/lib/utils"
 import type { MapaMetricas, TarefaDaLista } from "./tipos"
 
-function CardTarefa({ tarefa, metricas, profilesById, arrastando }: {
+export type AcoesDoCard = {
+    onEditar: (t: TarefaDaLista) => void
+    onStatus: (t: TarefaDaLista, s: TarefaStatus) => void
+    onDuplicar: (t: TarefaDaLista) => void
+    onArquivar: (t: TarefaDaLista) => void
+    onExcluir: (t: TarefaDaLista) => void
+}
+
+function MenuDoCard({ tarefa, acoes }: { tarefa: TarefaDaLista; acoes: AcoesDoCard }) {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="h-7 w-7 min-h-0 min-w-0 shrink-0 text-muted-foreground"
+                    aria-label={`Ações de ${tarefa.titulo}`}
+                    title="Mais ações"
+                    // Sem isto o sensor do dnd-kit captura o toque e o menu
+                    // nunca abre — o clique vira o começo de um arraste.
+                    onPointerDown={(e) => e.stopPropagation()}
+                >
+                    <MoreHorizontal className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => acoes.onEditar(tarefa)}>
+                    <Pencil className="h-4 w-4" /> Editar
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                        <CalendarDays className="h-4 w-4" /> Mudar status
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                        {TAREFA_STATUS_ORDEM.map((s) => {
+                            // Evidência obrigatória só pode ser cumprida na página
+                            // da tarefa, onde o anexo é enviado.
+                            const travado = s === "concluida" && tarefa.evidencia_obrigatoria
+                            return (
+                                <DropdownMenuItem
+                                    key={s}
+                                    disabled={s === tarefa.status || travado}
+                                    onClick={() => acoes.onStatus(tarefa, s)}
+                                    title={travado ? "Esta tarefa exige evidência — conclua pela página dela" : undefined}
+                                >
+                                    {TAREFA_STATUS[s].label}
+                                </DropdownMenuItem>
+                            )
+                        })}
+                    </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuItem onClick={() => acoes.onDuplicar(tarefa)}>
+                    <Copy className="h-4 w-4" /> Duplicar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => acoes.onArquivar(tarefa)}>
+                    {tarefa.arquivada
+                        ? <><ArchiveRestore className="h-4 w-4" /> Desarquivar</>
+                        : <><Archive className="h-4 w-4" /> Arquivar</>}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onClick={() => acoes.onExcluir(tarefa)}>
+                    <Trash2 className="h-4 w-4" /> Excluir
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+
+/**
+ * Card do board.
+ *
+ * As linhas são fixas e o rodapé é empurrado para baixo: sem isso, um card com
+ * subtarefas ficava bem mais alto que o vizinho sem, e a coluna virava uma
+ * escada. O que não existe naquela tarefa vira espaço reservado, não linha a
+ * menos.
+ */
+function CardTarefa({ tarefa, metricas, profilesById, acoes, arrastando }: {
     tarefa: TarefaDaLista
     metricas: MapaMetricas
     profilesById: Map<string, Profile>
+    acoes?: AcoesDoCard
     arrastando?: boolean
 }) {
     const m = metricas.get(tarefa.id)
@@ -39,56 +123,70 @@ function CardTarefa({ tarefa, metricas, profilesById, arrastando }: {
 
     return (
         <Card className={cn(
-            "rounded-xl border-border/60 transition-shadow",
+            "h-full transition-shadow",
             arrastando && "rotate-1 shadow-lg",
             tarefa.arquivada && "opacity-60",
         )}>
-            <CardContent className="space-y-2.5 p-3">
-                <Link
-                    href={`/tarefas/${tarefa.id}`}
-                    className="block text-sm font-medium leading-snug hover:text-primary"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {tarefa.titulo}
-                </Link>
+            <CardContent className="flex h-full flex-col gap-2 p-3">
+                <div className="flex items-start gap-1">
+                    <Link
+                        href={`/tarefas/${tarefa.id}`}
+                        // Duas linhas fixas: título curto e título longo ocupam a
+                        // mesma altura, e a fileira de cards não desalinha.
+                        className="line-clamp-2 min-h-[2.5rem] flex-1 text-sm font-medium leading-snug hover:text-primary"
+                        title={tarefa.titulo}
+                    >
+                        {tarefa.titulo}
+                    </Link>
+                    {acoes && <MenuDoCard tarefa={tarefa} acoes={acoes} />}
+                </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex min-h-6 flex-wrap items-center gap-1.5">
                     {tarefa.area && (
-                        <Badge variant="secondary" className={classeDaCor(tarefa.area.cor)}>{tarefa.area.nome}</Badge>
+                        <Badge variant="secondary" className={classeDaCor(tarefa.area.cor)}>
+                            {tarefa.area.nome}
+                        </Badge>
                     )}
                     {tarefa.campanha && (
-                        <Badge variant="outline" className="text-muted-foreground">{tarefa.campanha.nome}</Badge>
+                        <Badge variant="outline" className="max-w-full truncate text-muted-foreground">
+                            {tarefa.campanha.nome}
+                        </Badge>
                     )}
                 </div>
 
-                {sub > 0 && (
-                    <div className="space-y-1">
-                        <p className="text-[11px] text-muted-foreground">{feitas}/{sub} subtarefas</p>
-                        <Progress value={Math.round((feitas / sub) * 100)} className="h-1" />
-                    </div>
-                )}
+                {/* Reservado mesmo sem subtarefa: é o que mantém a altura igual. */}
+                <div className="min-h-[1.75rem]">
+                    {sub > 0 && (
+                        <div className="space-y-1">
+                            <p className="text-[11px] text-muted-foreground">{feitas}/{sub} subtarefas</p>
+                            <Progress value={Math.round((feitas / sub) * 100)} className="h-1" />
+                        </div>
+                    )}
+                </div>
 
-                {tarefa.data_entrega && (
-                    <p className={cn(
-                        "flex items-center gap-1.5 text-xs",
-                        prazo ? prazo.className.replace(/bg-[^ ]+/, "") : "text-muted-foreground",
-                    )}>
-                        <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                        {prazo?.label ?? dataCurta(tarefa.data_entrega)}
-                    </p>
-                )}
+                <div className="mt-auto flex items-center justify-between gap-2 border-t pt-2">
+                    <span className="flex min-w-0 items-center gap-2">
+                        {responsavel && <UserAvatar profile={responsavel} />}
+                        {tarefa.data_entrega && (
+                            <span className={cn(
+                                "flex items-center gap-1 truncate text-[11px]",
+                                prazo ? "text-status-erro" : "text-muted-foreground",
+                            )}>
+                                <CalendarDays className="h-3 w-3 shrink-0" aria-hidden />
+                                {prazo?.label ?? dataCurta(tarefa.data_entrega)}
+                            </span>
+                        )}
+                    </span>
 
-                <div className="flex items-center justify-between gap-2 pt-0.5">
-                    {responsavel ? <UserAvatar profile={responsavel} /> : <span />}
-                    <span className="flex items-center gap-2.5 text-xs text-muted-foreground">
+                    <span className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
                         {comentarios > 0 && (
                             <span className="flex items-center gap-1">
-                                <MessageSquare className="h-3.5 w-3.5" aria-hidden /> {comentarios}
+                                <MessageSquare className="h-3 w-3" aria-hidden /> {comentarios}
                             </span>
                         )}
                         {anexos > 0 && (
                             <span className="flex items-center gap-1">
-                                <Paperclip className="h-3.5 w-3.5" aria-hidden /> {anexos}
+                                <Paperclip className="h-3 w-3" aria-hidden /> {anexos}
                             </span>
                         )}
                     </span>
@@ -99,7 +197,12 @@ function CardTarefa({ tarefa, metricas, profilesById, arrastando }: {
 }
 
 /** Envelope arrastável; o card em si não conhece DnD. */
-function CardArrastavel(props: { tarefa: TarefaDaLista; metricas: MapaMetricas; profilesById: Map<string, Profile> }) {
+function CardArrastavel(props: {
+    tarefa: TarefaDaLista
+    metricas: MapaMetricas
+    profilesById: Map<string, Profile>
+    acoes: AcoesDoCard
+}) {
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: props.tarefa.id })
 
     return (
@@ -107,20 +210,22 @@ function CardArrastavel(props: { tarefa: TarefaDaLista; metricas: MapaMetricas; 
             ref={setNodeRef}
             {...listeners}
             {...attributes}
-            // O original some enquanto o DragOverlay desenha a cópia; sem isso a
-            // tarefa aparece em dois lugares ao mesmo tempo.
-            className={cn("touch-none", isDragging && "opacity-40")}
+            // w-full explícito: sem largura própria o item arrastável encolhe
+            // para o conteúdo e o card sai mais estreito que os vizinhos.
+            // O original some enquanto o DragOverlay desenha a cópia.
+            className={cn("w-full touch-none", isDragging && "opacity-40")}
         >
             <CardTarefa {...props} />
         </div>
     )
 }
 
-function Coluna({ titulo, tarefas, metricas, profilesById, onNova }: {
+function Coluna({ titulo, tarefas, metricas, profilesById, acoes, onNova }: {
     titulo: string
     tarefas: TarefaDaLista[]
     metricas: MapaMetricas
     profilesById: Map<string, Profile>
+    acoes: AcoesDoCard
     onNova: (status: TarefaStatus) => void
 }) {
     const { setNodeRef, isOver } = useDroppable({ id: titulo })
@@ -130,7 +235,7 @@ function Coluna({ titulo, tarefas, metricas, profilesById, onNova }: {
         <div
             ref={setNodeRef}
             className={cn(
-                "flex min-w-[260px] flex-col gap-3 rounded-2xl border bg-muted/30 p-3 transition-colors",
+                "flex min-w-0 flex-col gap-3 rounded-xl border bg-muted/30 p-3 transition-colors",
                 isOver && "border-primary/50 bg-primary/5",
             )}
         >
@@ -150,7 +255,13 @@ function Coluna({ titulo, tarefas, metricas, profilesById, onNova }: {
 
             <div className="flex flex-col gap-2">
                 {tarefas.map((t) => (
-                    <CardArrastavel key={t.id} tarefa={t} metricas={metricas} profilesById={profilesById} />
+                    <CardArrastavel
+                        key={t.id}
+                        tarefa={t}
+                        metricas={metricas}
+                        profilesById={profilesById}
+                        acoes={acoes}
+                    />
                 ))}
             </div>
 
@@ -172,10 +283,11 @@ function Coluna({ titulo, tarefas, metricas, profilesById, onNova }: {
  * abrindo a tarefa: sem ele, qualquer toque vira o começo de um arraste e o
  * link nunca dispara.
  */
-export function Board({ tarefas, metricas, profilesById, onMoverStatus, onNova }: {
+export function Board({ tarefas, metricas, profilesById, acoes, onMoverStatus, onNova }: {
     tarefas: TarefaDaLista[]
     metricas: MapaMetricas
     profilesById: Map<string, Profile>
+    acoes: AcoesDoCard
     onMoverStatus: (t: TarefaDaLista, status: TarefaStatus) => void
     onNova: (status: TarefaStatus) => void
 }) {
@@ -211,7 +323,7 @@ export function Board({ tarefas, metricas, profilesById, onMoverStatus, onNova }
             onDragEnd={aoSoltar}
             onDragCancel={() => setArrastando(null)}
         >
-            <div className="grid gap-3 overflow-x-auto pb-2 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
                 {TAREFA_BOARD_COLUNAS.map((coluna) => (
                     <Coluna
                         key={coluna.titulo}
@@ -219,6 +331,7 @@ export function Board({ tarefas, metricas, profilesById, onMoverStatus, onNova }
                         tarefas={tarefas.filter((t) => coluna.status.includes(t.status))}
                         metricas={metricas}
                         profilesById={profilesById}
+                        acoes={acoes}
                         onNova={onNova}
                     />
                 ))}
@@ -226,7 +339,12 @@ export function Board({ tarefas, metricas, profilesById, onMoverStatus, onNova }
 
             <DragOverlay>
                 {arrastando && (
-                    <CardTarefa tarefa={arrastando} metricas={metricas} profilesById={profilesById} arrastando />
+                    <CardTarefa
+                        tarefa={arrastando}
+                        metricas={metricas}
+                        profilesById={profilesById}
+                        arrastando
+                    />
                 )}
             </DragOverlay>
         </DndContext>

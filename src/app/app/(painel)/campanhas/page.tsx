@@ -282,7 +282,7 @@ export default function CampanhasPage() {
                         }}
                         filtros={[
                             {
-                                chave: "status", label: "Filtrar por status", valor: status,
+                                chave: "status", label: "Status", valor: status, neutro: TODOS,
                                 onChange: filtrar(setStatus),
                                 opcoes: [
                                     { value: TODOS, label: "Status: todos" },
@@ -290,7 +290,7 @@ export default function CampanhasPage() {
                                 ],
                             },
                             {
-                                chave: "cliente", label: "Filtrar por cliente", valor: cliente,
+                                chave: "cliente", label: "Cliente", valor: cliente, neutro: TODOS,
                                 onChange: filtrar(setCliente),
                                 opcoes: [
                                     { value: TODOS, label: "Cliente: todos" },
@@ -298,7 +298,7 @@ export default function CampanhasPage() {
                                 ],
                             },
                             {
-                                chave: "responsavel", label: "Filtrar por responsável", valor: responsavel,
+                                chave: "responsavel", label: "Responsável", valor: responsavel, neutro: TODOS,
                                 onChange: filtrar(setResponsavel),
                                 opcoes: [
                                     { value: TODOS, label: "Responsável: todos" },
@@ -306,19 +306,18 @@ export default function CampanhasPage() {
                                 ],
                             },
                             {
-                                chave: "periodo", label: "Filtrar por período", valor: periodo,
+                                chave: "periodo", label: "Período", valor: periodo, neutro: "todos",
                                 onChange: filtrar(setPeriodo) as (v: string) => void,
                                 opcoes: BLOG_PERIODOS.map((p) => ({ value: p.value, label: p.label })),
                             },
+                        ]}
+                        secundarios={[
                             {
-                                chave: "prioridade", label: "Filtrar por prioridade", valor: prioridade,
+                                chave: "prioridade", label: "Prioridade", valor: prioridade, neutro: TODOS,
                                 onChange: filtrar(setPrioridade),
-                                className: "lg:w-[150px]",
-                                opcoes: [
-                                    { value: TODOS, label: "Prioridade: toda" },
+                                opcoes: [{ value: TODOS, label: "Prioridade: toda" },
                                     ...(["urgente", "alta", "media", "baixa"] as TarefaPrioridade[])
-                                        .map((p) => ({ value: p, label: TAREFA_PRIORIDADE[p].label })),
-                                ],
+                                        .map((p) => ({ value: p, label: TAREFA_PRIORIDADE[p].label }))],
                             },
                         ]}
                         extras={

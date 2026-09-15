@@ -374,7 +374,7 @@ function Clientes() {
                         }}
                         filtros={[
                             {
-                                chave: "status", label: "Filtrar por status", valor: status,
+                                chave: "status", label: "Status", valor: status, neutro: TODOS,
                                 onChange: filtrar(setStatus),
                                 opcoes: [
                                     { value: TODOS, label: "Status: todos" },
@@ -382,7 +382,7 @@ function Clientes() {
                                 ],
                             },
                             {
-                                chave: "segmento", label: "Filtrar por segmento", valor: segmento,
+                                chave: "segmento", label: "Segmento", valor: segmento, neutro: TODOS,
                                 onChange: filtrar(setSegmento),
                                 opcoes: [
                                     { value: TODOS, label: "Segmento: todos" },
@@ -390,16 +390,15 @@ function Clientes() {
                                 ],
                             },
                             {
-                                chave: "estado", label: "Filtrar por estado", valor: estado,
+                                chave: "estado", label: "Estado", valor: estado, neutro: TODOS,
                                 onChange: filtrar(setEstado),
-                                className: "lg:w-[130px]",
                                 opcoes: [
                                     { value: TODOS, label: "Estado: todos" },
                                     ...UFS.map((u) => ({ value: u.sigla, label: u.sigla })),
                                 ],
                             },
                             {
-                                chave: "responsavel", label: "Filtrar por responsável", valor: responsavel,
+                                chave: "responsavel", label: "Responsável", valor: responsavel, neutro: TODOS,
                                 onChange: filtrar(setResponsavel),
                                 opcoes: [
                                     { value: TODOS, label: "Responsável: todos" },

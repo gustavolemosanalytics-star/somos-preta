@@ -95,7 +95,9 @@ export function MetricaCard({
                 </div>
                 <div className="min-w-0 flex-1">
                     <p className="text-2xl font-semibold leading-none tracking-tight sm:text-3xl">{valor}</p>
-                    <p className="mt-1.5 truncate text-sm text-muted-foreground">{rotulo}</p>
+                    {/* Quebra em duas linhas em vez de truncar: "Aguardando terceiros"
+                        cortado em "Aguardando terc…" não diz o que o número é. */}
+                    <p className="mt-1.5 text-sm leading-tight text-muted-foreground">{rotulo}</p>
                 </div>
                 {(href || onClick) && (
                     <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50" aria-hidden />

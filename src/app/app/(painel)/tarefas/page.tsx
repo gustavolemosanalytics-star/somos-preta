@@ -404,43 +404,52 @@ export default function TarefasPage() {
                         placeholder="Buscar tarefas..."
                         ativos={filtrosAtivos}
                         onLimpar={limparFiltros}
+                        // À vista ficam os quatro de uso diário; cliente,
+                        // campanha e prioridade entram em "Mais filtros".
                         filtros={[
                             {
-                                chave: "area", label: "Filtrar por área", valor: area, onChange: filtrar(setArea),
-                                className: "lg:w-[140px]",
+                                chave: "area", label: "Área", valor: area, neutro: TODAS_AREAS,
+                                onChange: filtrar(setArea),
                                 opcoes: [{ value: TODAS_AREAS, label: "Área: todas" },
                                     ...areas.map((a) => ({ value: a.id, label: a.nome }))],
                             },
                             {
-                                chave: "cliente", label: "Filtrar por cliente", valor: cliente,
+                                chave: "responsavel", label: "Responsável", valor: responsavel, neutro: TODOS,
+                                onChange: filtrar(setResponsavel),
+                                opcoes: [{ value: TODOS, label: "Responsável: todos" },
+                                    ...profiles.map((p) => ({ value: p.id, label: p.nome ?? p.email ?? p.id }))],
+                            },
+                            {
+                                chave: "status", label: "Status", valor: status, neutro: TODOS,
+                                onChange: filtrar(setStatus),
+                                opcoes: [{ value: TODOS, label: "Status: todos" },
+                                    ...TAREFA_STATUS_ORDEM.map((s) => ({ value: s, label: TAREFA_STATUS[s].label }))],
+                            },
+                            {
+                                chave: "prazo", label: "Prazo", valor: prazo, neutro: TODOS,
+                                onChange: filtrar(setPrazo), opcoes: PRAZOS,
+                            },
+                        ]}
+                        secundarios={[
+                            {
+                                chave: "cliente", label: "Cliente", valor: cliente, neutro: TODOS,
+                                // Trocar de cliente zera a campanha: a lista de
+                                // campanhas depende dele e ficaria inconsistente.
                                 onChange: (v) => { filtrar(setCliente)(v); setCampanha(TODOS) },
                                 opcoes: [{ value: TODOS, label: "Cliente: todos" },
                                     ...clientes.map((c) => ({ value: c.id, label: c.nome }))],
                             },
                             {
-                                chave: "campanha", label: "Filtrar por campanha", valor: campanha, onChange: filtrar(setCampanha),
+                                chave: "campanha", label: "Campanha", valor: campanha, neutro: TODOS,
+                                onChange: filtrar(setCampanha),
                                 opcoes: [{ value: TODOS, label: "Campanha: todas" },
                                     ...campanhasFiltradas.map((c) => ({ value: c.id, label: c.nome }))],
                             },
                             {
-                                chave: "responsavel", label: "Filtrar por responsável", valor: responsavel, onChange: filtrar(setResponsavel),
-                                opcoes: [{ value: TODOS, label: "Responsável: todos" },
-                                    ...profiles.map((p) => ({ value: p.id, label: p.nome ?? p.email ?? p.id }))],
-                            },
-                            {
-                                chave: "prioridade", label: "Filtrar por prioridade", valor: prioridade, onChange: filtrar(setPrioridade),
-                                className: "lg:w-[140px]",
+                                chave: "prioridade", label: "Prioridade", valor: prioridade, neutro: TODOS,
+                                onChange: filtrar(setPrioridade),
                                 opcoes: [{ value: TODOS, label: "Prioridade: toda" },
                                     ...PRIORIDADES.map((p) => ({ value: p, label: TAREFA_PRIORIDADE[p].label }))],
-                            },
-                            {
-                                chave: "prazo", label: "Filtrar por prazo", valor: prazo, onChange: filtrar(setPrazo),
-                                className: "lg:w-[150px]", opcoes: PRAZOS,
-                            },
-                            {
-                                chave: "status", label: "Filtrar por status", valor: status, onChange: filtrar(setStatus),
-                                opcoes: [{ value: TODOS, label: "Status: todos" },
-                                    ...TAREFA_STATUS_ORDEM.map((s) => ({ value: s, label: TAREFA_STATUS[s].label }))],
                             },
                         ]}
                         extras={
@@ -448,7 +457,7 @@ export default function TarefasPage() {
                                 <Button
                                     size="sm"
                                     variant={soMinhas ? "default" : "outline"}
-                                    className="rounded-xl"
+                                    className="rounded-lg"
                                     onClick={() => filtrar(setSoMinhas)(!soMinhas)}
                                     aria-pressed={soMinhas}
                                     disabled={visao === "minhas"}
@@ -459,7 +468,7 @@ export default function TarefasPage() {
                                 <Button
                                     size="sm"
                                     variant={mostrarArquivadas ? "default" : "outline"}
-                                    className="rounded-xl"
+                                    className="rounded-lg"
                                     onClick={() => filtrar(setMostrarArquivadas)(!mostrarArquivadas)}
                                     aria-pressed={mostrarArquivadas}
                                 >
@@ -505,6 +514,13 @@ export default function TarefasPage() {
                                 profilesById={profilesById}
                                 onMoverStatus={mudarStatus}
                                 onNova={(s) => abrirDialogo(null, s)}
+                                acoes={{
+                                    onEditar: (t) => abrirDialogo(t),
+                                    onStatus: mudarStatus,
+                                    onDuplicar: duplicar,
+                                    onArquivar: arquivar,
+                                    onExcluir: setExcluindo,
+                                }}
                             />
 
                             <div className="grid gap-4 xl:grid-cols-2">
