@@ -7,7 +7,9 @@ import { useRouter } from "next/navigation"
 import { BarChart3, CheckCircle2, Eye, EyeOff, Loader2, Megaphone, Newspaper } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
+import { verificarTurnstile } from "@/lib/turnstile"
 import { cn } from "@/lib/utils"
+import { useTurnstile } from "@/components/auth/turnstile"
 import { LogoPreta } from "@/components/public/marca"
 
 /**
@@ -46,6 +48,7 @@ const SENHA_MINIMA = 8
 export default function CriadorCriarContaPage() {
     const router = useRouter()
     const [supabase] = useState(() => createClient())
+    const turnstile = useTurnstile()
     const [modo, setModo] = useState<Modo>("cadastro")
     const [carregando, setCarregando] = useState(false)
     const [erro, setErro] = useState("")
@@ -84,6 +87,14 @@ export default function CriadorCriarContaPage() {
         setCarregando(true)
         setErro("")
 
+        const humano = await verificarTurnstile(turnstile.token)
+        if (!humano) {
+            setErro("Não foi possível confirmar que você não é um robô. Tente de novo.")
+            turnstile.reiniciar()
+            setCarregando(false)
+            return
+        }
+
         if (modo === "login") {
             const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
             if (error) {
@@ -94,6 +105,7 @@ export default function CriadorCriarContaPage() {
                           ? "Confirme seu e-mail antes de entrar."
                           : "Não foi possível entrar. Tente novamente."
                 )
+                turnstile.reiniciar()
                 setCarregando(false)
                 return
             }
@@ -114,6 +126,7 @@ export default function CriadorCriarContaPage() {
                     ? "Este e-mail já está cadastrado. Tente entrar."
                     : "Não foi possível criar a conta. Tente novamente."
             )
+            turnstile.reiniciar()
             setCarregando(false)
             return
         }
@@ -336,9 +349,11 @@ export default function CriadorCriarContaPage() {
                                             </p>
                                         )}
 
+                                        {turnstile.campo}
+
                                         <button
                                             type="submit"
-                                            disabled={carregando}
+                                            disabled={carregando || !turnstile.pronto}
                                             className="flex h-13 w-full items-center justify-center rounded-xl bg-brand-terracota py-3.5 text-base font-semibold text-white transition-colors hover:bg-brand-coral disabled:opacity-60"
                                         >
                                             {carregando ? (

@@ -4,6 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { verificarTurnstile } from "@/lib/turnstile"
+import { useTurnstile } from "@/components/auth/turnstile"
 import { LogoPreta } from "@/components/public/marca"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +16,7 @@ import { Loader2, Eye, EyeOff } from "lucide-react"
 export default function CriadorLoginPage() {
     const router = useRouter()
     const [supabase] = useState(() => createClient())
+    const turnstile = useTurnstile()
     const [isLoading, setIsLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState("")
@@ -42,6 +45,14 @@ export default function CriadorLoginPage() {
         setIsLoading(true)
         setError("")
 
+        const humano = await verificarTurnstile(turnstile.token)
+        if (!humano) {
+            setError("Não foi possível confirmar que você não é um robô. Tente de novo.")
+            turnstile.reiniciar()
+            setIsLoading(false)
+            return
+        }
+
         const { error } = await supabase.auth.signInWithPassword({ email, password })
 
         if (error) {
@@ -52,6 +63,7 @@ export default function CriadorLoginPage() {
                         ? "Confirme seu email antes de entrar"
                         : "Não foi possível entrar. Tente novamente."
             )
+            turnstile.reiniciar()
             setIsLoading(false)
             return
         }
@@ -133,10 +145,12 @@ export default function CriadorLoginPage() {
                                 </div>
                             )}
 
+                            {turnstile.campo}
+
                             <Button
                                 type="submit"
                                 className="w-full h-11 rounded-xl font-semibold"
-                                disabled={isLoading}
+                                disabled={isLoading || !turnstile.pronto}
                             >
                                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Entrar"}
                             </Button>

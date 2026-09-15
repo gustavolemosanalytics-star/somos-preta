@@ -4,6 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { verificarTurnstile } from "@/lib/turnstile"
+import { useTurnstile } from "@/components/auth/turnstile"
 import { LogoPreta } from "@/components/public/marca"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +26,7 @@ export function EsqueciSenhaForm({
     redefinirPath: string
 }) {
     const [supabase] = useState(() => createClient())
+    const turnstile = useTurnstile()
     const [isLoading, setIsLoading] = useState(false)
     const [done, setDone] = useState(false)
     const [email, setEmail] = useState("")
@@ -31,6 +34,14 @@ export function EsqueciSenhaForm({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
+
+        const humano = await verificarTurnstile(turnstile.token)
+        if (!humano) {
+            toast.error("Não foi possível confirmar que você não é um robô. Tente de novo.")
+            turnstile.reiniciar()
+            setIsLoading(false)
+            return
+        }
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `${window.location.origin}${redefinirPath}`,
@@ -40,6 +51,7 @@ export function EsqueciSenhaForm({
         // para não vazar quais emails estão cadastrados.
         if (error) {
             toast.error("Não foi possível enviar o email agora. Tente novamente.")
+            turnstile.reiniciar()
             setIsLoading(false)
             return
         }
@@ -84,10 +96,12 @@ export function EsqueciSenhaForm({
                             />
                         </div>
 
+                        {turnstile.campo}
+
                         <Button
                             type="submit"
                             className="w-full h-12 rounded-xl font-bold text-lg"
-                            disabled={isLoading}
+                            disabled={isLoading || !turnstile.pronto}
                         >
                             {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Enviar link de redefinição"}
                         </Button>

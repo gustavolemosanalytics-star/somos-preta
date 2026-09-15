@@ -5,6 +5,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { useTurnstile } from "@/components/auth/turnstile"
+import { verificarTurnstile } from "@/lib/turnstile"
 import { LogoPreta } from "@/components/public/marca"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +26,7 @@ export function RedefinirSenhaForm({
 }) {
     const router = useRouter()
     const [supabase] = useState(() => createClient())
+    const turnstile = useTurnstile()
     const [checkingSession, setCheckingSession] = useState(true)
     const [hasRecoverySession, setHasRecoverySession] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -67,10 +70,20 @@ export function RedefinirSenhaForm({
         }
 
         setIsLoading(true)
+
+        const humano = await verificarTurnstile(turnstile.token)
+        if (!humano) {
+            setError("Não foi possível confirmar que você não é um robô. Tente de novo.")
+            turnstile.reiniciar()
+            setIsLoading(false)
+            return
+        }
+
         const { error } = await supabase.auth.updateUser({ password })
 
         if (error) {
             setError("Não foi possível redefinir sua senha. Tente novamente.")
+            turnstile.reiniciar()
             setIsLoading(false)
             return
         }
@@ -161,10 +174,12 @@ export function RedefinirSenhaForm({
                         </div>
                     )}
 
+                    {turnstile.campo}
+
                     <Button
                         type="submit"
                         className="w-full h-12 rounded-xl font-bold text-lg"
-                        disabled={isLoading}
+                        disabled={isLoading || !turnstile.pronto}
                     >
                         {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Redefinir senha"}
                     </Button>
