@@ -94,10 +94,22 @@ async function fetchHikerMediaStats(userId: string, accessKey: string) {
     }
 }
 
-// Tenta buscar dados via HikerAPI. Retorna null se a fonte falhar por
-// qualquer motivo (sem crédito, erro de rede, schema inesperado) — nesse
-// caso o chamador cai para o scraper de fallback.
-async function fetchViaHikerApi(username: string, accessKey: string): Promise<EngajamentoData | null> {
+/**
+ * Por que a HikerAPI não respondeu.
+ *
+ * Existe porque "não achei" e "não consegui procurar" levavam à MESMA tela:
+ * quando a conta fica sem crédito, o fallback bate num Instagram que exige
+ * login, e o resultado saía como "Perfil não encontrado" para um perfil que
+ * existe e tem milhões de seguidores. Erro de infraestrutura apresentado como
+ * fato sobre o mundo é o pior tipo de mensagem.
+ */
+type FalhaHiker = "sem_credito" | "nao_encontrado" | "indisponivel"
+
+type RespostaHiker =
+    | { ok: true; dados: EngajamentoData }
+    | { ok: false; motivo: FalhaHiker }
+
+async function fetchViaHikerApi(username: string, accessKey: string): Promise<RespostaHiker> {
     let user: any
 
     try {
@@ -108,15 +120,21 @@ async function fetchViaHikerApi(username: string, accessKey: string): Promise<En
         const json: any = await res.json().catch(() => null)
 
         if (!res.ok || !json || json.state === false) {
-            console.log("HikerAPI user lookup failed:", res.status, json)
-            return null
+            console.warn("HikerAPI:", res.status, json?.exc_type ?? json?.error ?? "")
+            // 402 é a conta sem saldo; 401/403, chave inválida ou revogada.
+            // Nenhum dos três diz nada sobre o perfil procurado.
+            if (res.status === 402) return { ok: false, motivo: "sem_credito" }
+            if (res.status === 404) return { ok: false, motivo: "nao_encontrado" }
+            return { ok: false, motivo: "indisponivel" }
         }
 
         user = json.user ?? json
-        if (!user || (user.pk == null && user.id == null && !user.username)) return null
+        if (!user || (user.pk == null && user.id == null && !user.username)) {
+            return { ok: false, motivo: "nao_encontrado" }
+        }
     } catch (err) {
-        console.log("HikerAPI user lookup error:", err)
-        return null
+        console.warn("HikerAPI indisponível:", err)
+        return { ok: false, motivo: "indisponivel" }
     }
 
     const follower_count = user.follower_count ?? user.followers_count ?? 0
@@ -131,7 +149,7 @@ async function fetchViaHikerApi(username: string, accessKey: string): Promise<En
         engagement_rate = Math.round(((mediaStats.avg_likes + mediaStats.avg_comments) / follower_count) * 10000) / 100
     }
 
-    return {
+    return { ok: true, dados: {
         username: user.username || username,
         full_name: user.full_name || "",
         profile_pic_url: user.profile_pic_url || user.profile_pic_url_hd || "",
@@ -149,7 +167,7 @@ async function fetchViaHikerApi(username: string, accessKey: string): Promise<En
         analisados: mediaStats?.analisados ?? 0,
         destaques: mediaStats?.destaques ?? [],
         source: "hikerapi",
-    }
+    } }
 }
 
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -164,7 +182,17 @@ export async function GET(req: Request) {
     }
 
     const accessKey = process.env.HIKERAPI_ACCESS_KEY
-    let data: EngajamentoData | null = accessKey ? await fetchViaHikerApi(username, accessKey) : null
+    const hiker: RespostaHiker = accessKey
+        ? await fetchViaHikerApi(username, accessKey)
+        : { ok: false, motivo: "indisponivel" }
+
+    let data: EngajamentoData | null = hiker.ok ? hiker.dados : null
+
+    // A fonte principal disse, com autoridade, que o perfil não existe. Não
+    // adianta insistir no scraper, que responde pior à mesma pergunta.
+    if (!hiker.ok && hiker.motivo === "nao_encontrado") {
+        return NextResponse.json({ error: "Perfil não encontrado" }, { status: 404 })
+    }
 
     if (!data) {
         try {
@@ -193,7 +221,22 @@ export async function GET(req: Request) {
             console.error("Engajamento scraper error:", error)
             const message = error instanceof Error ? error.message : ""
 
+            // O scraper logado-fora não distingue "não existe" de "o Instagram
+            // não me deixou ver". Se a fonte boa caiu por saldo ou por estar
+            // fora do ar, o silêncio dele não vira veredito sobre o perfil.
             if (message === "PROFILE_NOT_FOUND") {
+                if (!hiker.ok && hiker.motivo === "sem_credito") {
+                    return NextResponse.json(
+                        { error: "A consulta de perfis está temporariamente indisponível (sem créditos na fonte de dados). Avise a equipe da Somos Preta." },
+                        { status: 503 }
+                    )
+                }
+                if (!hiker.ok && hiker.motivo === "indisponivel" && accessKey) {
+                    return NextResponse.json(
+                        { error: "Não foi possível consultar este perfil agora. Tente novamente em alguns minutos." },
+                        { status: 503 }
+                    )
+                }
                 return NextResponse.json({ error: "Perfil não encontrado" }, { status: 404 })
             }
             if (message === "LOGIN_WALL") {
