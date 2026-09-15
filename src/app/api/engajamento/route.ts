@@ -1,6 +1,26 @@
 import { NextResponse } from "next/server"
 import { fetchInstagramProfile } from "@/lib/instagram-scraper"
 
+/**
+ * A única coisa que quem está de fora ouve quando a consulta falha por causa
+ * NOSSA — saldo acabado, chave revogada, fonte fora do ar, coleta barrada.
+ *
+ * Antes cada uma dessas falhas se apresentava com nome e sobrenome na tela:
+ * a falta de saldo virava "sem créditos na fonte de dados… avise a equipe da
+ * Somos Preta", endereçada a quem passou ali por acaso e não tem como agir
+ * sobre isso. Além de expor roupa suja, é um mapa da nossa infraestrutura
+ * entregue a quem só queria uma taxa de engajamento.
+ *
+ * Sem prometer prazo, também: "em alguns minutos" é verdade quando a coleta
+ * foi barrada e mentira quando a conta está sem saldo — e mandar o visitante
+ * voltar em cinco minutos para falhar de novo é pior que não dizer nada.
+ *
+ * O diagnóstico não se perde, muda de lugar: vai inteiro para o log do
+ * servidor, que é onde alguém consegue fazer algo a respeito. O status HTTP
+ * continua distinguindo os casos (503 x 429) para quem lê máquina.
+ */
+const INDISPONIVEL = "A consulta de perfis está temporariamente indisponível. Tente de novo mais tarde."
+
 type EngajamentoData = {
     username: string
     full_name: string
@@ -123,7 +143,10 @@ async function fetchViaHikerApi(username: string, accessKey: string): Promise<Re
             console.warn("HikerAPI:", res.status, json?.exc_type ?? json?.error ?? "")
             // 402 é a conta sem saldo; 401/403, chave inválida ou revogada.
             // Nenhum dos três diz nada sobre o perfil procurado.
-            if (res.status === 402) return { ok: false, motivo: "sem_credito" }
+            if (res.status === 402) {
+                console.error("HikerAPI sem saldo (402) — recarregar em hikerapi.com/billing")
+                return { ok: false, motivo: "sem_credito" }
+            }
             if (res.status === 404) return { ok: false, motivo: "nao_encontrado" }
             return { ok: false, motivo: "indisponivel" }
         }
@@ -225,32 +248,34 @@ export async function GET(req: Request) {
             // não me deixou ver". Se a fonte boa caiu por saldo ou por estar
             // fora do ar, o silêncio dele não vira veredito sobre o perfil.
             if (message === "PROFILE_NOT_FOUND") {
-                if (!hiker.ok && hiker.motivo === "sem_credito") {
-                    return NextResponse.json(
-                        { error: "A consulta de perfis está temporariamente indisponível (sem créditos na fonte de dados). Avise a equipe da Somos Preta." },
-                        { status: 503 }
-                    )
-                }
-                if (!hiker.ok && hiker.motivo === "indisponivel" && accessKey) {
-                    return NextResponse.json(
-                        { error: "Não foi possível consultar este perfil agora. Tente novamente em alguns minutos." },
-                        { status: 503 }
-                    )
+                // Saldo, chave ou fonte fora do ar: falhas nossas, todas com a
+                // mesma consequência para quem está do outro lado — a consulta
+                // não aconteceu. Sem accessKey nenhuma a fonte boa nem foi
+                // tentada, então aí o silêncio do scraper vale como resposta.
+                const aFonteBoaFalhou =
+                    !hiker.ok &&
+                    (hiker.motivo === "sem_credito" ||
+                        (hiker.motivo === "indisponivel" && Boolean(accessKey)))
+
+                if (aFonteBoaFalhou) {
+                    return NextResponse.json({ error: INDISPONIVEL }, { status: 503 })
                 }
                 return NextResponse.json({ error: "Perfil não encontrado" }, { status: 404 })
             }
+            // "O Instagram bloqueou a requisição" é a mesma indiscrição com
+            // outra roupa: só faz sentido se existir uma coleta nossa batendo
+            // lá, e ainda joga a culpa num terceiro. Para quem está do outro
+            // lado o fato é um só — a consulta não saiu.
             if (message === "LOGIN_WALL") {
-                return NextResponse.json(
-                    { error: "Instagram bloqueou a requisição. Tente novamente em alguns minutos." },
-                    { status: 429 }
-                )
+                return NextResponse.json({ error: INDISPONIVEL }, { status: 429 })
             }
-            return NextResponse.json({ error: "Erro ao buscar dados do Instagram" }, { status: 500 })
+            return NextResponse.json({ error: INDISPONIVEL }, { status: 500 })
         }
     }
 
     if (!data) {
-        return NextResponse.json({ error: "Erro ao buscar dados do Instagram" }, { status: 500 })
+        console.error("Engajamento: nenhuma fonte devolveu dados para", username)
+        return NextResponse.json({ error: INDISPONIVEL }, { status: 500 })
     }
 
     if (data.is_private) {
