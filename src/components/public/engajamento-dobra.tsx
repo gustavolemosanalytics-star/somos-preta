@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
-import { EngajamentoHero } from "./engajamento-hero"
+import { EngajamentoHero, semArroba } from "./engajamento-hero"
 
 /**
  * Dobra do checador de engajamento na home.
@@ -17,7 +17,7 @@ export function EngajamentoDobra() {
 
     const ir = (e: React.FormEvent) => {
         e.preventDefault()
-        const alvo = valor.trim().replace(/^@/, "")
+        const alvo = semArroba(valor)
         router.push(alvo ? `/engajamento?perfil=${encodeURIComponent(alvo)}` : "/engajamento")
     }
 

@@ -16,6 +16,17 @@ import { cn } from "@/lib/utils"
  * resultado cabe.
  */
 
+/**
+ * Tira o @ (e os espaços) do que foi digitado ou colado.
+ *
+ * O @ virou moldura fixa do campo, desenhada ao lado do texto. Sem isso, quem
+ * digita o @ por hábito — ou cola "@fulano" — veria "@@fulano" na tela. O valor
+ * guardado é sempre o usuário puro, que é o que a API espera.
+ */
+export function semArroba(entrada: string) {
+    return entrada.replace(/@/g, "").replace(/\s+/g, "")
+}
+
 type Props = {
     valor: string
     onChange: (v: string) => void
@@ -74,17 +85,33 @@ export function EngajamentoHero({
 
                     <form onSubmit={onSubmit} className="mt-7 flex flex-col gap-3 sm:flex-row">
                         <div className="relative flex-1">
-                            <Instagram
-                                className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground"
-                                aria-hidden
-                            />
+                            {/* O @ fica do lado do texto, não dentro dele: quem digita
+                                lê "@fulano" sem nunca ter de escrever o @. */}
+                            <div className="pointer-events-none absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-2">
+                                <Instagram
+                                    className="h-[18px] w-[18px] text-muted-foreground"
+                                    aria-hidden
+                                />
+                                <span
+                                    aria-hidden
+                                    className={cn(
+                                        "text-[15px] leading-none",
+                                        valor ? "text-foreground" : "text-muted-foreground"
+                                    )}
+                                >
+                                    @
+                                </span>
+                            </div>
                             <input
                                 value={valor}
-                                onChange={(e) => onChange(e.target.value)}
-                                placeholder="@seuperfil"
-                                aria-label="@ do Instagram"
+                                onChange={(e) => onChange(semArroba(e.target.value))}
+                                placeholder="seuperfil"
+                                aria-label="Perfil do Instagram, sem o @"
                                 autoComplete="off"
-                                className="h-14 w-full rounded-2xl border border-border bg-card pl-12 pr-10 text-[15px] outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
+                                inputMode="text"
+                                autoCapitalize="none"
+                                spellCheck={false}
+                                className="h-14 w-full rounded-2xl border border-border bg-card pl-14 pr-10 text-[15px] outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
                             />
                             {valor && (
                                 <button

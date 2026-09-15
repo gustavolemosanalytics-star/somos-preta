@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { EngajamentoHero } from "@/components/public/engajamento-hero"
+import { EngajamentoHero, semArroba } from "@/components/public/engajamento-hero"
 import {
     FAIXAS_ENGAJAMENTO,
     LEITURA_POR_FAIXA,
@@ -89,7 +89,7 @@ function Checador() {
 
     async function analisar(e: React.FormEvent) {
         e.preventDefault()
-        const alvo = username.trim().replace(/^@/, "")
+        const alvo = semArroba(username)
         if (alvo) await consultar(alvo)
     }
 
@@ -100,8 +100,11 @@ function Checador() {
         const perfil = searchParams.get("perfil")
         if (!perfil || jaAnalisou.current) return
         jaAnalisou.current = true
-        setUsername(perfil)
-        void consultar(perfil.replace(/^@/, ""))
+        // O link da home pode trazer ?perfil=@fulano; o campo já desenha o @,
+        // então o estado guarda só o usuário.
+        const alvo = semArroba(perfil)
+        setUsername(alvo)
+        void consultar(alvo)
     }, [searchParams, consultar])
 
     return (
