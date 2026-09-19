@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
-import { PLATAFORMA_URL, SITE_URL } from "@/lib/constants/site"
+import { SITE_URL } from "@/lib/constants/site"
 
 /**
  * Callback do login social.
@@ -11,10 +11,11 @@ import { PLATAFORMA_URL, SITE_URL } from "@/lib/constants/site"
  * sessão: o server component rodava antes de o cliente trocar o código, via
  * perfil nulo e mandava de volta para o login.
  *
- * Quando o fluxo vem da área do criador (`origem=creator`), o papel é
- * confirmado aqui. O cadastro por e-mail envia role_hint no signUp, canal que
- * o OAuth não tem — sem isto o usuário do Google nasceria 'pendente' e cairia
- * em /app/sem-acesso.
+ * Quem chama esta rota são só as telas do criador (/creator/login e
+ * /creator/criar-conta) — o login da equipe não tem entrada social. Por isso
+ * todo destino daqui é dentro do site: nenhum caminho leva a
+ * plataforma.somospreta.com, que é o que fazia o login do criador piscar a área
+ * dele e terminar no painel da equipe.
  */
 export async function GET(request: NextRequest) {
     const url = new URL(request.url)
@@ -25,14 +26,9 @@ export async function GET(request: NextRequest) {
     // Em desenvolvimento não há domínio configurado, então vale a origem local.
     const base = url.hostname === "localhost" ? url.origin : SITE_URL
     const code = searchParams.get("code")
-    const origem = searchParams.get("origem")
     const erro = searchParams.get("error_description") ?? searchParams.get("error")
 
-    // A equipe entra pelo subdomínio do painel; o criador, pelo site. Guardar a
-    // URL inteira (e não só o caminho) é o que permite os dois conviverem.
-    const telaDeEntrada = origem === "creator"
-        ? `${base}/creator/login`
-        : `${url.hostname === "localhost" ? url.origin : PLATAFORMA_URL}/login`
+    const telaDeEntrada = `${base}/creator/login`
 
     if (erro) {
         return NextResponse.redirect(`${telaDeEntrada}?erro=oauth`)
@@ -50,9 +46,6 @@ export async function GET(request: NextRequest) {
 
     // O papel é decidido na criação do usuário, pelo trigger em auth.users:
     // tentar ajustá-lo aqui esbarraria no guard que só deixa admin mudar `role`.
-    if (origem === "creator") {
-        return NextResponse.redirect(`${base}/creator`)
-    }
-
-    return NextResponse.redirect(`${base}/app/dashboard`)
+    // /creator resolve o id e leva para a área da própria pessoa.
+    return NextResponse.redirect(`${base}/creator`)
 }

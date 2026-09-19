@@ -1,11 +1,8 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getProfile } from "@/lib/supabase/auth"
-import { PLATAFORMA_URL } from "@/lib/constants/site"
 import { LogoPreta } from "@/components/public/marca"
 import { LogoutButton } from "../logout-button"
-
-const STAFF_ROLES = ["admin", "gestor", "analista"]
 
 export default async function CreatorLayout({
     children,
@@ -19,11 +16,12 @@ export default async function CreatorLayout({
 
     if (!profile) redirect("/creator/login")
 
-    if (profile.role !== "creator") {
-        // Absolutos: o painel está noutro host.
-        if (STAFF_ROLES.includes(profile.role)) redirect(`${PLATAFORMA_URL}/dashboard`)
-        redirect(`${PLATAFORMA_URL}/sem-acesso`)
-    }
+    // Não há conferência de papel aqui. Estas três linhas mandavam quem não
+    // fosse 'creator' para plataforma.somospreta.com — inclusive quem tem conta
+    // de equipe e quis abrir o próprio Media Kit — e era o que fazia o login
+    // piscar a área do criador antes de jogar o usuário no outro host.
+    // A área é por usuário: o guard abaixo garante que ninguém abre a de outro,
+    // e a RLS do banco decide o resto. Papel não muda nada aqui dentro.
 
     // O id vai na URL, então precisa ser conferido: sem isto qualquer criador
     // logado abriria /creator/<id-de-outro>. Quem erra o id é mandado para o seu.

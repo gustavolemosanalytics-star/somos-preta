@@ -16,30 +16,18 @@ import { updateSession } from "@/lib/supabase/middleware"
  * cobre produção (plataforma.somospreta.com), previews com subdomínio próprio e
  * o desenvolvimento local em plataforma.localhost:3000 — que é como se abre o
  * painel na máquina, já que localhost:3000 continua servindo o site.
+ *
+ * O caminho contrário NÃO existe: nada em somospreta.com manda o visitante para
+ * plataforma.somospreta.com. Havia aqui um redirecionamento que capturava
+ * /login, /criadores, /dashboard e outros primeiros segmentos do site e os
+ * jogava no subdomínio do painel — era ele que, somado ao guard de papel da
+ * área do criador, fazia o login do criador piscar /creator e terminar no
+ * painel da equipe. Quem pedir um caminho do painel no site agora recebe 404,
+ * que é a resposta honesta: aquele caminho não existe neste domínio.
  */
 function ehHostDaPlataforma(host: string) {
     return host === "plataforma" || host.startsWith("plataforma.")
 }
-
-/** Domínios do site institucional, onde o painel NÃO é servido. */
-const HOSTS_SITE = ["www.somospreta.com", "somospreta.com"]
-
-/** Subdomínio do painel, destino dos redirects vindos do site. */
-const HOST_PLATAFORMA = "plataforma.somospreta.com"
-
-/**
- * Primeiros segmentos que pertencem ao painel.
- *
- * Servem para atender bookmarks antigos: quem guardou somospreta.com/clientes
- * de quando o painel vivia no mesmo domínio é levado ao subdomínio. A lista é
- * explícita porque há caminho ambíguo — /blog existe nos dois lados e, no site,
- * é o blog público.
- */
-const SEGMENTOS_DO_PAINEL = new Set([
-    "dashboard", "clientes", "campanhas", "tarefas", "criadores", "contratos",
-    "mensagens", "relatorios", "usuarios", "configuracoes", "descobrir",
-    "login", "criar-conta", "esqueci-senha", "redefinir-senha", "sem-acesso",
-])
 
 export async function middleware(request: NextRequest) {
     const host = (request.headers.get("host") ?? "").split(":")[0].toLowerCase()
@@ -88,21 +76,6 @@ export async function middleware(request: NextRequest) {
         const rewrite = NextResponse.rewrite(alvo, { request })
         resposta.cookies.getAll().forEach((c) => rewrite.cookies.set(c))
         return rewrite
-    }
-
-    // ---- no site, o painel vive no subdomínio ----
-    if (HOSTS_SITE.includes(host)) {
-        const primeiro = pathname.split("/")[1] ?? ""
-        const ehDoPainel = pathname.startsWith("/app") || SEGMENTOS_DO_PAINEL.has(primeiro)
-
-        if (ehDoPainel) {
-            const url = new URL(request.url)
-            url.host = HOST_PLATAFORMA
-            url.protocol = "https:"
-            url.port = ""
-            url.pathname = pathname.replace(/^\/app/, "") || "/"
-            return NextResponse.redirect(url)
-        }
     }
 
     return await updateSession(request)

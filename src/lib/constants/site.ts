@@ -5,12 +5,14 @@
 export const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://www.somospreta.com"
 
-/**
- * Endereço do painel interno, que vive em subdomínio próprio.
+/*
+ * Não existe mais uma constante com o endereço do painel.
  *
- * Existe para os saltos entre as duas áreas: a área do criador e o callback do
- * OAuth rodam no domínio do site, e um href relativo para /dashboard ali cairia
- * no site, não no painel.
+ * Ela servia para os saltos do site para plataforma.somospreta.com — e eram
+ * justamente esses saltos que faziam o login do criador piscar a área dele e
+ * terminar no painel da equipe. Nenhum caminho de somospreta.com leva ao outro
+ * host, então a constante virou só uma arma carregada esperando o próximo uso.
+ *
+ * O painel continua funcionando no subdomínio: quem o identifica é o
+ * middleware, pelo primeiro rótulo do host, sem precisar do endereço completo.
  */
-export const PLATAFORMA_URL =
-    process.env.NEXT_PUBLIC_PLATAFORMA_URL?.replace(/\/$/, "") ?? "https://plataforma.somospreta.com"
