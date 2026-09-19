@@ -64,15 +64,23 @@ const redeConfig: Record<string, { label: string; icone: typeof Instagram }> = {
 }
 
 /**
+ * Duas cores por tema, e a diferença importa.
+ *
+ * `icone` pinta ícone, marcador e ornamento — lugares onde a cor da marca pode
+ * ser ela mesma. `leitura` pinta texto que alguém precisa ler: o terracota
+ * #E07A5F dá 2,76:1 sobre o off-white e o coral #F26D4F, 2,78:1, quando a WCAG
+ * AA pede 4,5:1. Num media kit aberto no celular, no sol, isso é a diferença
+ * entre ler o preço do pacote e desistir.
+ *
  * `teal` é chave de kits antigos e era pintada com `text-accent` — #F1EAE1,
  * superfície de hover: título quase branco sobre off-white. Aqui ela cai no
  * coral, que é cor de marca de verdade e enxerga.
  */
-const acentos: Record<string, { texto: string; fundo: string }> = {
-    terracota: { texto: "text-brand-terracota", fundo: "bg-brand-terracota" },
-    oliva: { texto: "text-brand-oliva", fundo: "bg-brand-oliva" },
-    coral: { texto: "text-brand-coral", fundo: "bg-brand-coral" },
-    teal: { texto: "text-brand-coral", fundo: "bg-brand-coral" },
+const acentos: Record<string, { icone: string; leitura: string; fundo: string }> = {
+    terracota: { icone: "text-brand-terracota", leitura: "text-brand-terracota-texto", fundo: "bg-brand-terracota" },
+    oliva: { icone: "text-brand-oliva", leitura: "text-brand-oliva", fundo: "bg-brand-oliva" },
+    coral: { icone: "text-brand-coral", leitura: "text-brand-terracota-texto", fundo: "bg-brand-coral" },
+    teal: { icone: "text-brand-coral", leitura: "text-brand-terracota-texto", fundo: "bg-brand-coral" },
 }
 
 function formatarNumero(valor: number) {
@@ -85,7 +93,7 @@ export function KitVitrine({
     kit,
     /**
      * "previa" desliga os links (ninguém quer sair do editor por engano) e
-     * tira o min-h-screen, porque ali a vitrine mora dentro de uma moldura.
+     * tira o min-h-dvh, porque ali a vitrine mora dentro de uma moldura.
      */
     modo = "publico",
     className,
@@ -109,7 +117,9 @@ export function KitVitrine({
         <div
             className={cn(
                 "@container bg-background text-foreground",
-                !previa && "min-h-screen",
+                // 100vh no celular inclui a barra do navegador que some ao rolar,
+                // criando uma rolagem vertical fantasma; dvh acompanha a tela real.
+                !previa && "min-h-dvh",
                 previa && "pointer-events-none select-none",
                 className,
             )}
@@ -137,17 +147,17 @@ export function KitVitrine({
                         </h1>
                         {localizacao && (
                             <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-                                <MapPin className={cn("h-4 w-4", acento.texto)} aria-hidden /> {localizacao}
+                                <MapPin className={cn("h-4 w-4", acento.icone)} aria-hidden /> {localizacao}
                             </p>
                         )}
                     </div>
 
-                    {kit.bio && <p className="max-w-2xl leading-relaxed text-muted-foreground">{kit.bio}</p>}
+                    {kit.bio && <p className="max-w-2xl leading-relaxed break-words text-muted-foreground">{kit.bio}</p>}
 
                     {(kit.nichos ?? []).length > 0 && (
                         <div className="flex flex-wrap gap-2">
                             {(kit.nichos ?? []).map((nicho) => (
-                                <Badge key={nicho} variant="outline">
+                                <Badge key={nicho} variant="outline" className="max-w-full whitespace-normal text-[13px]">
                                     {nicho}
                                 </Badge>
                             ))}
@@ -165,7 +175,7 @@ export function KitVitrine({
                                 <Card key={chave} className="rounded-2xl">
                                     <CardContent className="px-5">
                                         <div className="mb-2 flex items-center gap-2">
-                                            <Icone className={cn("h-4 w-4", acento.texto)} aria-hidden />
+                                            <Icone className={cn("h-4 w-4", acento.icone)} aria-hidden />
                                             <span className="text-sm font-medium">{config.label}</span>
                                         </div>
                                         {rede.handle && (
@@ -179,7 +189,7 @@ export function KitVitrine({
                                             </p>
                                         )}
                                         {typeof rede.engagement_rate === "number" && (
-                                            <p className="mt-1 text-xs text-muted-foreground">
+                                            <p className="mt-1 text-sm text-muted-foreground">
                                                 {rede.engagement_rate.toFixed(1)}% de engajamento
                                             </p>
                                         )}
@@ -193,8 +203,8 @@ export function KitVitrine({
                 {/* ---------- portfólio ---------- */}
                 {portfolio.length > 0 && (
                     <div className="mt-14">
-                        <h2 className={cn("mb-5 text-xl font-semibold tracking-tight", acento.texto)}>Portfólio</h2>
-                        <div className="grid grid-cols-2 gap-4 @3xl:grid-cols-3">
+                        <h2 className={cn("mb-5 text-xl font-semibold tracking-tight", acento.leitura)}>Portfólio</h2>
+                        <div className="grid grid-cols-1 gap-4 @lg:grid-cols-2 @3xl:grid-cols-3">
                             {portfolio.map((item, i) => (
                                 <Card key={i} className="gap-0 overflow-hidden rounded-2xl py-0">
                                     {item.imagem && (
@@ -203,14 +213,20 @@ export function KitVitrine({
                                             <img
                                                 src={item.imagem}
                                                 alt={item.titulo ?? ""}
+                                                // O portfólio fica abaixo da
+                                                // dobra: sem lazy, um kit com
+                                                // seis trabalhos puxava tudo
+                                                // antes da primeira rolagem.
+                                                loading="lazy"
+                                                decoding="async"
                                                 className="h-full w-full object-cover"
                                             />
                                         </div>
                                     )}
                                     <CardContent className="p-4">
-                                        {item.titulo && <h3 className="text-sm font-medium">{item.titulo}</h3>}
+                                        {item.titulo && <h3 className="font-medium">{item.titulo}</h3>}
                                         {item.descricao && (
-                                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                                                 {item.descricao}
                                             </p>
                                         )}
@@ -221,8 +237,8 @@ export function KitVitrine({
                                                 rel="noopener noreferrer"
                                                 tabIndex={previa ? -1 : undefined}
                                                 className={cn(
-                                                    "mt-2 inline-flex items-center gap-1 text-xs font-medium hover:underline",
-                                                    acento.texto,
+                                                    "mt-2 inline-flex items-center gap-1 text-sm font-medium hover:underline",
+                                                    acento.leitura,
                                                 )}
                                             >
                                                 Ver mais <ExternalLink className="h-3 w-3" aria-hidden />
@@ -238,14 +254,14 @@ export function KitVitrine({
                 {/* ---------- pacotes ---------- */}
                 {pacotes.length > 0 && (
                     <div className="mt-14">
-                        <h2 className={cn("mb-5 text-xl font-semibold tracking-tight", acento.texto)}>Pacotes</h2>
-                        <div className="grid gap-4 @xl:grid-cols-2 @5xl:grid-cols-3">
+                        <h2 className={cn("mb-5 text-xl font-semibold tracking-tight", acento.leitura)}>Pacotes</h2>
+                        <div className="grid grid-cols-1 gap-4 @xl:grid-cols-2 @5xl:grid-cols-3">
                             {pacotes.map((pacote, i) => (
                                 <Card key={i} className="rounded-2xl">
-                                    <CardContent className="flex flex-col gap-3 px-5">
+                                    <CardContent className="flex flex-col gap-3 px-5 wrap-anywhere">
                                         {pacote.nome && <h3 className="font-semibold">{pacote.nome}</h3>}
                                         {pacote.preco !== undefined && pacote.preco !== "" && (
-                                            <p className={cn("text-2xl font-semibold tracking-tight", acento.texto)}>
+                                            <p className={cn("text-2xl font-semibold tracking-tight", acento.leitura)}>
                                                 {typeof pacote.preco === "number"
                                                     ? pacote.preco.toLocaleString("pt-BR", {
                                                           style: "currency",

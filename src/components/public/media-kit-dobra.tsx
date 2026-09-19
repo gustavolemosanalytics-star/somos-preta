@@ -99,7 +99,7 @@ export function MediaKitDobra() {
                                     {s.valor}
                                 </dt>
                                 <dd className="mt-1.5 text-sm text-muted-foreground">{s.label}</dd>
-                                <dd className="mt-3 text-[10px] font-medium uppercase leading-[1.7] tracking-[0.16em] text-muted-foreground/80">
+                                <dd className="mt-3 text-[12px] font-medium uppercase leading-[1.7] tracking-[0.16em] text-muted-foreground sm:text-[10px]">
                                     {s.nota}
                                 </dd>
                             </div>
@@ -160,12 +160,12 @@ function CartaoExemplo() {
             <header className="flex items-center justify-between gap-4">
                 <LogoPreta className="h-4 w-auto" />
                 <span className="flex flex-col items-center">
-                    <span className="text-[9px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                    <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground sm:text-[9px]">
                         Media Kit
                     </span>
                     <span aria-hidden className="mt-1.5 h-[2px] w-8 rounded-full bg-brand-coral" />
                 </span>
-                <span className="text-right text-[9px] font-medium uppercase leading-[1.7] tracking-[0.18em] text-muted-foreground">
+                <span className="text-right text-[11px] font-medium uppercase leading-[1.7] tracking-[0.18em] text-muted-foreground sm:text-[9px]">
                     Ideias que
                     <br />
                     movem
@@ -187,7 +187,7 @@ function CartaoExemplo() {
 
                 <div className="min-w-0 flex-1">
                     <h3 className="text-xl font-bold tracking-tight">Jaminy Santos</h3>
-                    <p className="mt-1.5 text-[10px] font-medium uppercase leading-[1.8] tracking-[0.16em] text-muted-foreground">
+                    <p className="mt-1.5 text-[12px] font-medium uppercase leading-[1.8] tracking-[0.16em] text-muted-foreground sm:text-[10px]">
                         Criadora de conteúdo
                         <br />
                         Salvador - BA
@@ -206,7 +206,7 @@ function CartaoExemplo() {
                                 <span className="h-5 w-5 shrink-0 rounded-md bg-brand-areia" aria-hidden />
                                 <span className="leading-tight">
                                     <span className="block text-xs font-bold">{r.valor}</span>
-                                    <span className="block text-[9px] text-muted-foreground">
+                                    <span className="block text-[11px] text-muted-foreground sm:text-[9px]">
                                         {r.unidade}
                                     </span>
                                 </span>
@@ -219,7 +219,7 @@ function CartaoExemplo() {
                         {NICHOS.map((n) => (
                             <li
                                 key={n}
-                                className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-medium text-foreground/70"
+                                className="rounded-full bg-muted px-2.5 py-1 text-[12px] font-medium text-foreground/70 sm:text-[10px]"
                             >
                                 {n}
                             </li>
@@ -232,7 +232,7 @@ function CartaoExemplo() {
                 {METRICAS.map((m, i) => (
                     <div key={m.label} className={cn(i > 0 && "border-l border-border pl-3")}>
                         <dt className="text-base font-bold leading-none tracking-tight">{m.valor}</dt>
-                        <dd className="mt-1.5 text-[10px] text-muted-foreground">{m.label}</dd>
+                        <dd className="mt-1.5 text-[12px] text-muted-foreground sm:text-[10px]">{m.label}</dd>
                     </div>
                 ))}
             </dl>

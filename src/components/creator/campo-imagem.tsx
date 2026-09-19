@@ -18,6 +18,59 @@ import { cn } from "@/lib/utils"
 const TIPOS_ACEITOS = ["image/jpeg", "image/png", "image/webp", "image/avif"]
 const TAMANHO_MAXIMO = 10 * 1024 * 1024
 
+/**
+ * Lado maior da imagem depois do corte.
+ *
+ * O bucket aceita 10MB e a vitrine servia o arquivo original: uma foto de
+ * 4032px tirada no celular saía de lá inteira e voltava inteira para o celular
+ * da marca, no 4G. 1600px cobre a capa em tela retina com folga e derruba essa
+ * mesma foto para uns 250KB.
+ */
+const LADO_MAXIMO = 1600
+
+/**
+ * Encolhe no navegador antes de subir. Em qualquer falha devolve o arquivo
+ * original: espremer a imagem é melhoria, não pode virar motivo de não
+ * conseguir enviar a foto.
+ */
+async function encolher(arquivo: File): Promise<File> {
+    // Abaixo de 400KB não compensa: o canvas re-encoda para JPEG e pode até
+    // piorar um WebP ou AVIF que já veio bem comprimido.
+    if (arquivo.size < 400 * 1024) return arquivo
+
+    try {
+        const bitmap = await createImageBitmap(arquivo)
+        const maior = Math.max(bitmap.width, bitmap.height)
+        if (maior <= LADO_MAXIMO) {
+            bitmap.close()
+            return arquivo
+        }
+
+        const escala = LADO_MAXIMO / maior
+        const tela = document.createElement("canvas")
+        tela.width = Math.round(bitmap.width * escala)
+        tela.height = Math.round(bitmap.height * escala)
+
+        const contexto = tela.getContext("2d")
+        if (!contexto) {
+            bitmap.close()
+            return arquivo
+        }
+        contexto.drawImage(bitmap, 0, 0, tela.width, tela.height)
+        bitmap.close()
+
+        const blob = await new Promise<Blob | null>((resolve) =>
+            tela.toBlob(resolve, "image/jpeg", 0.85),
+        )
+        if (!blob || blob.size >= arquivo.size) return arquivo
+
+        const nome = arquivo.name.replace(/\.[^.]+$/, "") + ".jpg"
+        return new File([blob], nome, { type: "image/jpeg" })
+    } catch {
+        return arquivo
+    }
+}
+
 export type FormatoImagem = "capa" | "avatar" | "item"
 
 export function CampoImagem({
@@ -53,7 +106,7 @@ export function CampoImagem({
             : formato === "capa" ? "Trocar a imagem de capa"
                 : "Trocar a imagem do trabalho"
 
-    function validarEEnviar(arquivo: File | undefined) {
+    async function validarEEnviar(arquivo: File | undefined) {
         if (!arquivo) return
 
         if (!TIPOS_ACEITOS.includes(arquivo.type)) {
@@ -66,7 +119,7 @@ export function CampoImagem({
             return
         }
 
-        onArquivo(arquivo)
+        onArquivo(await encolher(arquivo))
     }
 
     function abrirSeletor() {
@@ -89,7 +142,7 @@ export function CampoImagem({
                 tabIndex={-1}
                 className="sr-only"
                 onChange={(e) => {
-                    validarEEnviar(e.target.files?.[0])
+                    void validarEEnviar(e.target.files?.[0])
                     // Sem isto o mesmo arquivo não pode ser reescolhido depois
                     // de um erro: o input guarda o valor e o change não dispara.
                     e.target.value = ""
@@ -117,7 +170,7 @@ export function CampoImagem({
                 onDrop={(e) => {
                     e.preventDefault()
                     setSobrevoando(false)
-                    validarEEnviar(e.dataTransfer.files?.[0])
+                    void validarEEnviar(e.dataTransfer.files?.[0])
                 }}
                 className={cn(
                     "group relative w-full overflow-hidden border-2 border-dashed border-border bg-muted/40 p-0",
@@ -136,15 +189,31 @@ export function CampoImagem({
                     <>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={valor} alt="" className="h-full w-full object-cover" />
+                        {/* No toque não existe hover: a pista de que dá para
+                            trocar a imagem ficava invisível no celular. Aqui ela
+                            é um selo sempre visível, que no ponteiro vira a
+                            cortina inteira ao passar o mouse. */}
                         <span
                             aria-hidden
                             className={cn(
-                                "absolute inset-0 flex items-center justify-center gap-2 bg-brand-carvao/55 text-xs font-medium text-white opacity-0",
+                                "absolute inset-0 flex items-center justify-center gap-2 bg-brand-carvao/55 text-[13px] font-medium text-white opacity-0",
                                 "transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100",
                             )}
                         >
                             <RefreshCw className="h-4 w-4" />
                             {formato !== "avatar" && "Trocar imagem"}
+                        </span>
+                        <span
+                            aria-hidden
+                            className={cn(
+                                "absolute flex items-center gap-1.5 rounded-full bg-brand-carvao/70 text-white group-hover:opacity-0",
+                                formato === "avatar"
+                                    ? "bottom-1 right-1 h-7 w-7 justify-center"
+                                    : "bottom-2 right-2 px-3 py-1.5 text-[12px] font-medium",
+                            )}
+                        >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            {formato !== "avatar" && "Trocar"}
                         </span>
                     </>
                 ) : (

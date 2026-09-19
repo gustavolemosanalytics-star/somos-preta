@@ -111,7 +111,7 @@ export function EngajamentoHero({
                                 inputMode="text"
                                 autoCapitalize="none"
                                 spellCheck={false}
-                                className="h-14 w-full rounded-2xl border border-border bg-card pl-14 pr-10 text-[15px] outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
+                                className="h-14 w-full rounded-2xl border border-border bg-card pl-14 pr-16 text-[16px] outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
                             />
                             {valor && (
                                 <button

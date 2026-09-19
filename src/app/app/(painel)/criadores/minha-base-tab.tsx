@@ -272,7 +272,7 @@ export function MinhaBaseTab() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild><Button className="rounded-xl"><Plus className="h-4 w-4" /> Novo</Button></DialogTrigger>
-                    <DialogContent className="sm:max-w-lg">
+                    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                         <form onSubmit={handleCreate}>
                             <DialogHeader>
                                 <DialogTitle>Novo criador</DialogTitle>
@@ -551,7 +551,7 @@ function RowActions({ row, supabase, reload }: {
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Ver detalhes"><Eye className="h-4 w-4" /></Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>{row.nome}</DialogTitle>
                         <DialogDescription>Detalhes do criador.</DialogDescription>
@@ -583,7 +583,7 @@ function RowActions({ row, supabase, reload }: {
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar"><Pencil className="h-4 w-4" /></Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                     <form onSubmit={handleUpdate}>
                         <DialogHeader>
                             <DialogTitle>Editar criador</DialogTitle>

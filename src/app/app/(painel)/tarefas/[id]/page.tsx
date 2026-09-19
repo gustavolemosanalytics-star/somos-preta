@@ -456,13 +456,17 @@ function TarefaDetalheConteudo() {
                     </div>
 
                     <Tabs defaultValue={tabInicial}>
-                        <TabsList>
-                            <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-                            <TabsTrigger value="subtarefas">Subtarefas</TabsTrigger>
-                            <TabsTrigger value="anexos"><Paperclip className="h-3.5 w-3.5" /> Anexos</TabsTrigger>
-                            <TabsTrigger value="atualizacoes">Atualizações</TabsTrigger>
-                            <TabsTrigger value="historico"><History className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
-                        </TabsList>
+                        {/* Cinco rótulos passam de 450px; abaixo de ~480px a
+                            faixa rola sozinha em vez de empurrar a página. */}
+                        <div className="overflow-x-auto scrollbar-hide">
+                            <TabsList className="w-max">
+                                <TabsTrigger value="detalhes" className="flex-none">Detalhes</TabsTrigger>
+                                <TabsTrigger value="subtarefas" className="flex-none">Subtarefas</TabsTrigger>
+                                <TabsTrigger value="anexos" className="flex-none"><Paperclip className="h-3.5 w-3.5" /> Anexos</TabsTrigger>
+                                <TabsTrigger value="atualizacoes" className="flex-none">Atualizações</TabsTrigger>
+                                <TabsTrigger value="historico" className="flex-none"><History className="h-3.5 w-3.5" /> Histórico</TabsTrigger>
+                            </TabsList>
+                        </div>
 
                         <TabsContent value="detalhes" className="space-y-1.5">
                             <Label>Descrição</Label>

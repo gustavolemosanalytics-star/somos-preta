@@ -120,6 +120,8 @@ export default function CriadorLoginPage() {
                                 <Input
                                     id="email"
                                     type="email"
+                                    autoComplete="email"
+                                    inputMode="email"
                                     placeholder="seu@email.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -138,16 +140,18 @@ export default function CriadorLoginPage() {
                                     <Input
                                         id="password"
                                         type={showPassword ? "text" : "password"}
+                                        autoComplete="current-password"
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="h-11 rounded-xl pr-10"
+                                        className="h-11 rounded-xl pr-12"
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg text-muted-foreground hover:text-foreground"
                                     >
                                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>

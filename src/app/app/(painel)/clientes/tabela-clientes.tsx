@@ -191,7 +191,7 @@ export function TabelaClientes({
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <button type="button" className="h-auto min-h-0" aria-label={`Status de ${c.nome}`}>
+                                        <button type="button" className="-my-3.5 inline-flex min-h-0 items-center py-3.5" aria-label={`Status de ${c.nome}`}>
                                             <Badge variant="secondary" className={cn("gap-1.5", meta.className)}>
                                                 <span className={cn("h-1.5 w-1.5 rounded-full", meta.ponto)} aria-hidden />
                                                 {meta.label}

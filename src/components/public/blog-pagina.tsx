@@ -166,11 +166,16 @@ export function BlogPagina({
                             aria-hidden
                         />
                         <input
+                            type="search"
+                            inputMode="search"
+                            enterKeyHint="search"
                             value={termo}
                             onChange={(e) => setTermo(e.target.value)}
                             placeholder="Buscar no blog..."
                             aria-label="Buscar no blog"
-                            className="h-11 w-full rounded-full border border-border bg-card pl-11 pr-4 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
+                            // 16px literal: abaixo disso o iOS amplia a página ao focar, e
+                            // `text-sm` daria 12,25px com o root de 14px do celular.
+                            className="h-11 w-full rounded-full border border-border bg-card pl-11 pr-4 text-[16px] outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
                         />
                     </div>
                 </div>

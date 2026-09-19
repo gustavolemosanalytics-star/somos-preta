@@ -1084,7 +1084,7 @@ function Cartao({ children, className }: { children: React.ReactNode; className?
 
 function Ajuda({ id, children }: { id: string; children: React.ReactNode }) {
     return (
-        <p id={id} className="text-xs leading-relaxed text-muted-foreground">
+        <p id={id} className="text-[13px] leading-relaxed text-muted-foreground">
             {children}
         </p>
     )
@@ -1511,7 +1511,7 @@ function EtapaPortfolio({
                                         onPointerDown={(e) => e.stopPropagation()}
                                         aria-label={`Remover ${item.titulo || "trabalho"}`}
                                         title="Remover trabalho"
-                                        className="!min-h-10 !min-w-10 shrink-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                        className="shrink-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                     >
                                         <Trash2 className="h-4 w-4" aria-hidden />
                                     </button>
@@ -1635,7 +1635,7 @@ function EtapaPacotes({
                                         onPointerDown={(e) => e.stopPropagation()}
                                         aria-label={`Remover ${item.nome || "pacote"}`}
                                         title="Remover pacote"
-                                        className="!min-h-10 !min-w-10 shrink-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                        className="shrink-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                     >
                                         <Trash2 className="h-4 w-4" aria-hidden />
                                     </button>
@@ -1948,7 +1948,9 @@ function EtapaPublicar({
 function LinkPublico({ slug, onCopiar }: { slug: string; onCopiar: () => void }) {
     return (
         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-muted/40 px-4 py-3">
-            <code className="min-w-0 flex-1 truncate text-sm">somospreta.com/kit/{slug}</code>
+            {/* break-all em vez de truncate: o slug é o que a criadora vai conferir
+                antes de mandar para a marca, e cortado em 89px ele não serve. */}
+            <code className="w-full min-w-0 break-all text-sm sm:w-auto sm:flex-1 sm:truncate">somospreta.com/kit/{slug}</code>
             <Button variant="outline" onClick={onCopiar} className="h-10 rounded-full">
                 <Copy className="h-4 w-4" aria-hidden /> Copiar
             </Button>
@@ -1985,7 +1987,7 @@ function ListaDeProntidao({
                             <button
                                 type="button"
                                 onClick={() => onIr(item.etapa)}
-                                className="!min-h-11 flex w-full items-center gap-3 rounded-xl px-3 text-left hover:bg-accent"
+                                className="flex w-full items-center gap-3 rounded-xl px-3 text-left hover:bg-accent"
                             >
                                 <span
                                     aria-hidden

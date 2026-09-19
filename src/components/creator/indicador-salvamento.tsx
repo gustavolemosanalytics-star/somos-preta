@@ -62,7 +62,10 @@ export function IndicadorSalvamento({
                             <button
                                 type="button"
                                 onClick={onTentarDeNovo}
-                                className="!min-h-7 rounded-full px-2 underline underline-offset-4 hover:text-foreground"
+                                // Sem o override, o alvo global de 44px vale —
+                                // e este botão é a saída de um erro de rede, o
+                                // pior lugar para errar o toque.
+                                className="rounded-full px-3 underline underline-offset-4 hover:text-foreground"
                             >
                                 Tentar de novo
                             </button>

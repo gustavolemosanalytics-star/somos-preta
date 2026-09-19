@@ -56,6 +56,7 @@
   --color-brand-areia: var(--brand-areia);
   --color-brand-bege: var(--brand-bege);
   --color-brand-terracota: var(--brand-terracota);
+  --color-brand-terracota-texto: var(--brand-terracota-texto);
   --color-brand-oliva: var(--brand-oliva);
   --color-brand-carvao: var(--brand-carvao);
   --color-brand-coral: var(--brand-coral);
@@ -93,6 +94,15 @@
   --brand-oliva: #2F4F3E;
   --brand-carvao: #1F1F1F;
   --brand-coral: #F26D4F;
+
+  /* Terracota escurecido só o bastante para ser LIDO.
+     O #E07A5F da marca dá 2,76:1 sobre o off-white e 2,95:1 sobre o card
+     branco — reprova na WCAG AA (4,5:1) em qualquer tamanho de texto. Isso não
+     é problema em botão preenchido, ícone ou borda, que é onde a cor da marca
+     vive; é problema quando ela vira a cor de uma frase que alguém precisa ler.
+     Este tom mantém a mesma matiz (12,6 graus) e chega a 4,74:1 no off-white e
+     5,07:1 no card. Use-o em texto; use o terracota original no resto. */
+  --brand-terracota-texto: #C04625;
 
   /* Escala semântica para status, badges e gráficos do painel.
      Todas testadas sobre o off-white #FAF7F2. */
@@ -370,6 +380,45 @@ html {
     html {
       font-size: 16px;
     }
+  }
+}
+
+/* Piso de legibilidade no celular.
+   Abaixo de 640px o root é 14px, e a escala em rem entrega text-xs = 10,5px e
+   text-sm = 12,25px — tamanhos em que badge, rótulo e texto de ajuda deixam de
+   ser lidos por quem tem qualquer dificuldade de visão. Estas duas param de
+   encolher e ficam com o mesmo px que já teriam de 640px para cima (11,25 e
+   13,125). O resto da escala continua acompanhando o root, como foi desenhado. */
+@media (max-width: 639px) {
+  :root {
+    --text-xs: 0.804rem;
+    --text-sm: 0.938rem;
+  }
+}
+
+/* O WebKit do iOS amplia a página ao focar um campo com fonte menor que 16px, e
+   só desfaz quando o teclado fecha — até lá a página fica torta e com rolagem
+   horizontal. Como o html roda a 14px no celular e 15px a partir de 640, TODA a
+   escala fica abaixo do limiar: `text-base` dá 14-15px e `md:text-sm`, 13,1px.
+
+   Os 16px daqui não são escolha tipográfica, são o limiar do navegador — é a
+   única exceção legítima à regra de não compensar rem à mão. O min-height
+   acompanha porque 16px não cabem na caixa de 31,5px do `h-9`, e de quebra dá
+   ao campo o mesmo alvo de toque de 44px que botões e links já têm.
+
+   Fica FORA de @layer de propósito: o Tailwind v4 declara
+   `@layer theme, base, components, utilities`, então uma regra dentro de
+   `@layer base` perderia para as utilitárias `text-base`/`text-sm` dos campos. */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea {
+    min-height: 44px;
   }
 }
 

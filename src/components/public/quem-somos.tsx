@@ -63,7 +63,7 @@ export function QuemSomos() {
                 <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-14">
                     {/* ---------- texto ---------- */}
                     <motion.div {...fade}>
-                        <p className="text-[13px] font-semibold uppercase tracking-[0.16em] text-brand-coral">
+                        <p className="text-[13px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                             Gente real. Território real.
                         </p>
 
@@ -103,7 +103,12 @@ export function QuemSomos() {
                     <motion.div {...fade} transition={{ ...fade.transition, delay: 0.1 }}>
                         <div className="flex items-stretch gap-3 sm:gap-6">
                             <ul
-                                className="flex h-[clamp(16rem,23vw,21rem)] min-w-0 flex-1 items-stretch gap-3 sm:gap-4"
+                                // O accordion depende de hover para abrir um painel, e no
+                                // celular hover não existe: os quatro viravam tiras de ~72px
+                                // de largura, com a foto reduzida a uma fresta e a legenda
+                                // cortada. Abaixo de lg vira uma grade 2x2, em que cada
+                                // painel tem espaço para ser visto sem interação nenhuma.
+                                className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:gap-4 lg:flex lg:h-[clamp(16rem,23vw,21rem)] lg:items-stretch"
                                 onMouseLeave={() => setAtivo(null)}
                             >
                                 {PAINEIS.map((painel, i) => (
@@ -121,7 +126,11 @@ export function QuemSomos() {
                                             onFocus={() => setAtivo(i)}
                                             onBlur={() => setAtivo(null)}
                                             className={cn(
-                                                "group flex h-full flex-col transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                                                // Em linha de grade a altura é automática, e
+                                                // h-full resolveria contra pai indefinido,
+                                                // colapsando a foto. Abaixo de lg a proporção
+                                                // é que dá altura ao painel.
+                                                "group flex aspect-[4/5] flex-col transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:aspect-auto lg:h-full",
                                                 painel.inclinacao,
                                                 ativo === i && "rotate-0"
                                             )}
@@ -136,7 +145,7 @@ export function QuemSomos() {
                                                     src={painel.src}
                                                     alt={painel.alt}
                                                     fill
-                                                    sizes="(max-width: 1024px) 45vw, 18vw"
+                                                    sizes="(max-width: 1023px) 46vw, 18vw"
                                                     className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                                                 />
                                             </span>

@@ -323,7 +323,7 @@ export default function CriadorCriarContaPage() {
                                                         modo === "cadastro" ? "new-password" : "current-password"
                                                     }
                                                     required
-                                                    className="h-12 w-full rounded-xl border border-border bg-background px-4 pr-12 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
+                                                    className="h-12 w-full rounded-xl border border-border bg-background px-4 pr-12 text-[16px] outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
                                                 />
                                                 <button
                                                     type="button"
@@ -465,7 +465,7 @@ function Campo({
                 onChange={(e) => onChange(e.target.value)}
                 autoComplete={autoComplete}
                 required
-                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
+                className="h-12 w-full rounded-xl border border-border bg-background px-4 text-[16px] outline-none placeholder:text-muted-foreground focus-visible:border-brand-terracota"
             />
         </div>
     )

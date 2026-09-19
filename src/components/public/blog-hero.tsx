@@ -118,7 +118,7 @@ export function BlogConteudo({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                     >
-                        <p className="text-[13px] font-semibold uppercase tracking-[0.16em] text-brand-coral">
+                        <p className="text-[13px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                             Conteúdo que conecta
                         </p>
 

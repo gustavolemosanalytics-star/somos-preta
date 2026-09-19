@@ -22,15 +22,20 @@ export function useTurnstile() {
     }
 
     const campo = sitekey ? (
-        <Turnstile
-            ref={ref}
-            siteKey={sitekey}
-            onSuccess={setToken}
-            onExpire={() => setToken(null)}
-            onError={() => setToken(null)}
-            options={{ size: "flexible", language: "pt-br" }}
-            className="w-full"
-        />
+        // O widget tem 300px de largura mínima própria, e a coluna útil dentro
+        // do cartão de credencial é ~290px num celular de 360px. A faixa rolável
+        // contém o excesso aqui dentro em vez de deixá-lo empurrar a página.
+        <div className="w-full overflow-x-auto">
+            <Turnstile
+                ref={ref}
+                siteKey={sitekey}
+                onSuccess={setToken}
+                onExpire={() => setToken(null)}
+                onError={() => setToken(null)}
+                options={{ size: "flexible", language: "pt-br" }}
+                className="w-full"
+            />
+        </div>
     ) : null
 
     return {

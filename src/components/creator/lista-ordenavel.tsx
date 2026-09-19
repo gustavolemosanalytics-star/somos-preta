@@ -115,7 +115,9 @@ function ItemOrdenavel({
             type="button"
             aria-label={`Reordenar ${rotulo}. Use as setas para mover.`}
             title="Arraste para reordenar"
-            className="!min-h-9 !min-w-9 shrink-0 cursor-grab touch-none rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground active:cursor-grabbing"
+            // Sem override de tamanho: a alça é o único jeito de reordenar no
+            // toque, então ela fica com os 44px que o globals.css garante.
+            className="shrink-0 cursor-grab touch-none rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground active:cursor-grabbing"
             {...attributes}
             {...listeners}
         >

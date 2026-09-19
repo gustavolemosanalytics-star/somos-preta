@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import {
-    DndContext, DragOverlay, PointerSensor, closestCorners, useDraggable,
+    DndContext, DragOverlay, MouseSensor, TouchSensor, closestCorners, useDraggable,
     useDroppable, useSensor, useSensors,
     type DragEndEvent, type DragStartEvent,
 } from "@dnd-kit/core"
@@ -213,7 +213,10 @@ function CardArrastavel(props: {
             // w-full explícito: sem largura própria o item arrastável encolhe
             // para o conteúdo e o card sai mais estreito que os vizinhos.
             // O original some enquanto o DragOverlay desenha a cópia.
-            className={cn("w-full touch-none", isDragging && "opacity-40")}
+            // touch-pan-y e não touch-none: com touch-none o navegador entrega
+            // TODO gesto ao dnd-kit, e como os cards ocupam a coluna inteira não
+            // sobrava lugar nenhum para rolar a página com o dedo.
+            className={cn("w-full touch-pan-y", isDragging && "opacity-40")}
         >
             <CardTarefa {...props} />
         </div>
@@ -279,9 +282,11 @@ function Coluna({ titulo, tarefas, metricas, profilesById, acoes, onNova }: {
 /**
  * Board de cinco colunas com arrastar-e-soltar.
  *
- * O `activationConstraint` de 6px existe para o clique no título continuar
- * abrindo a tarefa: sem ele, qualquer toque vira o começo de um arraste e o
- * link nunca dispara.
+ * Dois sensores, não um. No mouse os 6px de distância existem para o clique no
+ * título continuar abrindo a tarefa: sem eles, qualquer toque vira o começo de
+ * um arraste e o link nunca dispara. No toque, distância não serve de critério
+ * — rolar a página é exatamente "arrastar o dedo" — então o que separa rolar de
+ * mover é a ESPERA: segurar 220ms começa o arraste, deslizar antes disso rola.
  */
 export function Board({ tarefas, metricas, profilesById, acoes, onMoverStatus, onNova }: {
     tarefas: TarefaDaLista[]
@@ -292,7 +297,10 @@ export function Board({ tarefas, metricas, profilesById, acoes, onMoverStatus, o
     onNova: (status: TarefaStatus) => void
 }) {
     const [arrastando, setArrastando] = useState<TarefaDaLista | null>(null)
-    const sensores = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+    const sensores = useSensors(
+        useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
+    )
 
     function aoSoltar(e: DragEndEvent) {
         setArrastando(null)

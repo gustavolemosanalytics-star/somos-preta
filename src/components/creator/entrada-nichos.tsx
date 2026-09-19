@@ -93,7 +93,11 @@ export function EntradaNichos({
                                         onClick={() => remover(nicho)}
                                         aria-label={`Remover o nicho ${nicho}`}
                                         title={`Remover ${nicho}`}
-                                        className="!min-h-6 !min-w-6 rounded-full text-muted-foreground hover:bg-brand-terracota/20 hover:text-foreground"
+                                        // A área de toque cresce além do
+                                        // desenho pelo ::after: o X precisa
+                                        // continuar pequeno dentro da ficha,
+                                        // mas 21px de alvo faz errar o dedo.
+                                        className="!min-h-6 !min-w-6 relative rounded-full text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:bg-brand-terracota/20 hover:text-foreground"
                                     >
                                         <X className="h-3.5 w-3.5" aria-hidden />
                                     </button>
@@ -137,7 +141,7 @@ export function EntradaNichos({
                             key={sugestao}
                             type="button"
                             onClick={() => adicionar(sugestao)}
-                            className="!min-h-8 inline-flex items-center gap-1 rounded-full border border-border px-3 text-xs font-medium text-muted-foreground hover:border-brand-terracota hover:bg-accent hover:text-foreground"
+                            className="inline-flex items-center gap-1 rounded-full border border-border px-3.5 text-[13px] font-medium text-muted-foreground hover:border-brand-terracota hover:bg-accent hover:text-foreground"
                         >
                             <Plus className="h-3 w-3" aria-hidden /> {sugestao}
                         </button>

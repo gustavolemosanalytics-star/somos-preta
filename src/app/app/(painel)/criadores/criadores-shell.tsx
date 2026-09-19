@@ -37,11 +37,18 @@ export function CriadoresShell() {
             </div>
 
             <Tabs value={aba} onValueChange={mudarAba}>
-                <TabsList>
-                    {ABAS.map((a) => (
-                        <TabsTrigger key={a.value} value={a.value}><a.icon className="h-3.5 w-3.5" /> {a.label}</TabsTrigger>
-                    ))}
-                </TabsList>
+                {/* A TabsList do shadcn é `inline-flex w-fit` com gatilhos
+                    `flex-1 whitespace-nowrap`: nada encolhe, e os cinco rótulos
+                    somam ~434px contra 332px úteis num celular de 360px. Sem
+                    esta faixa, quem rolava de lado era a PÁGINA inteira. Mesmo
+                    remédio já usado em criadores/[id]/page.tsx. */}
+                <div className="overflow-x-auto scrollbar-hide">
+                    <TabsList className="w-max">
+                        {ABAS.map((a) => (
+                            <TabsTrigger key={a.value} value={a.value} className="flex-none"><a.icon className="h-3.5 w-3.5" /> {a.label}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                </div>
                 <TabsContent value="explorar"><ExplorarTab /></TabsContent>
                 <TabsContent value="base"><MinhaBaseTab /></TabsContent>
                 <TabsContent value="listas"><ListasTab /></TabsContent>

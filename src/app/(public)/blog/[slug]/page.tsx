@@ -103,7 +103,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                             </p>
                         )}
 
-                        <h1 className="mt-5 max-w-2xl text-[clamp(2rem,3.6vw,3.4rem)] font-extrabold leading-[1.08] tracking-[-0.03em]">
+                        <h1 className="mt-5 max-w-2xl break-words text-[clamp(2rem,3.6vw,3.4rem)] font-extrabold leading-[1.08] tracking-[-0.03em]">
                             {post.titulo}
                         </h1>
 
@@ -136,7 +136,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
             {/* ---------- corpo ---------- */}
             <article className="mx-auto w-full max-w-[46rem] px-6 py-14 lg:py-16">
-                <div className="whitespace-pre-wrap text-[17px] leading-[1.75] text-foreground/90">
+                {/* break-words: sem isto uma URL colada no corpo do post empurra a
+                        pagina inteira para o lado no celular. */}
+                    <div className="whitespace-pre-wrap break-words text-[17px] leading-[1.75] text-foreground/90">
                     {post.conteudo}
                 </div>
 

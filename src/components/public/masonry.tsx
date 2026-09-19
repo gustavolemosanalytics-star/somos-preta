@@ -89,7 +89,10 @@ export function Masonry({
     blurToFocus = true,
 }: Props) {
     const router = useRouter()
-    const colunas = useMedia(CONSULTAS, COLUNAS, 1)
+    // Abaixo de 400px nenhuma consulta casa e o findIndex devolve -1; com 1 de
+    // reserva a vitrine virava coluna unica justamente em 360px, e a dobra
+    // passava de 1480px de altura.
+    const colunas = useMedia(CONSULTAS, COLUNAS, 2)
     const [containerRef, largura] = useMeasure<HTMLDivElement>()
     const [prontas, setProntas] = useState(false)
     const montou = useRef(false)

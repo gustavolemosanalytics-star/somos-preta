@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Bell, Search } from "lucide-react"
+import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -60,25 +59,10 @@ export function DashboardHeader() {
 
     return (
         <div className="flex items-center gap-2 sm:gap-3">
-            {/* Search - hidden on mobile, visible on tablet+ */}
-            <div className="hidden md:flex relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="Buscar na plataforma..."
-                    className="pl-9 w-[200px] lg:w-[300px] h-9 bg-muted/50 border-transparent focus:border-primary/50 rounded-xl transition-all"
-                />
-            </div>
-
-            {/* Mobile search button */}
-            <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden h-9 w-9 rounded-xl"
-            >
-                <Search className="h-4 w-4" />
-                <span className="sr-only">Buscar</span>
-            </Button>
+            {/* A busca foi removida daqui: o campo não tinha value nem onChange
+                e o botão do celular não abria nada. Era decoração que prometia
+                uma função inexistente — pior que não ter busca é ter uma que o
+                usuário tenta usar e não responde. */}
 
             {/* Notifications */}
             <DropdownMenu onOpenChange={(o) => { if (o) load() }}>

@@ -166,7 +166,9 @@ function Resultado({ dados }: { dados: Resultado }) {
                 </span>
 
                 <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-2 text-xl font-bold tracking-tight">
+                    {/* wrap-anywhere: um @ longo era cortado em silêncio pelo
+                                    overflow-hidden do cartão. */}
+                                <p className="flex items-center gap-2 text-xl font-bold tracking-tight wrap-anywhere">
                         @{dados.username}
                         {dados.is_verified && (
                             <BadgeCheck className="h-5 w-5 shrink-0 text-status-info" aria-label="Perfil verificado" />
@@ -249,7 +251,9 @@ function Resultado({ dados }: { dados: Resultado }) {
                                         />
                                         <span
                                             className={cn(
-                                                "mt-2 block truncate text-[11px]",
+                                                // Sem truncate: em 360px a coluna da régua tem 49px e "Muito baixo"
+                                                // virava "Muito ba…". Quebrar em duas linhas mostra o rótulo inteiro.
+                                                "mt-2 block text-[11px] leading-[1.15] hyphens-auto break-words",
                                                 ativa
                                                     ? "font-semibold text-foreground"
                                                     : "text-muted-foreground"

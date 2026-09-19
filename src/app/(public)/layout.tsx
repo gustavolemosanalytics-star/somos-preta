@@ -120,13 +120,19 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
                 {menuMobile && (
                     <div className="border-t border-border px-6 pb-6 pt-4 lg:hidden">
-                        <ul className="space-y-1">
+                        <ul className="space-y-1.5">
                             {navItems.map((item) => (
                                 <li key={item.href}>
+                                    {/* O globals.css zera o alvo de 44px para
+                                        link dentro de li (para não inchar texto
+                                        corrido), e aqui o efeito colateral eram
+                                        cinco tiras de 36px coladas. `flex` +
+                                        min-h devolvem o alvo sem `!`: utilities
+                                        vence base por ordem de camada. */}
                                     <Link
                                         href={item.href}
                                         onClick={() => setMenuMobile(false)}
-                                        className="block rounded-xl px-2 py-2.5 text-[15px] text-foreground/80"
+                                        className="flex min-h-[44px] items-center rounded-xl px-2 py-2.5 text-[15px] text-foreground/80"
                                     >
                                         {item.label}
                                     </Link>
