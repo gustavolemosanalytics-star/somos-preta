@@ -23,7 +23,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
     Search, Filter, Users, MapPin, Loader2, Star, TrendingUp, Instagram, CheckCircle, Lock,
     UserPlus, ImageIcon, Heart, MessageCircle, Zap, Briefcase, Info, Scale,
@@ -477,10 +476,26 @@ export function ExplorarTab() {
                                             <div>
                                                 <span className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
                                                     <TrendingUp className="h-3 w-3" /> Engaj.
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild><Info className="h-3 w-3 cursor-help" /></TooltipTrigger>
-                                                        <TooltipContent><p className="max-w-[200px] text-xs">Calculado como (curtidas + comentários médios) / seguidores, com base nos últimos posts coletados.</p></TooltipContent>
-                                                    </Tooltip>
+                                                    {/* Popover, não Tooltip: no toque não existe
+                                                        hover, e a única explicação de como o
+                                                        engajamento é calculado ficava inalcançável
+                                                        no celular. O alvo de 12px também vira 42px
+                                                        pelo padding negativo, sem mudar o desenho. */}
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <button
+                                                                type="button"
+                                                                aria-label="Como calculamos o engajamento"
+                                                                className="-m-[15px] shrink-0 p-[15px] text-muted-foreground"
+                                                            >
+                                                                <Info className="h-3 w-3" />
+                                                            </button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-64 text-[13px] leading-relaxed normal-case">
+                                                            Calculado como (curtidas + comentários médios) / seguidores, com
+                                                            base nos últimos posts coletados.
+                                                        </PopoverContent>
+                                                    </Popover>
                                                 </span>
                                                 <div className="font-bold text-lg text-primary">{influencer.engagement}%</div>
                                             </div>

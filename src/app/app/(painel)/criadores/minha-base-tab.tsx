@@ -289,7 +289,7 @@ export function MinhaBaseTab() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2"><Label htmlFor="mail">E-mail</Label><Input id="mail" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-                                    <div className="grid gap-2"><Label htmlFor="tel">Telefone</Label><Input id="tel" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
+                                    <div className="grid gap-2"><Label htmlFor="tel">Telefone</Label><Input id="tel" type="tel" inputMode="tel" autoComplete="off" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2"><Label htmlFor="cid">Cidade</Label><Input id="cid" value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} /></div>

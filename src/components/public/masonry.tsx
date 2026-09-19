@@ -97,23 +97,14 @@ export function Masonry({
     const [prontas, setProntas] = useState(false)
     const montou = useRef(false)
 
+    // O portão de pré-carregamento saiu daqui. Ele baixava TODAS as capas em
+    // resolução cheia — mais de 1MB na dobra da home — e só então liberava a
+    // vitrine, anulando o `loading="lazy"` de cada célula. E não servia para
+    // nada: a geometria da grade vem de `item.height`, que é constante, nunca
+    // das dimensões naturais da foto. Esperar o download não mudava layout
+    // nenhum, só deixava a área em branco até a última imagem chegar.
     useEffect(() => {
-        let vivo = true
-        Promise.all(
-            items.map(
-                (i) =>
-                    new Promise<void>((resolve) => {
-                        const img = new window.Image()
-                        img.src = i.img
-                        img.onload = img.onerror = () => resolve()
-                    })
-            )
-        ).then(() => {
-            if (vivo) setProntas(true)
-        })
-        return () => {
-            vivo = false
-        }
+        setProntas(true)
     }, [items])
 
     const grid = useMemo(() => {
@@ -228,6 +219,14 @@ export function Masonry({
                     onFocus={() => escala(item.id, hoverScale)}
                     onBlur={() => escala(item.id, 1)}
                     className="absolute left-0 top-0 cursor-pointer p-1.5 will-change-[transform,width,height,opacity]"
+                    // A geometria já vai no render, não só no gsap: assim o
+                    // primeiro quadro pintado já é a grade montada, em vez de
+                    // todas as células empilhadas no canto superior esquerdo.
+                    style={{
+                        width: item.w,
+                        height: item.h,
+                        transform: `translate(${item.x}px, ${item.y}px)`,
+                    }}
                 >
                     <div className="group relative h-full w-full overflow-hidden rounded-xl bg-muted shadow-[0_16px_44px_-24px_rgba(31,31,31,0.45)] ring-1 ring-brand-carvao/[0.06]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -235,6 +234,11 @@ export function Masonry({
                             src={item.img}
                             alt={item.alt}
                             loading="lazy"
+                            decoding="async"
+                            // A célula nunca passa de metade da tela no celular
+                            // nem de um quarto no desktop; sem `sizes` o
+                            // navegador assume 100vw e busca a maior variante.
+                            sizes="(max-width: 767px) 50vw, 25vw"
                             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
                         />
                         {item.legenda && (

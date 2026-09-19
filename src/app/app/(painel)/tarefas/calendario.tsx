@@ -338,7 +338,12 @@ export function Calendario({ tarefas, areas, agora, filtros, onFiltro, areaFiltr
                     )}
 
                     {modo === "mes" && (
-                        <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl bg-border">
+                        // Sete colunas em 360px dão ~42px cada, e cada tarefa
+                        // aparecia com um caractere. A grade ganha largura
+                        // mínima e rola na horizontal dentro do próprio cartão,
+                        // como o modo Semana já faz neste mesmo arquivo.
+                        <div className="overflow-x-auto">
+                        <div className="grid min-w-[560px] grid-cols-7 gap-px overflow-hidden rounded-xl bg-border">
                             {DIAS_CURTOS.map((d) => (
                                 <div key={d} className="bg-card p-2 text-center text-[11px] text-muted-foreground">{d}</div>
                             ))}
@@ -368,6 +373,7 @@ export function Calendario({ tarefas, areas, agora, filtros, onFiltro, areaFiltr
                                     )
                                 })
                             })()}
+                        </div>
                         </div>
                     )}
 

@@ -1,8 +1,7 @@
 "use client"
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
 import {
     ArrowRight,
@@ -52,16 +51,20 @@ const compacto = (n: number | null) =>
         ? "—"
         : new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n)
 
+/**
+ * O Suspense com `fallback={null}` saiu daqui.
+ *
+ * Ele existia só para atender ao `useSearchParams`, e o preço era a página não
+ * ter HTML nenhum: quem abria /engajamento num 4G do interior via tela em
+ * branco até todo o JS baixar e hidratar. O `?perfil=` é lido uma vez só,
+ * dentro do efeito, direto de `window.location` — o que dispensa o hook,
+ * dispensa o Suspense e devolve a marcação ao servidor.
+ */
 export default function EngajamentoPage() {
-    return (
-        <Suspense fallback={null}>
-            <Checador />
-        </Suspense>
-    )
+    return <Checador />
 }
 
 function Checador() {
-    const searchParams = useSearchParams()
     const [username, setUsername] = useState("")
     const [carregando, setCarregando] = useState(false)
     const [erro, setErro] = useState<string | null>(null)
@@ -97,15 +100,16 @@ function Checador() {
     // uma única vez, para o visitante não precisar clicar de novo.
     const jaAnalisou = useRef(false)
     useEffect(() => {
-        const perfil = searchParams.get("perfil")
-        if (!perfil || jaAnalisou.current) return
+        if (jaAnalisou.current) return
+        const perfil = new URLSearchParams(window.location.search).get("perfil")
+        if (!perfil) return
         jaAnalisou.current = true
         // O link da home pode trazer ?perfil=@fulano; o campo já desenha o @,
         // então o estado guarda só o usuário.
         const alvo = semArroba(perfil)
         setUsername(alvo)
         void consultar(alvo)
-    }, [searchParams, consultar])
+    }, [consultar])
 
     return (
         <div className="flex flex-col">

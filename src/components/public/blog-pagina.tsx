@@ -124,7 +124,7 @@ export function BlogPagina({
                             {EIXOS.map((e) => (
                                 <li
                                     key={e}
-                                    className="text-[10px] font-medium uppercase leading-none tracking-[0.2em] text-muted-foreground"
+                                    className="text-[12px] font-medium uppercase leading-none tracking-[0.2em] text-muted-foreground sm:text-[10px]"
                                 >
                                     {e}
                                 </li>
@@ -198,14 +198,14 @@ export function BlogPagina({
                                 className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                             />
                             {destaque.categoria && (
-                                <span className="absolute bottom-3 left-3 rounded-full bg-background/90 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-foreground/80 backdrop-blur-sm">
+                                <span className="absolute bottom-3 left-3 rounded-full bg-background/90 px-3 py-1 text-[12px] font-medium uppercase tracking-[0.14em] text-foreground/80 backdrop-blur-sm sm:text-[10px]">
                                     {destaque.categoria}
                                 </span>
                             )}
                         </Link>
 
                         <div className="min-w-0">
-                            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                            <p className="text-[12px] font-medium uppercase tracking-[0.2em] text-muted-foreground sm:text-[10px]">
                                 Artigo em destaque
                             </p>
                             <h2 className="mt-3 text-[clamp(1.5rem,2.2vw,2.1rem)] font-extrabold leading-[1.15] tracking-[-0.025em]">
@@ -235,7 +235,7 @@ export function BlogPagina({
                                     {["Territórios", "Ideias", "Pessoas", "Resultados"].map((e) => (
                                         <li
                                             key={e}
-                                            className="text-[10px] font-medium uppercase leading-none tracking-[0.2em] text-muted-foreground"
+                                            className="text-[12px] font-medium uppercase leading-none tracking-[0.2em] text-muted-foreground sm:text-[10px]"
                                         >
                                             {e}
                                         </li>
@@ -294,7 +294,7 @@ export function BlogPagina({
                                             className="object-cover transition-transform duration-700 group-hover:scale-[1.05]"
                                         />
                                         {p.categoria && (
-                                            <span className="absolute bottom-3 left-3 rounded-full bg-background/90 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-foreground/80 backdrop-blur-sm">
+                                            <span className="absolute bottom-3 left-3 rounded-full bg-background/90 px-3 py-1 text-[12px] font-medium uppercase tracking-[0.14em] text-foreground/80 backdrop-blur-sm sm:text-[10px]">
                                                 {p.categoria}
                                             </span>
                                         )}

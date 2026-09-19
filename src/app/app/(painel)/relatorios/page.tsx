@@ -254,12 +254,17 @@ export default function AnalyticsPage() {
                             <div className="h-full flex items-center justify-center text-sm text-muted-foreground">{semCampanhas}</div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={data.porCliente} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} interval={0} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={brlShort} width={50} />
+                                {/* Barra deitada, como o cartão de Top influenciadores ao
+                                    lado. Em pé, com seis clientes num celular de 360px, cada
+                                    faixa do eixo X ficava com ~50px e os nomes se sobrepunham
+                                    até virar borrão. Deitada, cada cliente ganha uma linha
+                                    própria e nenhum rótulo colide com o vizinho. */}
+                                <BarChart data={data.porCliente} layout="vertical" margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
+                                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={brlShort} />
+                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} width={80} interval={0} tickFormatter={(v: string) => v.length > 12 ? `${v.substring(0, 12)}...` : v} />
                                     <Tooltip contentStyle={tooltipStyle} formatter={(v?: number) => brl(Number(v ?? 0))} cursor={{ fill: "color-mix(in srgb, var(--muted) 20%, transparent)" }} />
-                                    <Bar dataKey="orcamento" name="Orçamento" radius={[4, 4, 0, 0]} fill="var(--primary)" barSize={36} />
+                                    <Bar dataKey="orcamento" name="Orçamento" radius={[0, 4, 4, 0]} fill="var(--primary)" barSize={20} />
                                 </BarChart>
                             </ResponsiveContainer>
                         )}

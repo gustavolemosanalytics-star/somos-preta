@@ -123,8 +123,12 @@ export function SpecularButton({
         if (!el || !fx) return
 
         // Quem pediu menos movimento não recebe um rAF girando indefinidamente.
+        // E no toque não existe cursor: `proximidade` nunca sai de ~0, então o
+        // laço renderizaria quadros idênticos para sempre — contexto WebGL e
+        // 60fps de bateria por um brilho que nunca acende naquele aparelho.
         const semMovimento = window.matchMedia("(prefers-reduced-motion: reduce)")
-        if (semMovimento.matches) return
+        const semCursor = !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        if (semMovimento.matches || semCursor) return
 
         const dpr = window.devicePixelRatio || 1
         const renderer = new Renderer({ alpha: true, premultipliedAlpha: true, antialias: true, dpr })

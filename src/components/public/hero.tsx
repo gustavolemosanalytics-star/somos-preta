@@ -49,19 +49,19 @@ const PECAS: Peca[] = [
         src: "/hero/criador-chapeu.webp",
         alt: "Criador de conteúdo de chapéu de palha sorrindo",
         frame: "left-[0%] top-[8%] w-[27%] h-[46%] z-20 -rotate-1",
-        sizes: "(max-width: 1024px) 45vw, 16vw",
+        sizes: "(min-width: 1025px) 16vw, calc((100vw - 4.5rem) / 3)",
     },
     {
         src: "/hero/coqueiros.webp",
         alt: "Coqueiros contra o céu do litoral nordestino",
         frame: "left-[70%] top-[46%] w-[13%] h-[34%] z-20",
-        sizes: "(max-width: 1024px) 45vw, 8vw",
+        sizes: "(min-width: 1025px) 8vw, calc((100vw - 4.5rem) / 3)",
     },
     {
         src: "/hero/criadora-cacheada.webp",
         alt: "Criadora de cabelo cacheado olhando para a câmera",
         frame: "left-[56%] top-[27%] w-[19%] h-[57%] z-30",
-        sizes: "(max-width: 1024px) 45vw, 12vw",
+        sizes: "(min-width: 1025px) 12vw, calc((100vw - 4.5rem) / 3)",
     },
     {
         src: "/hero/criadora-principal.webp",

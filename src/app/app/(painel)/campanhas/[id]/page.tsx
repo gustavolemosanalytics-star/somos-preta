@@ -237,7 +237,9 @@ export default function CampanhaDetalhePage() {
                         const prazo = tarefaPrazoBadge(t)
                         return (
                             <Card key={t.id}>
-                                <CardContent className="flex items-center gap-3 py-3">
+                                {/* Empilha no celular: em linha, o Select de status e o botão de
+                                    excluir comiam a largura e sobravam ~36px para o título. */}
+                                <CardContent className="flex flex-col items-stretch gap-2 py-3 sm:flex-row sm:items-center sm:gap-3">
                                     <div className="flex-1 min-w-0">
                                         <Link href={`/tarefas/${t.id}`} className="hover:text-primary">
                                             <p className={`font-medium truncate ${t.status === "concluida" ? "line-through text-muted-foreground" : ""}`}>{t.titulo}</p>
