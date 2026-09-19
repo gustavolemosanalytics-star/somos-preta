@@ -19,10 +19,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             .from("somos_preta_blog_posts")
             .select("slug, updated_at")
             .eq("status", "publicado"),
+        // A tabela é fechada para o anônimo desde 0002_hardening_rls.sql, e o
+        // sitemap roda sem sessão: consultá-la direto devolvia zero linhas, sem
+        // erro, e nenhum media kit jamais entrou no índice. A view pública é o
+        // caminho autorizado — e já filtra publicado = true.
         supabase
-            .from("somos_preta_midia_kits")
-            .select("slug, updated_at")
-            .eq("publicado", true),
+            .from("somos_preta_midia_kits_publicos")
+            .select("slug, updated_at"),
     ])
 
     const fixas: MetadataRoute.Sitemap = [

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, Eye, EyeOff } from "lucide-react"
+import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react"
 
 export default function CriadorLoginPage() {
     const router = useRouter()
@@ -73,10 +73,25 @@ export default function CriadorLoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="relative min-h-screen flex items-center justify-center bg-background p-4">
+            {/* Sem isto a tela de login é um beco sem saída: quem cai aqui por
+                engano — ou desiste de entrar — não tem nenhum caminho de volta
+                para o site. A tela de criar conta já resolve isso pelo logo do
+                cabeçalho; aqui não há cabeçalho, então o botão fica solto no
+                topo e o logo também vira link. */}
+            <Link
+                href="/"
+                className="absolute left-4 top-4 inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card/60 px-4 text-sm font-medium text-muted-foreground backdrop-blur transition-colors hover:border-brand-terracota hover:bg-accent hover:text-foreground sm:left-6 sm:top-6"
+            >
+                <ArrowLeft className="h-4 w-4" aria-hidden />
+                Voltar ao site
+            </Link>
+
             <div className="w-full max-w-sm space-y-8">
                 <div className="text-center space-y-2">
-                    <LogoPreta className="mx-auto h-9 w-auto" priority />
+                    <Link href="/" aria-label="Somos Preta — início" className="inline-block">
+                        <LogoPreta className="mx-auto h-9 w-auto" priority />
+                    </Link>
                     <h1 className="text-xl font-semibold text-foreground">Área do Creator</h1>
                     <p className="text-muted-foreground text-sm">Entre para acessar seu Media Kit</p>
                 </div>
