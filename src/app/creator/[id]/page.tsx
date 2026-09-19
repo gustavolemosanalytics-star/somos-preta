@@ -1,9 +1,14 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, ExternalLink, Eye, Pencil, Sparkles } from "lucide-react"
+import { ArrowRight, ExternalLink, Eye, Pencil, Plus, Sparkles } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
 import { getProfile } from "@/lib/supabase/auth"
+import { Progress } from "@/components/ui/progress"
+import {
+    ESSENCIAIS, percentualPronto,
+    type Pacote, type PortfolioItem, type RedeInfo,
+} from "@/lib/constants/media-kit"
 import { MapaTerritorio } from "@/components/public/mapa-territorio"
 import { CopyLinkButton } from "../copy-link-button"
 import type { MidiaKit } from "@/lib/db/types"
@@ -122,6 +127,26 @@ function KitAusente({ idCriador }: { idCriador: string }) {
 function KitExistente({ kit, idCriador }: { kit: MidiaKit; idCriador: string }) {
     const iniciais = kit.nome.slice(0, 2).toUpperCase()
 
+    // As colunas jsonb chegam como unknown do banco; o cálculo de prontidão é
+    // o mesmo que o editor usa, então a leitura é montada aqui uma vez só.
+    const dados = {
+        publicado: kit.publicado,
+        nome: kit.nome,
+        bio: kit.bio,
+        avatar_url: kit.avatar_url,
+        cover_url: kit.cover_url,
+        cidade: kit.cidade,
+        estado: kit.estado,
+        whatsapp: kit.whatsapp,
+        nichos: kit.nichos,
+        redes: (kit.redes ?? {}) as Record<string, RedeInfo>,
+        portfolio: (Array.isArray(kit.portfolio) ? kit.portfolio : []) as PortfolioItem[],
+        pacotes: (Array.isArray(kit.pacotes) ? kit.pacotes : []) as Pacote[],
+    }
+
+    const percentual = percentualPronto(dados)
+    const faltando = ESSENCIAIS.filter((item) => !item.ok(dados))
+
     return (
         <section className="mt-10 overflow-hidden rounded-3xl border border-border bg-card">
             <div className="flex flex-wrap items-start gap-5 p-6 sm:p-8">
@@ -156,10 +181,43 @@ function KitExistente({ kit, idCriador }: { kit: MidiaKit; idCriador: string }) 
                         </p>
                     )}
 
-                    {!kit.publicado && (
+                    {/* O painel é onde a criadora volta depois de fechar a aba.
+                        Uma frase dizendo "está em rascunho" não diz o que fazer;
+                        a lista de pendências leva direto à etapa que resolve. */}
+                    <div className="mt-4 max-w-md">
+                        <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                                {percentual === 100 ? "Kit completo" : "Quanto falta"}
+                            </span>
+                            <span className="text-sm font-bold tabular-nums">{percentual}%</span>
+                        </div>
+                        <Progress value={percentual} className="mt-1.5 h-1.5" />
+                    </div>
+
+                    {faltando.length > 0 && (
+                        <ul className="mt-3 flex flex-wrap gap-2">
+                            {faltando.slice(0, 3).map((item) => (
+                                <li key={item.rotulo}>
+                                    <Link
+                                        href={`/creator/${idCriador}/media-kit?etapa=${item.etapa}`}
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-dashed border-border px-3.5 text-[13px] text-muted-foreground transition-colors hover:border-brand-terracota hover:bg-accent hover:text-foreground"
+                                    >
+                                        <Plus className="h-3.5 w-3.5" aria-hidden />
+                                        {item.rotulo}
+                                    </Link>
+                                </li>
+                            ))}
+                            {faltando.length > 3 && (
+                                <li className="flex h-9 items-center text-[13px] text-muted-foreground">
+                                    e mais {faltando.length - 3}
+                                </li>
+                            )}
+                        </ul>
+                    )}
+
+                    {!kit.publicado && faltando.length === 0 && (
                         <p className="mt-3 text-[13px] text-muted-foreground">
-                            Seu Media Kit ainda está em rascunho — publique para poder
-                            compartilhar o link.
+                            Está tudo pronto — falta só publicar para o link funcionar.
                         </p>
                     )}
                 </div>
@@ -167,11 +225,15 @@ function KitExistente({ kit, idCriador }: { kit: MidiaKit; idCriador: string }) 
 
             <div className="flex flex-wrap items-center gap-3 border-t border-border bg-muted/30 px-6 py-5 sm:px-8">
                 <Link
-                    href={`/creator/${idCriador}/media-kit`}
+                    href={
+                        faltando.length > 0
+                            ? `/creator/${idCriador}/media-kit?etapa=${faltando[0].etapa}`
+                            : `/creator/${idCriador}/media-kit`
+                    }
                     className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-terracota px-6 text-sm font-semibold text-white transition-colors hover:bg-brand-coral"
                 >
                     <Pencil className="h-4 w-4" aria-hidden />
-                    Editar Media Kit
+                    {faltando.length > 0 ? "Continuar meu Media Kit" : "Editar Media Kit"}
                 </Link>
 
                 {kit.publicado && (
