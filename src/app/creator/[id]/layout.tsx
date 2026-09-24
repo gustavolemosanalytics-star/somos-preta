@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation"
-import Link from "next/link"
+
+import { createClient } from "@/lib/supabase/server"
 import { getProfile } from "@/lib/supabase/auth"
-import { LogoPreta } from "@/components/public/marca"
-import { LogoutButton } from "../logout-button"
+import { normalizarHandle, type RedeInfo } from "@/lib/constants/media-kit"
+import type { MidiaKit } from "@/lib/db/types"
+import { CascaDoCriador } from "@/components/creator/casca"
 
 export default async function CreatorLayout({
     children,
@@ -16,7 +18,7 @@ export default async function CreatorLayout({
 
     if (!profile) redirect("/creator/login")
 
-    // Não há conferência de papel aqui. Estas três linhas mandavam quem não
+    // Não há conferência de papel aqui. Havia três linhas que mandavam quem não
     // fosse 'creator' para plataforma.somospreta.com — inclusive quem tem conta
     // de equipe e quis abrir o próprio Media Kit — e era o que fazia o login
     // piscar a área do criador antes de jogar o usuário no outro host.
@@ -27,22 +29,29 @@ export default async function CreatorLayout({
     // logado abriria /creator/<id-de-outro>. Quem erra o id é mandado para o seu.
     if (id !== profile.id) redirect(`/creator/${profile.id}`)
 
+    // A barra lateral mostra o @ e a foto, que moram no kit e não no perfil.
+    const supabase = await createClient()
+    const { data: kit } = await supabase
+        .from("somos_preta_midia_kits")
+        .select("nome, avatar_url, redes")
+        .eq("cadastrado_por", id)
+        .maybeSingle<Pick<MidiaKit, "nome" | "avatar_url" | "redes">>()
+
+    const redes = (kit?.redes ?? {}) as Record<string, RedeInfo>
+    const arroba = normalizarHandle(redes.instagram?.handle ?? "") || null
+
     return (
-        <div className="min-h-screen bg-background text-foreground">
-            <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/60">
-                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    <Link href={`/creator/${profile.id}`} aria-label="Somos Preta — início" className="flex items-center gap-2.5">
-                        <LogoPreta className="h-6 w-auto" />
-                    </Link>
-
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground hidden sm:inline">{profile.nome}</span>
-                        <LogoutButton />
-                    </div>
-                </div>
-            </nav>
-
-            <main className="container mx-auto px-4 py-8">{children}</main>
-        </div>
+        <CascaDoCriador
+            itens={[
+                { href: `/creator/${id}`, rotulo: "Meu perfil", sigla: "P" },
+                { href: `/creator/${id}/midia-kit`, rotulo: "Meu Mídia Kit", sigla: "M" },
+            ]}
+            nome={kit?.nome || profile.nome || "Criador"}
+            arroba={arroba}
+            avatar={kit?.avatar_url ?? profile.avatar_url ?? null}
+            papel="Creator"
+        >
+            {children}
+        </CascaDoCriador>
     )
 }
