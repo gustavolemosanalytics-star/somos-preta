@@ -422,6 +422,35 @@ html {
   }
 }
 
+/* A folha do Media Kit, quando vira PDF pelo diálogo de impressão.
+   O navegador imprime o mesmo HTML da tela, então o que muda aqui é só o que
+   não faz sentido no papel: fundo economizado pela impressora, cartão partido
+   no meio pela quebra de página e link que ninguém consegue clicar. */
+@media print {
+  /* Sem isto a impressora "economiza tinta" e some com o fundo dos cartões e
+     com a faixa de capa — justamente o que dá forma à página. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Um trabalho do portfólio ou um pacote cortado ao meio entre duas folhas
+     obriga quem lê a montar a informação de cabeça. */
+  [data-slot="card"],
+  figure,
+  li {
+    break-inside: avoid;
+  }
+
+  h1, h2, h3 {
+    break-after: avoid;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}
+
 /* Pull-to-refresh style indicator */
 .pull-indicator {
   @apply fixed top-0 left-1/2 -translate-x-1/2 z-50 opacity-0 transition-opacity;

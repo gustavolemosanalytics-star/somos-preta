@@ -1,15 +1,16 @@
 import Link from "next/link"
-import { ArrowRight, ArrowUpRight, Instagram, Music2, Pencil, Youtube } from "lucide-react"
+import { ArrowRight, ArrowUpRight, FileDown, Instagram, Music2, Pencil, Youtube } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
 import { SITE_URL } from "@/lib/constants/site"
 import { cn } from "@/lib/utils"
 import type { MidiaKit } from "@/lib/db/types"
 import {
-    ESSENCIAIS, RECOMENDADOS, normalizarHandle, percentualPronto,
+    ESSENCIAIS, RECOMENDADOS, normalizarHandle,
     type Pacote, type PortfolioItem, type RedeInfo,
 } from "@/lib/constants/media-kit"
 import { CopiarLinkDoKit } from "@/components/creator/copiar-link-do-kit"
+import { DialogoQrCode } from "@/components/creator/dialogo-qrcode"
 
 /**
  * Meu Mídia Kit — o painel do kit, separado do editor.
@@ -59,8 +60,28 @@ export default async function MeuMidiaKitPage({ params }: { params: Promise<{ id
         pacotes: (Array.isArray(kit?.pacotes) ? kit?.pacotes : []) as Pacote[],
     }
 
-    const completude = kit ? percentualPronto(dados) : 0
     const pendencias = [...ESSENCIAIS, ...RECOMENDADOS].filter((i) => !i.ok(dados))
+
+    // Os números de acesso vivem numa tabela própria (migration 0023). Enquanto
+    // ela não estiver aplicada a chamada falha, e aí os cartões dizem que ainda
+    // não há medição — em vez de mostrarem zero, que seria afirmar que ninguém
+    // abriu o kit.
+    const { data: medidas, error: erroDasMetricas } = await supabase
+        .rpc("somos_preta_midia_kit_metricas", { p_kit_id: kit?.id ?? null, p_dias: 30 })
+        .maybeSingle<{
+            visualizacoes: number
+            cliques_contato: number
+            downloads_pdf: number
+            visualizacoes_antes: number
+            cliques_antes: number
+            downloads_antes: number
+        }>()
+
+    const medindo = Boolean(kit) && !erroDasMetricas
+    const m = medidas ?? {
+        visualizacoes: 0, cliques_contato: 0, downloads_pdf: 0,
+        visualizacoes_antes: 0, cliques_antes: 0, downloads_antes: 0,
+    }
     // Sem o esquema e sem o www: o que a criadora vai ditar ou colar numa
     // conversa é o endereço curto.
     const dominio = SITE_URL.replace(/^https?:\/\//, "").replace(/^www\./, "")
@@ -128,42 +149,57 @@ export default async function MeuMidiaKitPage({ params }: { params: Promise<{ id
                         </Link>
 
                         {kit?.publicado && kit.slug && (
-                            <Link
-                                href={`/kit/${kit.slug}`}
-                                target="_blank"
-                                className="inline-flex h-12 items-center gap-2 rounded-2xl border border-white/15 px-6 text-sm font-bold text-white transition-colors hover:bg-white/10"
-                            >
-                                Ver página pública
-                                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                            </Link>
+                            <>
+                                <Link
+                                    href={`/kit/${kit.slug}`}
+                                    target="_blank"
+                                    className="inline-flex h-12 items-center gap-2 rounded-2xl border border-white/15 px-6 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                                >
+                                    Ver página pública
+                                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                                </Link>
+
+                                <Link
+                                    href={`/kit/${kit.slug}/pdf`}
+                                    target="_blank"
+                                    className="inline-flex h-12 items-center gap-2 rounded-2xl border border-white/15 px-6 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                                >
+                                    <FileDown className="h-4 w-4" aria-hidden />
+                                    Baixar PDF
+                                </Link>
+
+                                <DialogoQrCode slug={kit.slug} />
+                            </>
                         )}
                     </div>
                 </div>
             </section>
 
-            {/* ---------- diagnóstico ---------- */}
+            {/* ---------- números ---------- */}
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <Numero
-                    rotulo="Completude"
-                    valor={`${completude}%`}
+                    rotulo="Visualizações"
+                    valor={medindo ? m.visualizacoes.toLocaleString("pt-BR") : "—"}
+                    nota={medindo ? variacao(m.visualizacoes, m.visualizacoes_antes) : SEM_MEDICAO}
+                    boa={medindo && m.visualizacoes > m.visualizacoes_antes}
+                />
+                <Numero
+                    rotulo="Cliques em parceria"
+                    valor={medindo ? m.cliques_contato.toLocaleString("pt-BR") : "—"}
                     nota={
-                        completude === 100
-                            ? "Tudo preenchido"
-                            : `${pendencias.length} ${pendencias.length === 1 ? "item" : "itens"} a preencher`
+                        medindo
+                            ? m.visualizacoes > 0
+                                ? `${((m.cliques_contato / m.visualizacoes) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% dos acessos`
+                                : "Ninguém clicou ainda"
+                            : SEM_MEDICAO
                     }
-                    boa={completude === 100}
+                    boa={medindo && m.cliques_contato > 0}
                 />
                 <Numero
-                    rotulo="Situação"
-                    valor={kit?.publicado ? "No ar" : "Rascunho"}
-                    nota={kit?.publicado ? "Link funcionando" : "Ainda não publicado"}
-                    boa={Boolean(kit?.publicado)}
-                />
-                <Numero
-                    rotulo="Trabalhos no portfólio"
-                    valor={`${dados.portfolio.length}`}
-                    nota={dados.portfolio.length ? "Aparecem na sua página" : "Nenhum ainda"}
-                    boa={dados.portfolio.length > 0}
+                    rotulo="Downloads do PDF"
+                    valor={medindo ? m.downloads_pdf.toLocaleString("pt-BR") : "—"}
+                    nota={medindo ? "Últimos 30 dias" : SEM_MEDICAO}
+                    boa={medindo && m.downloads_pdf > 0}
                 />
                 <Numero
                     rotulo="Última atualização"
@@ -254,6 +290,22 @@ export default async function MeuMidiaKitPage({ params }: { params: Promise<{ id
             </div>
         </div>
     )
+}
+
+/**
+ * O que os cartões dizem enquanto a tabela de eventos não existe.
+ *
+ * Zero seria uma afirmação: "ninguém abriu seu kit". Um traço com esta linha
+ * embaixo é a verdade: ainda não estamos contando.
+ */
+const SEM_MEDICAO = "Medição ainda não ativada"
+
+/** "+24% em 30 dias" — e o texto honesto quando não há com o que comparar. */
+function variacao(agora: number, antes: number) {
+    if (antes === 0) return agora === 0 ? "Nenhum acesso ainda" : "Primeiros 30 dias"
+    const pct = Math.round(((agora - antes) / antes) * 100)
+    const sinal = pct > 0 ? "+" : ""
+    return `${sinal}${pct}% em 30 dias`
 }
 
 /** Por que cada pendência importa, na voz de quem vai preencher. */

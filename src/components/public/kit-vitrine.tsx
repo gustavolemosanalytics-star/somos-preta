@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { BotaoWhatsapp, ContarVisualizacao } from "@/components/public/kit-metricas"
 
 /**
  * A vitrine do Media Kit — o desenho da página que a marca abre.
@@ -96,10 +97,19 @@ export function KitVitrine({
      * tira o min-h-dvh, porque ali a vitrine mora dentro de uma moldura.
      */
     modo = "publico",
+    /**
+     * O endereço do kit. Só vem preenchido na página pública de um kit de
+     * verdade: é ele que liga a contagem de visualização e de clique.
+     *
+     * Fica de fora na prévia do editor (a criadora contaria a si mesma a cada
+     * tecla) e na página de exemplo (que não é kit de ninguém).
+     */
+    slug,
     className,
 }: {
     kit: DadosVitrine
     modo?: "publico" | "previa"
+    slug?: string
     className?: string
 }) {
     const previa = modo === "previa"
@@ -300,17 +310,23 @@ export function KitVitrine({
                 {whatsappLimpo && (
                     <div className="mt-16 mb-20 text-center">
                         <Button asChild size="lg" className="h-12 rounded-full px-8 text-base">
-                            <a
-                                href={previa ? undefined : `https://wa.me/${whatsappLimpo}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                tabIndex={previa ? -1 : undefined}
-                            >
-                                <MessageCircle className="h-5 w-5" aria-hidden /> Falar no WhatsApp
-                            </a>
+                            {slug && !previa ? (
+                                <BotaoWhatsapp slug={slug} numero={whatsappLimpo} />
+                            ) : (
+                                <a
+                                    href={previa ? undefined : `https://wa.me/${whatsappLimpo}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    tabIndex={previa ? -1 : undefined}
+                                >
+                                    <MessageCircle className="h-5 w-5" aria-hidden /> Falar no WhatsApp
+                                </a>
+                            )}
                         </Button>
                     </div>
                 )}
+
+                {slug && !previa && <ContarVisualizacao slug={slug} />}
 
                 {!whatsappLimpo && <div className="h-16" />}
             </div>

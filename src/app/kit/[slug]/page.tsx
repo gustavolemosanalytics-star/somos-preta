@@ -56,5 +56,5 @@ export default async function MediaKitPage({ params }: { params: Promise<{ slug:
 
     if (!kit || !kit.publicado) notFound()
 
-    return <KitVitrine kit={kit} />
+    return <KitVitrine kit={kit} slug={kit.slug} />
 }
