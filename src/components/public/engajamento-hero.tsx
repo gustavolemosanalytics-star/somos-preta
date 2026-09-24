@@ -1,7 +1,6 @@
 "use client"
 
 import Image from "next/image"
-import Link from "next/link"
 import { motion } from "framer-motion"
 import { Instagram, Loader2, Search, X } from "lucide-react"
 
@@ -138,15 +137,6 @@ export function EngajamentoHero({
                             Analisar perfil
                         </button>
                     </form>
-
-                    {compacta ? (
-                        <Link
-                            href="/engajamento"
-                            className="mt-5 inline-flex text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                        >
-                            Ver como calculamos
-                        </Link>
-                    ) : null}
                 </motion.div>
 
                 <Colagem compacta={compacta} />

@@ -13,11 +13,20 @@ export default async function PainelLayout({
 }) {
     const profile = await getProfile()
 
-    // Sem perfil (não logado ou schema ainda não aplicado) -> login
-    if (!profile) redirect("/login")
+    // Os destinos levam o prefixo /app, que é onde as rotas realmente moram.
+    //
+    // Sem ele, quem chegasse a uma tela do painel pelo domínio do site caía num
+    // 404: `/sem-acesso` não existe em somospreta.com — a rota é
+    // `/app/sem-acesso`. E era justamente o caminho de quem tem conta de
+    // criador e acaba num endereço do painel: em vez do aviso "sem acesso",
+    // página não encontrada.
+    //
+    // No subdomínio do painel o prefixo não atrapalha: o middleware tira o
+    // /app de qualquer endereço que chegue com ele.
+    if (!profile) redirect("/app/login")
 
     // Sem papel de equipe -> sem acesso ao sistema interno (aguarda liberação de um admin)
-    if (!STAFF_ROLES.includes(profile.role)) redirect("/sem-acesso")
+    if (!STAFF_ROLES.includes(profile.role)) redirect("/app/sem-acesso")
 
     const navUser = {
         name: profile.nome ?? "Usuário",

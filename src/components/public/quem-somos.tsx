@@ -45,7 +45,6 @@ const PAINEIS = [
 ]
 
 /** Trocar por SVGs oficiais em /public/marcas quando o cliente enviar. */
-const CONFIAM = ["Coca-Cola", "Fanta", "Absolut", "AdeS", "NegroniWeek"]
 
 const fade = {
     initial: { opacity: 0, y: 24 },
@@ -172,30 +171,6 @@ export function QuemSomos() {
                         </div>
                     </motion.div>
                 </div>
-
-                {/* ---------- prova social ---------- */}
-                <motion.div
-                    {...fade}
-                    transition={{ ...fade.transition, delay: 0.15 }}
-                    className="mt-14 flex flex-wrap items-center gap-x-10 gap-y-5 border-t border-border pt-8"
-                >
-                    <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                        Confiam na Somos Preta
-                    </p>
-                    <ul className="flex flex-1 flex-wrap items-center gap-x-10 gap-y-4">
-                        {CONFIAM.map((marca) => (
-                            <li
-                                key={marca}
-                                className="text-lg font-semibold tracking-tight text-muted-foreground/70 transition-colors hover:text-foreground"
-                            >
-                                {marca}
-                            </li>
-                        ))}
-                    </ul>
-                    <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                        E muitas outras
-                    </p>
-                </motion.div>
             </div>
         </section>
     )

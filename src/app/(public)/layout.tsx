@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ArrowRight, Instagram, Menu, X } from "lucide-react"
+import { Instagram, Menu, X } from "lucide-react"
 
 import { PillNav, type PillNavItem } from "@/components/public/pill-nav"
 import { LogoPreta, SimboloTerritorio } from "@/components/public/marca"
-import { LINK_CONTATO } from "@/lib/constants/contato"
 
 // A ordem aqui espelha a ordem das dobras na home, de cima para baixo.
 const navItems: PillNavItem[] = [
@@ -98,14 +97,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                             Entrar
                         </Link>
 
-                        <Link
-                            href={LINK_CONTATO}
-                            className="group hidden h-11 items-center gap-2 rounded-full border border-brand-terracota px-6 text-sm font-semibold text-brand-terracota transition-colors hover:bg-brand-terracota hover:text-white sm:inline-flex"
-                        >
-                            Fale com a gente
-                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-                        </Link>
-
                         <button
                             type="button"
                             onClick={() => setMenuMobile((v) => !v)}
@@ -146,14 +137,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                                 className="flex h-12 items-center justify-center rounded-full border border-border text-sm font-medium"
                             >
                                 Entrar
-                            </Link>
-                            <Link
-                                href={LINK_CONTATO}
-                                onClick={() => setMenuMobile(false)}
-                                className="flex h-12 items-center justify-center gap-2 rounded-full bg-brand-terracota text-sm font-semibold text-white"
-                            >
-                                Fale com a gente
-                                <ArrowRight className="h-4 w-4" aria-hidden />
                             </Link>
                         </div>
                     </div>
