@@ -10,6 +10,9 @@ import {
     type Pacote, type PortfolioItem, type RedeInfo,
 } from "@/lib/constants/media-kit"
 import { UFS } from "@/lib/constants/uf"
+import { lerMetricas, numeroCompacto, percentual } from "@/lib/instagram/tipos"
+import { lerConexao } from "@/lib/instagram/conexao"
+import { ConectarInstagram } from "@/components/creator/conectar-instagram"
 
 /**
  * Meu perfil — a primeira tela da área do criador.
@@ -51,16 +54,19 @@ export default async function MeuPerfilPage({ params }: { params: Promise<{ id: 
     const profile = await getProfile()
     const supabase = await createClient()
 
-    const { data: kit } = await supabase
-        .from("somos_preta_midia_kits")
-        .select("*")
-        .eq("cadastrado_por", id)
-        .maybeSingle<MidiaKit>()
+    const [{ data: kit }, conexao] = await Promise.all([
+        supabase.from("somos_preta_midia_kits").select("*").eq("cadastrado_por", id).maybeSingle<MidiaKit>(),
+        lerConexao(id),
+    ])
 
     const primeiroNome = (kit?.nome || profile?.nome || "").split(" ")[0]
     const redes = (kit?.redes ?? {}) as Record<string, RedeInfo>
     const arroba = normalizarHandle(redes.instagram?.handle ?? "")
     const nichos = kit?.nichos ?? []
+    const metricas = lerMetricas(kit?.metricas_instagram)
+    // Só conta como conectado com a conexão ativa: os números de uma conta que
+    // perdeu o acesso não são mais atualizados.
+    const instagram = conexao?.status === "ativa" && metricas ? metricas : null
 
     const conectadas = REDES_CONFIG.filter((r) => Boolean(redes[r.chave]?.handle))
     const disponiveis = REDES_CONFIG.filter((r) => !redes[r.chave]?.handle)
@@ -86,7 +92,7 @@ export default async function MeuPerfilPage({ params }: { params: Promise<{ id: 
     const etapasDoPerfil = [
         { rotulo: "Informações pessoais", ok: Boolean(kit?.nome?.trim() && kit?.cidade?.trim()) },
         { rotulo: "Foto e apresentação", ok: Boolean(kit?.avatar_url && kit?.bio?.trim()) },
-        { rotulo: "Instagram conectado", ok: Boolean(redes.instagram?.handle) },
+        { rotulo: "Instagram conectado", ok: Boolean(instagram) },
         { rotulo: "Adicionar mais uma rede", ok: conectadas.length > 1 },
     ]
 
@@ -117,6 +123,46 @@ export default async function MeuPerfilPage({ params }: { params: Promise<{ id: 
                     Editar meus dados
                 </Link>
             </header>
+
+            {/* ---------- Instagram ----------
+                Logo depois de criar a conta, isto é a primeira coisa da tela: com
+                o @ conectado, foto, bio e números do kit chegam preenchidos. */}
+            {instagram ? (
+                <Link
+                    href={`/creator/${id}/metricas`}
+                    className="group flex flex-wrap items-center gap-x-6 gap-y-3 rounded-3xl bg-brand-carvao px-6 py-5 text-white transition-colors hover:bg-brand-carvao/95"
+                >
+                    <span className="flex min-w-0 items-center gap-3">
+                        <span
+                            aria-hidden
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#F58529,#DD2A7B_55%,#8134AF)] text-sm font-bold"
+                        >
+                            IG
+                        </span>
+                        <span className="min-w-0">
+                            <span className="block truncate text-sm font-bold">@{instagram.username}</span>
+                            <span className="block text-xs text-white/55">
+                                Conectado · dados oficiais
+                            </span>
+                        </span>
+                    </span>
+                    {[
+                        { rotulo: "seguidores", valor: numeroCompacto(instagram.seguidores) },
+                        { rotulo: "engajamento", valor: percentual(instagram.taxa_engajamento) },
+                        { rotulo: "alcance em 30 dias", valor: numeroCompacto(instagram.insights_30d?.alcance) },
+                    ].map((m) => (
+                        <span key={m.rotulo} className="leading-tight">
+                            <span className="block text-xl font-extrabold tracking-tight tabular-nums">{m.valor}</span>
+                            <span className="block text-xs text-white/55">{m.rotulo}</span>
+                        </span>
+                    ))}
+                    <span className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-white/80 group-hover:text-white">
+                        Ver métricas <ArrowRight className="h-4 w-4" aria-hidden />
+                    </span>
+                </Link>
+            ) : (
+                <ConectarInstagram conexao={conexao} metricas={metricas} variante="destaque" />
+            )}
 
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1.62fr)_minmax(0,1fr)]">
                 {/* ---------- cartão do perfil ---------- */}

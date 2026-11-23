@@ -41,10 +41,13 @@ export function BotaoWhatsapp({
     slug,
     numero,
     className,
+    children,
 }: {
     slug: string
     numero: string
     className?: string
+    /** Conteúdo do botão; sem ele, o rótulo padrão com o ícone. */
+    children?: React.ReactNode
 }) {
     return (
         <a
@@ -54,7 +57,11 @@ export function BotaoWhatsapp({
             onClick={() => void registrarEventoDoKit(slug, "clique_contato")}
             className={className}
         >
-            <MessageCircle className="h-5 w-5" aria-hidden /> Falar no WhatsApp
+            {children ?? (
+                <>
+                    <MessageCircle className="h-5 w-5" aria-hidden /> Falar no WhatsApp
+                </>
+            )}
         </a>
     )
 }

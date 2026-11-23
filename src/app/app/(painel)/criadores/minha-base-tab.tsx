@@ -26,7 +26,7 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Users, Plus, Loader2, Search, Eye, Pencil, Trash2, Star, Scale, TrendingUp, Sparkles, MapPin } from "lucide-react"
+import { BadgeCheck, Users, Plus, Loader2, Search, Eye, Pencil, Trash2, Star, Scale, TrendingUp, Sparkles, MapPin } from "lucide-react"
 import { toast } from "sonner"
 import { confirmarEscrita, lidos } from "@/lib/supabase/resultado"
 import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
@@ -419,7 +419,22 @@ export function MinhaBaseTab() {
                                                 {plataformas(i).length === 0 && "—"}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-right">{fmt(i.followers)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <span className="inline-flex items-center justify-end gap-1">
+                                                {fmt(i.followers)}
+                                                {/* O selo separa número vindo da conta conectada pela
+                                                    criadora de número digitado na planilha — a mesma
+                                                    coluna guarda os dois. */}
+                                                {i.instagram_fonte === "instagram" && (
+                                                    <span
+                                                        className="text-status-sucesso"
+                                                        title={`Instagram conectado pela criadora${i.instagram_sincronizado_em ? ` · atualizado em ${new Date(i.instagram_sincronizado_em).toLocaleDateString("pt-BR")}` : ""}`}
+                                                    >
+                                                        <BadgeCheck className="h-3.5 w-3.5" aria-label="Instagram conectado pela criadora" />
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </TableCell>
                                         <TableCell className="hidden md:table-cell text-right">{Number(i.engagement)}%</TableCell>
                                         <TableCell><Badge className={STATUS_META[i.status].className} variant="secondary">{STATUS_META[i.status].label}</Badge></TableCell>
                                         <TableCell className="text-right">

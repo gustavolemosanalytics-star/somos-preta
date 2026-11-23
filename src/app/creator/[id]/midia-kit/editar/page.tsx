@@ -5,8 +5,8 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import {
-    ArrowLeft, ArrowRight, BadgeCheck, Check, Copy, ExternalLink, Eye, Loader2,
-    PartyPopper, Plus, RefreshCw, Rocket, Trash2,
+    ArrowLeft, ArrowRight, BadgeCheck, Check, Copy, ExternalLink, Eye,
+    PartyPopper, Plus, Rocket, Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -17,11 +17,12 @@ import { cn } from "@/lib/utils"
 import type { MidiaKit } from "@/lib/db/types"
 import { UFS } from "@/lib/constants/uf"
 import {
-    ESSENCIAIS, ETAPAS, RECOMENDADOS, REDES_CONFIG, TEMAS,
-    formatarWhatsapp, normalizarHandle, normalizarLink, percentualPronto,
+    ESSENCIAIS, ETAPAS, MAX_CHAMADA, RECOMENDADOS, REDES_CONFIG,
+    formatarWhatsapp, lerAparencia, normalizarHandle, normalizarLink, percentualPronto,
     whatsappParaBanco, whatsappValido,
-    type ChaveEtapa, type Pacote, type PortfolioItem, type RedeInfo,
+    type Aparencia, type ChaveEtapa, type Pacote, type PortfolioItem, type RedeInfo,
 } from "@/lib/constants/media-kit"
+import { lerMetricas, type MetricasInstagram } from "@/lib/instagram/tipos"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,6 +43,8 @@ import { EntradaNichos } from "@/components/creator/entrada-nichos"
 import { ListaOrdenavel } from "@/components/creator/lista-ordenavel"
 import { TrilhaEtapas } from "@/components/creator/trilha-etapas"
 import { IndicadorSalvamento, type EstadoSalvamento } from "@/components/creator/indicador-salvamento"
+import { ConectarInstagram, chamarSincronizacao, type RespostaSincronizacao } from "@/components/creator/conectar-instagram"
+import { EtapaVisual } from "@/components/creator/etapa-visual"
 
 /**
  * Editor do Media Kit.
@@ -143,9 +146,11 @@ function Editor() {
     const portfolioRef = useRef<PortfolioItem[]>([])
     const [pacotes, setPacotes] = useState<Pacote[]>([])
     const [slug, setSlug] = useState("")
+    const [chamada, setChamada] = useState("")
+    const [marcas, setMarcas] = useState<string[]>([])
+    const [aparencia, setAparencia] = useState<Aparencia>(() => lerAparencia(null))
 
     const [enviando, setEnviando] = useState<string | null>(null)
-    const [buscandoRede, setBuscandoRede] = useState<string | null>(null)
     const [confirmandoPublicacao, setConfirmandoPublicacao] = useState(false)
     const [aRemover, setARemover] = useState<{ tipo: "portfolio" | "pacote"; id: string; nome: string } | null>(null)
     const [acabouDePublicar, setAcabouDePublicar] = useState(false)
@@ -275,6 +280,9 @@ function Editor() {
         setNichos(k.nichos ?? [])
         definirPortfolio(comIds<PortfolioItem>(k.portfolio))
         setPacotes(comIds<Pacote>(k.pacotes))
+        setChamada(k.chamada ?? "")
+        setMarcas(k.marcas ?? [])
+        setAparencia(lerAparencia(k.aparencia))
 
         // O campo de estado era texto livre e há kits salvos com "Bahia"; o
         // resto do produto guarda a sigla. Converte na entrada para o seletor
@@ -474,46 +482,67 @@ function Editor() {
         })
     }
 
-    async function buscarDados(chave: string) {
-        const usuario = normalizarHandle(handles[chave] ?? "")
-        if (!usuario) {
-            toast.error("Escreva seu @ antes de buscar")
-            return
-        }
+    /**
+     * "Atualizar agora" do Instagram DENTRO da fila de escrita.
+     *
+     * O servidor grava `redes` e `metricas_instagram` por conta própria. Se a
+     * chamada corresse em paralelo à fila, um salvamento de TikTok que partiu
+     * do `redes` antigo apagaria o Instagram recém-atualizado. Na fila, ela
+     * espera o que estiver pendente e, ao terminar, atualiza o espelho local
+     * com o que o servidor gravou — as escritas seguintes já partem dele.
+     *
+     * A CONEXÃO em si não passa por aqui: é um login na Meta que sai do editor
+     * e volta para ele, e o editor recarrega o kit inteiro na volta.
+     */
+    async function sincronizarInstagram(): Promise<RespostaSincronizacao> {
+        let resposta: RespostaSincronizacao = { ok: false, mensagem: "Não consegui atualizar agora." }
+        await enfileirar(async () => {
+            resposta = await chamarSincronizacao()
+            const alvo = kitRef.current
+            if (!alvo) return true
 
-        setBuscandoRede(chave)
-        try {
-            const res = await fetch(`/api/engajamento?username=${encodeURIComponent(usuario)}`)
-            const dados = await res.json()
-            if (!res.ok) {
-                toast.error(dados?.error || "Não consegui buscar seus números agora")
-                return
-            }
+            const atualizado = {
+                ...alvo,
+                ...(resposta.redes ? { redes: resposta.redes } : {}),
+                ...(resposta.metricas !== undefined ? { metricas_instagram: resposta.metricas as unknown as Record<string, unknown> | null } : {}),
+            } as MidiaKit
+            kitRef.current = atualizado
+            setKit(atualizado)
 
-            await salvarDerivado(() => {
-                const atuais = (kitRef.current?.redes ?? {}) as Record<string, RedeInfo>
-                return {
-                    redes: {
-                        ...atuais,
-                        [chave]: {
-                            handle: usuario,
-                            followers: dados.follower_count ?? null,
-                            engagement_rate: dados.engagement_rate ?? null,
-                            verificado: true,
-                        },
-                    },
-                }
-            })
+            const handleSalvo = (resposta.redes?.instagram as RedeInfo | undefined)?.handle
+            if (handleSalvo !== undefined) setHandles((prev) => ({ ...prev, instagram: handleSalvo }))
+            return true
+        })
+        return resposta
+    }
 
-            const seguidores = typeof dados.follower_count === "number"
-                ? dados.follower_count.toLocaleString("pt-BR")
-                : "?"
-            toast.success(`${seguidores} seguidores encontrados`)
-        } catch {
-            toast.error("Não consegui buscar seus números agora")
-        } finally {
-            setBuscandoRede(null)
-        }
+    /** Depois do "Desconectar": o servidor já tirou o Instagram; o espelho acompanha. */
+    function aoDesconectarInstagram() {
+        const alvo = kitRef.current
+        if (!alvo) return
+        const redes = { ...((alvo.redes ?? {}) as Record<string, unknown>) }
+        delete redes.instagram
+        const atualizado = { ...alvo, redes, metricas_instagram: null } as MidiaKit
+        kitRef.current = atualizado
+        setKit(atualizado)
+        setHandles((prev) => ({ ...prev, instagram: "" }))
+    }
+
+    function salvarChamada() {
+        const limpa = chamada.trim().slice(0, MAX_CHAMADA)
+        setChamada(limpa)
+        if (!kitRef.current || limpa === (kitRef.current.chamada ?? "")) return
+        salvar({ chamada: limpa || null })
+    }
+
+    function salvarMarcas(novas: string[]) {
+        setMarcas(novas)
+        salvar({ marcas: novas })
+    }
+
+    function salvarAparencia(nova: Aparencia) {
+        setAparencia(nova)
+        salvar({ aparencia: nova as unknown as Record<string, unknown> })
     }
 
     // ---------- imagens ----------
@@ -693,8 +722,12 @@ function Editor() {
             redes,
             portfolio,
             pacotes,
+            chamada,
+            marcas,
+            aparencia,
+            metricas_instagram: kit?.metricas_instagram ?? null,
         }
-    }, [nome, bio, cidade, estado, nichos, whatsapp, handles, portfolio, pacotes, kit])
+    }, [nome, bio, cidade, estado, nichos, whatsapp, handles, portfolio, pacotes, kit, chamada, marcas, aparencia])
 
     const prontas = useMemo(
         () =>
@@ -889,6 +922,9 @@ function Editor() {
                                     nome={nome}
                                     setNome={setNome}
                                     salvarNome={salvarNome}
+                                    chamada={chamada}
+                                    setChamada={setChamada}
+                                    salvarChamada={salvarChamada}
                                     bio={bio}
                                     setBio={setBio}
                                     salvarBio={() => salvarSimples("bio", bio)}
@@ -925,12 +961,14 @@ function Editor() {
                                     setHandles={setHandles}
                                     salvarHandle={salvarHandle}
                                     salvarMetrica={salvarMetrica}
-                                    buscarDados={buscarDados}
-                                    buscandoRede={buscandoRede}
+                                    instagram={lerMetricas(kit.metricas_instagram)}
+                                    sincronizarInstagram={sincronizarInstagram}
+                                    aoDesconectarInstagram={aoDesconectarInstagram}
                                 />
                             )}
 
                             {etapa === "portfolio" && (
+                                <div className="space-y-4">
                                 <EtapaPortfolio
                                     portfolio={portfolio}
                                     enviando={enviando}
@@ -943,6 +981,25 @@ function Editor() {
                                         setARemover({ tipo: "portfolio", id: item.id, nome: item.titulo || "este trabalho" })
                                     }
                                 />
+                                <Cartao className="space-y-3">
+                                    <div>
+                                        <Label htmlFor="mk-marcas">Marcas com quem você já trabalhou</Label>
+                                        <Ajuda id="mk-marcas-ajuda">
+                                            Viram um letreiro em movimento na sua página. Só coloque quem foi parceria de verdade.
+                                        </Ajuda>
+                                    </div>
+                                    <EntradaNichos
+                                        id="mk-marcas"
+                                        nichos={marcas}
+                                        onMudar={salvarMarcas}
+                                        sugestoes={[]}
+                                        maximo={16}
+                                        item="a marca"
+                                        placeholder="Digite o nome da marca e aperte Enter"
+                                        cheio="Dezesseis marcas já é uma bela lista"
+                                    />
+                                </Cartao>
+                                </div>
                             )}
 
                             {etapa === "pacotes" && (
@@ -958,9 +1015,16 @@ function Editor() {
                             )}
 
                             {etapa === "tema" && (
-                                <EtapaTema
+                                <EtapaVisual
                                     tema={kit.tema ?? "terracota"}
-                                    onEscolher={(valor) => salvar({ tema: valor })}
+                                    aparencia={aparencia}
+                                    onTema={(valor) => salvar({ tema: valor })}
+                                    onAparencia={salvarAparencia}
+                                    onModelo={(novoTema, nova) => {
+                                        setAparencia(nova)
+                                        salvar({ tema: novoTema, aparencia: nova as unknown as Record<string, unknown> })
+                                    }}
+                                    dados={dadosPrevia}
                                     nome={nome}
                                     avatar={kit.avatar_url}
                                 />
@@ -1091,7 +1155,7 @@ function Ajuda({ id, children }: { id: string; children: React.ReactNode }) {
 }
 
 function EtapaIdentidade({
-    kit, nome, setNome, salvarNome, bio, setBio, salvarBio, cidade, setCidade, salvarCidade,
+    kit, nome, setNome, salvarNome, chamada, setChamada, salvarChamada, bio, setBio, salvarBio, cidade, setCidade, salvarCidade,
     estado, setEstado, nichos, salvarNichos, enviando, onEnviarAvatar, onEnviarCapa,
     onRemoverAvatar, onRemoverCapa,
 }: {
@@ -1099,6 +1163,9 @@ function EtapaIdentidade({
     nome: string
     setNome: (v: string) => void
     salvarNome: () => void
+    chamada: string
+    setChamada: (v: string) => void
+    salvarChamada: () => void
     bio: string
     setBio: (v: string) => void
     salvarBio: () => void
@@ -1166,6 +1233,28 @@ function EtapaIdentidade({
                     className="h-11 rounded-xl"
                 />
                 <Ajuda id="mk-nome-ajuda">Como você quer ser chamada nas conversas com marcas.</Ajuda>
+            </div>
+
+            <div className="space-y-2">
+                <div className="flex items-baseline justify-between gap-3">
+                    <Label htmlFor="mk-chamada">Sua frase de efeito</Label>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                        {chamada.length}/{MAX_CHAMADA}
+                    </span>
+                </div>
+                <Input
+                    id="mk-chamada"
+                    value={chamada}
+                    maxLength={MAX_CHAMADA}
+                    onChange={(e) => setChamada(e.target.value)}
+                    onBlur={salvarChamada}
+                    aria-describedby="mk-chamada-ajuda"
+                    placeholder="Beleza real, de Salvador para o Brasil."
+                    className="h-11 rounded-xl"
+                />
+                <Ajuda id="mk-chamada-ajuda">
+                    Uma linha só, logo abaixo do seu nome, em destaque. É o seu slogan.
+                </Ajuda>
             </div>
 
             <div className="space-y-2">
@@ -1303,25 +1392,35 @@ function EtapaContato({
 }
 
 function EtapaRedes({
-    kit, handles, setHandles, salvarHandle, salvarMetrica, buscarDados, buscandoRede,
+    kit, handles, setHandles, salvarHandle, salvarMetrica, instagram, sincronizarInstagram, aoDesconectarInstagram,
 }: {
     kit: MidiaKit
     handles: Record<string, string>
     setHandles: React.Dispatch<React.SetStateAction<Record<string, string>>>
     salvarHandle: (chave: string) => void
     salvarMetrica: (chave: string, campo: "followers" | "engagement_rate", valor: string) => void
-    buscarDados: (chave: string) => void
-    buscandoRede: string | null
+    instagram: MetricasInstagram | null
+    sincronizarInstagram: () => Promise<RespostaSincronizacao>
+    aoDesconectarInstagram: () => void
 }) {
     const metricas = (kit.redes ?? {}) as Record<string, RedeInfo>
 
     return (
         <div className="space-y-4">
             <p className="text-[15px] leading-relaxed text-muted-foreground">
-                Não precisa ser milhão — precisa ser verdade. A marca confere depois.
+                Não precisa ser milhão — precisa ser verdade. O Instagram vem direto da sua conta, com login; as
+                outras redes você informa.
             </p>
 
-            {REDES_CONFIG.map((rede) => {
+            {/* O Instagram não é digitado: é conectado com login. Sem campo de @ —
+                consultar perfil de terceiros é contra as regras da Meta. */}
+            <ConectarInstagram
+                metricas={instagram}
+                sincronizar={sincronizarInstagram}
+                onDesconectado={aoDesconectarInstagram}
+            />
+
+            {REDES_CONFIG.filter((rede) => rede.chave !== "instagram").map((rede) => {
                 const Icone = rede.icone
                 const info = metricas[rede.chave]
                 const temHandle = Boolean(handles[rede.chave])
@@ -1373,22 +1472,6 @@ function EtapaRedes({
                                 </div>
                             </div>
 
-                            {rede.buscavel && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={buscandoRede === rede.chave || !temHandle}
-                                    onClick={() => buscarDados(rede.chave)}
-                                    className="h-11 shrink-0 rounded-full"
-                                >
-                                    {buscandoRede === rede.chave ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                                    ) : (
-                                        <RefreshCw className="h-4 w-4" aria-hidden />
-                                    )}
-                                    Buscar meus números
-                                </Button>
-                            )}
                         </div>
 
                         <Ajuda id={`mk-rede-${rede.chave}-ajuda`}>{rede.dica}</Ajuda>
@@ -1712,108 +1795,6 @@ function EtapaPacotes({
                 <Plus className="h-4 w-4" aria-hidden /> Adicionar outro pacote
             </button>
         </div>
-    )
-}
-
-function EtapaTema({
-    tema,
-    onEscolher,
-    nome,
-    avatar,
-}: {
-    tema: string
-    onEscolher: (valor: string) => void
-    nome: string
-    avatar: string | null
-}) {
-    return (
-        <Cartao className="space-y-5">
-            <p className="text-[15px] leading-relaxed text-muted-foreground">
-                A cor manda nos títulos, nos ícones das redes e no preço dos pacotes. Dá para trocar quando
-                quiser.
-            </p>
-
-            {/* Num radiogroup o Tab entra uma vez só e as SETAS trocam a opção
-                (roving tabindex). Sem o onKeyDown, quem navega por teclado
-                fica preso no cartão em foco e não consegue mudar de cor. */}
-            <div role="radiogroup" aria-label="Cor do seu Media Kit" className="grid gap-4 sm:grid-cols-3">
-                {TEMAS.map((opcao, indice) => {
-                    const escolhido = tema === opcao.valor || (tema === "teal" && opcao.valor === "coral")
-                    return (
-                        <button
-                            key={opcao.valor}
-                            type="button"
-                            role="radio"
-                            aria-checked={escolhido}
-                            tabIndex={escolhido ? 0 : -1}
-                            onKeyDown={(e) => {
-                                const passo =
-                                    e.key === "ArrowRight" || e.key === "ArrowDown" ? 1
-                                        : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1
-                                            : 0
-                                if (!passo) return
-                                e.preventDefault()
-                                const proximo = TEMAS[(indice + passo + TEMAS.length) % TEMAS.length]
-                                onEscolher(proximo.valor)
-                                const grupo = e.currentTarget.parentElement
-                                const alvo = grupo?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[
-                                    (indice + passo + TEMAS.length) % TEMAS.length
-                                ]
-                                alvo?.focus()
-                            }}
-                            onClick={() => onEscolher(opcao.valor)}
-                            className={cn(
-                                "!min-h-0 relative flex flex-col items-stretch gap-0 overflow-hidden rounded-2xl border bg-card p-0 text-left",
-                                escolhido ? "border-brand-terracota" : "border-border hover:border-brand-terracota/50",
-                            )}
-                        >
-                            {/* Miniatura real do topo do kit — escolher cor sem ver
-                                cor era o que tornava esta etapa a mais pobre da tela. */}
-                            <span aria-hidden className="block h-10 w-full" style={{ backgroundColor: opcao.amostra }} />
-                            <span aria-hidden className="flex items-center gap-2 px-4 pb-1 pt-0">
-                                <span className="-mt-4 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-card bg-muted text-[11px] font-bold text-muted-foreground">
-                                    {avatar ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img src={avatar} alt="" className="h-full w-full object-cover" />
-                                    ) : (
-                                        (nome || "?").slice(0, 2).toUpperCase()
-                                    )}
-                                </span>
-                            </span>
-                            <span className="flex flex-col gap-1 px-4 pb-4">
-                                <span
-                                    className="text-sm font-semibold tracking-tight"
-                                    style={{ color: opcao.amostra }}
-                                >
-                                    Pacotes
-                                </span>
-                                <span className="text-[11px] text-muted-foreground">R$ 1.200</span>
-                            </span>
-
-                            <span className="flex items-center justify-between border-t border-border px-4 py-3">
-                                <span className="text-[13px] font-semibold">{opcao.label}</span>
-                                <span className="text-[11px] text-muted-foreground">{opcao.descricao}</span>
-                            </span>
-
-                            {escolhido && (
-                                <span
-                                    aria-hidden
-                                    className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-brand-terracota"
-                                />
-                            )}
-                            {escolhido && (
-                                <span
-                                    aria-hidden
-                                    className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-brand-terracota text-white"
-                                >
-                                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                                </span>
-                            )}
-                        </button>
-                    )
-                })}
-            </div>
-        </Cartao>
     )
 }
 

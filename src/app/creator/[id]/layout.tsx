@@ -44,7 +44,9 @@ export default async function CreatorLayout({
         <CascaDoCriador
             itens={[
                 { href: `/creator/${id}`, rotulo: "Meu perfil", sigla: "P" },
+                { href: `/creator/${id}/metricas`, rotulo: "Métricas", sigla: "N" },
                 { href: `/creator/${id}/midia-kit`, rotulo: "Meu Mídia Kit", sigla: "M" },
+                { href: `/creator/${id}/midia-kit/editar?etapa=tema`, rotulo: "Personalizar", sigla: "V" },
             ]}
             nome={kit?.nome || profile.nome || "Criador"}
             arroba={arroba}

@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import type { Influencer, Campanha, Mensagem, Contrato } from "@/lib/db/types"
-import { useInstagramSearch } from "@/hooks/use-social-search"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -14,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-    ArrowLeft, Building2, Calendar, FileText, Image as ImageIcon, Instagram, Loader2,
+    ArrowLeft, BadgeCheck, Building2, Calendar, FileText, Image as ImageIcon, Instagram, Loader2,
     Megaphone, Send, Star, TrendingUp,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
@@ -22,6 +20,8 @@ import { ptBR } from "date-fns/locale"
 import { toast } from "sonner"
 import { confirmarEscrita, lido } from "@/lib/supabase/resultado"
 import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
+import { GradeDePublicacoes, InstagramMetricas } from "@/components/painel/instagram-metricas"
+import type { PostInstagram } from "@/lib/instagram/tipos"
 
 const fmt = (n: number) => n.toLocaleString("pt-BR")
 
@@ -56,6 +56,18 @@ export default function CreatorProfilePage() {
         load()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id])
+
+    /**
+     * Relê só a linha do criador, sem acender o carregamento da página.
+     *
+     * A aba Instagram chama isto depois de atualizar: `load()` trocaria a tela
+     * inteira pelo spinner, desmontaria as abas e devolveria a pessoa para
+     * "Visão Geral" no meio do que estava olhando.
+     */
+    async function recarregarInfluencer() {
+        const { data } = await supabase.from("somos_preta_influencers").select("*").eq("id", id).maybeSingle()
+        if (data) setInfluencer(data as Influencer)
+    }
 
     async function toggleFavorito() {
         const { data: { user } } = await supabase.auth.getUser()
@@ -121,7 +133,20 @@ export default function CreatorProfilePage() {
                         </div>
                     </div>
                     <div className="flex gap-4 sm:gap-6">
-                        <div className="text-center"><div className="text-xl font-bold">{fmt(influencer.followers)}</div><div className="text-[10px] text-muted-foreground uppercase">Seguidores</div></div>
+                        <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 text-xl font-bold">
+                                {fmt(influencer.followers)}
+                                {influencer.instagram_fonte === "instagram" && (
+                                    <span
+                                        title={`Conectado pela criadora${influencer.instagram_sincronizado_em ? ` · atualizado em ${new Date(influencer.instagram_sincronizado_em).toLocaleDateString("pt-BR")}` : ""}`}
+                                        className="text-status-sucesso"
+                                    >
+                                        <BadgeCheck className="h-4 w-4" aria-label="Instagram conectado pela criadora" />
+                                    </span>
+                                )}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground uppercase">Seguidores</div>
+                        </div>
                         <div className="text-center"><div className="text-xl font-bold text-primary">{influencer.engagement}%</div><div className="text-[10px] text-muted-foreground uppercase">Engaj.</div></div>
                     </div>
                     <Button variant="outline" size="icon" onClick={toggleFavorito} aria-label="Favoritar">
@@ -134,6 +159,7 @@ export default function CreatorProfilePage() {
                 <div className="overflow-x-auto">
                     <TabsList className="w-max gap-1">
                         <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
+                        <TabsTrigger value="instagram">Instagram</TabsTrigger>
                         <TabsTrigger value="relatorio">Relatório</TabsTrigger>
                         <TabsTrigger value="conteudo">Conteúdo</TabsTrigger>
                         <TabsTrigger value="campanhas">Campanhas</TabsTrigger>
@@ -144,6 +170,7 @@ export default function CreatorProfilePage() {
                 </div>
 
                 <TabsContent value="visao-geral"><VisaoGeralTab influencer={influencer} /></TabsContent>
+                <TabsContent value="instagram"><InstagramMetricas influencer={influencer} onAtualizado={recarregarInfluencer} /></TabsContent>
                 <TabsContent value="relatorio"><RelatorioTab influencer={influencer} /></TabsContent>
                 <TabsContent value="conteudo"><ConteudoTab influencer={influencer} /></TabsContent>
                 <TabsContent value="campanhas"><CampanhasTab influencerId={influencer.id} /></TabsContent>
@@ -253,26 +280,69 @@ function RelatorioTab({ influencer: i }: { influencer: Influencer }) {
     )
 }
 
+/**
+ * Conteúdo: as publicações da última coleta da conta que a criadora conectou.
+ *
+ * Antes esta aba buscava os posts raspando o perfil pelo @ — o que é contra as
+ * regras da Meta e já não existe. Agora ela só mostra o que veio da conexão.
+ */
 function ConteudoTab({ influencer: i }: { influencer: Influencer }) {
-    const handle = i.instagram ? (i.instagram.startsWith("@") ? i.instagram : `@${i.instagram}`) : ""
-    const { data: igProfile, isLoading } = useInstagramSearch(handle)
+    const [supabase] = useState(() => createClient())
+    const [posts, setPosts] = useState<PostInstagram[] | null>(null)
+    const [falhou, setFalhou] = useState(false)
 
-    if (!i.instagram) {
-        return <Card className="mt-4"><CardContent className="py-14 text-center text-muted-foreground"><ImageIcon className="h-10 w-10 mx-auto mb-3 opacity-40" />Sem Instagram cadastrado para buscar conteúdo.</CardContent></Card>
+    useEffect(() => {
+        let vivo = true
+        Promise.all([
+            supabase
+                .from("somos_preta_instagram_coletas")
+                .select("posts")
+                .eq("influencer_id", i.id)
+                .order("coletado_em", { ascending: false })
+                .limit(1)
+                .maybeSingle(),
+            supabase.from("somos_preta_midia_kits").select("metricas_instagram").eq("influencer_id", i.id).limit(1).maybeSingle(),
+        ]).then(([coleta, kit]) => {
+            if (!vivo) return
+            if (coleta.error) {
+                setFalhou(true)
+                setPosts([])
+                return
+            }
+            // A imagem copiada para o nosso storage só existe nos destaques do
+            // kit; o resto das publicações fica com o ícone do formato.
+            const destaques = ((kit.data?.metricas_instagram as { destaques?: PostInstagram[] } | null)?.destaques ?? [])
+            const imagens = new Map(destaques.map((d) => [d.id, d.imagem]))
+            const lista = (Array.isArray(coleta.data?.posts) ? coleta.data.posts : []) as PostInstagram[]
+            setPosts(
+                [...lista]
+                    .map((p) => ({ ...p, imagem: p.imagem ?? imagens.get(p.id) ?? null }))
+                    .sort((a, b) => (b.data ?? "").localeCompare(a.data ?? "")),
+            )
+        })
+        return () => {
+            vivo = false
+        }
+    }, [i.id, supabase])
+
+    if (posts === null) {
+        return <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando publicações...</div>
     }
-    if (isLoading) {
-        return <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Buscando posts recentes...</div>
-    }
-    if (!igProfile || igProfile.recent_posts.length === 0) {
-        return <Card className="mt-4"><CardContent className="py-14 text-center text-muted-foreground"><ImageIcon className="h-10 w-10 mx-auto mb-3 opacity-40" />Nenhum post recente disponível.</CardContent></Card>
+    if (posts.length === 0) {
+        return (
+            <Card className="mt-4">
+                <CardContent className="py-14 text-center text-muted-foreground">
+                    <ImageIcon className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                    {falhou
+                        ? "Não consegui ler as publicações agora."
+                        : "Sem publicações ainda. Elas aparecem quando a criadora conecta o Instagram pela área dela."}
+                </CardContent>
+            </Card>
+        )
     }
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-4">
-            {igProfile.recent_posts.map((post) => (
-                <a key={post.shortcode} href={`https://instagram.com/p/${post.shortcode}`} target="_blank" rel="noopener noreferrer" className="group relative aspect-square rounded-xl overflow-hidden bg-muted">
-                    {post.thumbnail_url && <Image src={post.thumbnail_url} alt="" fill unoptimized className="object-cover group-hover:scale-105 transition-transform" />}
-                </a>
-            ))}
+        <div className="pt-4">
+            <GradeDePublicacoes posts={posts} />
         </div>
     )
 }

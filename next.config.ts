@@ -30,6 +30,9 @@ const routeMap: [string, string][] = [
 // antigos. Precisam vir ANTES do routeMap: sem isso, o wildcard genérico
 // capturaria "/login/midia-kit" primeiro.
 const legacyMidiaKitPaths = [
+  // O verificador de engajamento por @ saiu do site: consultar o perfil de
+  // terceiros sem autorização é contra as regras da Meta.
+  "/engajamento",
   "/midia-kit",
   "/login/midia-kit",
   "/midia-kit/registro",

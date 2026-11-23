@@ -67,6 +67,20 @@
   --color-status-progresso: var(--status-progresso);
   --color-status-neutro: var(--status-neutro);
   --font-manuscrita: var(--font-caveat);
+  /* Media Kit: as cores vêm da paleta que a criadora escolheu, aplicadas como
+     variáveis na raiz da vitrine (ver kit-vitrine.tsx). Registradas aqui para
+     valerem como utilitário (bg-kit-acento/15, text-kit-leitura...). */
+  --color-kit-fundo: var(--kit-fundo);
+  --color-kit-superficie: var(--kit-superficie);
+  --color-kit-tinta: var(--kit-tinta);
+  --color-kit-suave: var(--kit-suave);
+  --color-kit-linha: var(--kit-linha);
+  --color-kit-acento: var(--kit-acento);
+  --color-kit-acento2: var(--kit-acento2);
+  --color-kit-leitura: var(--kit-leitura);
+  --color-kit-botao: var(--kit-botao);
+  --color-kit-sobre-botao: var(--kit-sobre-botao);
+  --font-kit: var(--kit-fonte-display);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -697,4 +711,107 @@ html {
     -webkit-backdrop-filter: none;
   }
   .painel::before { display: none; }
+}
+
+
+/* ============================================================================
+   Media Kit — grafismos e movimento da vitrine
+   ----------------------------------------------------------------------------
+   Os grafismos são CSS puro (sem imagem) para mudarem de cor junto com a
+   paleta e não pesarem no carregamento de quem abre o kit no 4G.
+   ============================================================================ */
+
+/* Valores de reserva: fora da vitrine as variáveis não existem, e um
+   utilitário kit-* usado por engano não pode virar cor inválida. */
+:root {
+  --kit-fundo: #FAF7F2;
+  --kit-superficie: #FFFFFF;
+  --kit-tinta: #1F1F1F;
+  --kit-suave: #6B625A;
+  --kit-linha: #E8DDD1;
+  --kit-acento: #E07A5F;
+  --kit-acento2: #F2B33D;
+  --kit-leitura: #B5401F;
+  --kit-botao: #C04625;
+  --kit-sobre-botao: #FFFFFF;
+  --kit-fonte-display: inherit;
+}
+
+@keyframes kit-deriva {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(6%, -4%, 0) scale(1.08); }
+}
+
+@keyframes kit-deriva-lenta {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+  50% { transform: translate3d(-5%, 5%, 0) scale(0.95); }
+}
+
+@keyframes kit-girar {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes kit-letreiro {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.kit-anima-deriva { animation: kit-deriva 18s ease-in-out infinite; }
+.kit-anima-deriva-lenta { animation: kit-deriva-lenta 24s ease-in-out infinite; }
+.kit-anima-girar { animation: kit-girar 28s linear infinite; }
+.kit-anima-letreiro { animation: kit-letreiro 38s linear infinite; }
+
+/* Grade de estúdio que some nas bordas. */
+.kit-grade {
+  background-image:
+    linear-gradient(var(--kit-linha) 1px, transparent 1px),
+    linear-gradient(90deg, var(--kit-linha) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 70% 70% at 70% 30%, #000 30%, transparent 75%);
+}
+
+.kit-pontos {
+  background-image: radial-gradient(var(--kit-acento) 1.3px, transparent 1.6px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(115deg, transparent 15%, #000 55%, transparent 95%);
+  opacity: 0.45;
+}
+
+/* Grão de filme por cima da aurora: tira o aspecto "degradê de PowerPoint". */
+.kit-grao {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.09;
+  mix-blend-mode: overlay;
+}
+
+/* Letreiro de marcas: as pontas esmaecem em vez de cortar a palavra seca. */
+.kit-mascara-x {
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+/* Miniaturas dos modelos no editor: nove topos animados ao mesmo tempo
+   pesariam no celular de qualquer um. Parados, contam a mesma história. */
+.kit-miniatura .kit-anima-deriva,
+.kit-miniatura .kit-anima-deriva-lenta,
+.kit-miniatura .kit-anima-girar,
+.kit-miniatura .kit-anima-letreiro {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kit-anima-deriva,
+  .kit-anima-deriva-lenta,
+  .kit-anima-girar,
+  .kit-anima-letreiro {
+    animation: none !important;
+  }
+}
+
+@media print {
+  .kit-anima-deriva,
+  .kit-anima-deriva-lenta,
+  .kit-anima-girar,
+  .kit-anima-letreiro {
+    animation: none !important;
+  }
 }

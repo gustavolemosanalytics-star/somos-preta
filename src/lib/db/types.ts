@@ -93,6 +93,11 @@ export type Influencer = {
     portfolio: unknown | null
     tags: string[]
     fonte: "app" | "interna"
+    /** "instagram" quando os números vêm da conta conectada pela própria criadora. */
+    instagram_fonte?: string | null
+    /** Resultado da última coleta do Instagram. */
+    instagram_status?: string | null
+    instagram_sincronizado_em?: string | null
     created_at: string
     updated_at: string
 }
@@ -301,6 +306,14 @@ export type MidiaKit = {
     publicado: boolean
     cadastrado_por: string | null
     influencer_id: string | null
+    /** Tipografia, grafismo, abertura e seções (migration 0024). Ler com `lerAparencia`. */
+    aparencia?: Record<string, unknown> | null
+    /** A frase de efeito do topo da vitrine. */
+    chamada?: string | null
+    /** Marcas com quem a criadora já trabalhou. */
+    marcas?: string[] | null
+    /** Só o servidor escreve. Ler com `lerMetricas`. */
+    metricas_instagram?: Record<string, unknown> | null
     created_at: string
     updated_at: string
 }

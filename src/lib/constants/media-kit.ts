@@ -44,20 +44,251 @@ export const REDES_CONFIG = [
 ] as const
 
 /**
- * As cores que a vitrine sabe desenhar. Inventar uma quarta não quebra nada
- * visivelmente — só cai no terracota em silêncio, que é pior que quebrar.
+ * As paletas que a vitrine sabe desenhar. Moram na coluna `tema`, que sempre
+ * foi a escolha de cor do kit.
  *
- * O terceiro tema era `teal`, que a vitrine pintava com `text-accent` — e
- * `--accent` é #F1EAE1, superfície de hover, não cor de texto: o título saía
- * branco sobre off-white, ilegível. Nunca houve teal na identidade. O tema
- * virou coral (cor real da marca) e `teal` segue aceito como chave antiga de
- * kits já salvos, desenhada como coral.
+ * Cada paleta é um conjunto fechado, e não uma cor solta, porque cor de
+ * destaque boa para desenho raramente é boa para texto: o terracota #E07A5F dá
+ * 2,76:1 sobre o off-white. Por isso existem papéis separados —
+ *   `acento` / `acento2`  grafismo, gráfico, ornamento (pode ser vibrante)
+ *   `leitura`             texto na cor da marca sobre o fundo (≥ 4,5:1)
+ *   `botao` / `sobreBotao` o par do botão de contato (≥ 4,5:1)
+ * Todos os pares de texto foram medidos contra WCAG AA em fundo e superfície.
+ *
+ * `teal` é chave de kits antigos (era pintada com uma cor de hover, ilegível)
+ * e cai no coral, que é cor de marca de verdade.
  */
-export const TEMAS = [
-    { valor: "terracota", label: "Terracota", amostra: "#E07A5F", descricao: "Quente e acolhedor" },
-    { valor: "oliva", label: "Verde-oliva", amostra: "#2F4F3E", descricao: "Sóbrio e elegante" },
-    { valor: "coral", label: "Coral", amostra: "#F26D4F", descricao: "Vivo e direto" },
+export type Paleta = {
+    valor: string
+    label: string
+    descricao: string
+    escuro: boolean
+    fundo: string
+    superficie: string
+    tinta: string
+    suave: string
+    linha: string
+    acento: string
+    acento2: string
+    leitura: string
+    botao: string
+    sobreBotao: string
+}
+
+export const PALETAS: Paleta[] = [
+    {
+        valor: "terracota", label: "Terracota", descricao: "Quente e acolhedor", escuro: false,
+        fundo: "#FAF7F2", superficie: "#FFFFFF", tinta: "#1F1F1F", suave: "#6B625A", linha: "#E8DDD1",
+        acento: "#E07A5F", acento2: "#F2B33D", leitura: "#B5401F", botao: "#C04625", sobreBotao: "#FFFFFF",
+    },
+    {
+        valor: "coral", label: "Coral", descricao: "Vivo e direto", escuro: false,
+        fundo: "#FFF5F0", superficie: "#FFFFFF", tinta: "#22160F", suave: "#6F5D54", linha: "#F3DDD3",
+        acento: "#F26D4F", acento2: "#FFB4A2", leitura: "#B83A1E", botao: "#F26D4F", sobreBotao: "#22160F",
+    },
+    {
+        valor: "oliva", label: "Verde-oliva", descricao: "Sóbrio e elegante", escuro: false,
+        fundo: "#F3F1EA", superficie: "#FFFFFF", tinta: "#17241D", suave: "#5E6A62", linha: "#DCD8CB",
+        acento: "#2F4F3E", acento2: "#A3B18A", leitura: "#2F4F3E", botao: "#2F4F3E", sobreBotao: "#FAF7F2",
+    },
+    {
+        valor: "anil", label: "Anil", descricao: "Elétrico e moderno", escuro: false,
+        fundo: "#F4F5FB", superficie: "#FFFFFF", tinta: "#12142B", suave: "#5A5E7A", linha: "#DFE2F2",
+        acento: "#3A4BD6", acento2: "#8FA2FF", leitura: "#3A4BD6", botao: "#3A4BD6", sobreBotao: "#FFFFFF",
+    },
+    {
+        valor: "orquidea", label: "Orquídea", descricao: "Ousado e afetivo", escuro: false,
+        fundo: "#FBF3F7", superficie: "#FFFFFF", tinta: "#2A1020", suave: "#765466", linha: "#F0DCE6",
+        acento: "#C2387F", acento2: "#F5A3C7", leitura: "#A62B6B", botao: "#A62B6B", sobreBotao: "#FFFFFF",
+    },
+    {
+        valor: "grafite", label: "Grafite", descricao: "Minimalista", escuro: false,
+        fundo: "#F5F4F1", superficie: "#FFFFFF", tinta: "#111111", suave: "#66625D", linha: "#E2DFD9",
+        acento: "#111111", acento2: "#BDB6AC", leitura: "#111111", botao: "#111111", sobreBotao: "#FFFFFF",
+    },
+    {
+        valor: "noite", label: "Noite", descricao: "Escuro com terracota", escuro: true,
+        fundo: "#121110", superficie: "#1D1B19", tinta: "#F6F1EA", suave: "#A39A90", linha: "#2E2A26",
+        acento: "#E07A5F", acento2: "#F2B33D", leitura: "#EE9A82", botao: "#E07A5F", sobreBotao: "#121110",
+    },
+    {
+        valor: "ouro", label: "Ouro", descricao: "Escuro e luxuoso", escuro: true,
+        fundo: "#0E0C08", superficie: "#1A1712", tinta: "#F7F0DF", suave: "#A89F8A", linha: "#2D281E",
+        acento: "#D9A23C", acento2: "#8C5A1F", leitura: "#E5B95C", botao: "#D9A23C", sobreBotao: "#0E0C08",
+    },
+    {
+        valor: "mangue", label: "Mangue", descricao: "Escuro e natural", escuro: true,
+        fundo: "#0D1A15", superficie: "#142620", tinta: "#EAF4EE", suave: "#93AA9E", linha: "#213A31",
+        acento: "#4FBF8A", acento2: "#C9E265", leitura: "#7FD8AC", botao: "#4FBF8A", sobreBotao: "#0D1A15",
+    },
+]
+
+export function paletaDoTema(tema: string | null | undefined): Paleta {
+    const chave = tema === "teal" ? "coral" : tema
+    return PALETAS.find((p) => p.valor === chave) ?? PALETAS[0]
+}
+
+/* ------------------------------------------------------------------------- */
+/* Personalização: o que a criadora escolhe além da cor                        */
+/* ------------------------------------------------------------------------- */
+
+export const FONTES = [
+    { valor: "moderna", label: "Moderna", descricao: "Limpa e direta" },
+    { valor: "editorial", label: "Editorial", descricao: "Serifa de revista" },
+    { valor: "expressiva", label: "Expressiva", descricao: "Com personalidade" },
 ] as const
+
+export const GRAFISMOS = [
+    { valor: "aurora", label: "Aurora", descricao: "Luz difusa em movimento" },
+    { valor: "aneis", label: "Anéis", descricao: "Órbitas concêntricas" },
+    { valor: "grade", label: "Grade", descricao: "Linhas finas de estúdio" },
+    { valor: "pontos", label: "Pontos", descricao: "Trama pontilhada" },
+    { valor: "liso", label: "Liso", descricao: "Sem ornamento" },
+] as const
+
+export const ABERTURAS = [
+    { valor: "retrato", label: "Retrato", descricao: "Sua foto grande ao lado do nome" },
+    { valor: "capa", label: "Capa", descricao: "Imagem de capa no topo" },
+    { valor: "central", label: "Central", descricao: "Tudo centralizado" },
+] as const
+
+export const SECOES = [
+    { valor: "numeros", label: "Números", descricao: "Seguidores, alcance, engajamento e crescimento" },
+    { valor: "audiencia", label: "Audiência", descricao: "Gênero, idade e cidades de quem te segue" },
+    { valor: "destaques", label: "Destaques do Instagram", descricao: "Suas publicações de melhor resultado" },
+    { valor: "portfolio", label: "Portfólio", descricao: "Trabalhos que você já fez" },
+    { valor: "marcas", label: "Marcas", descricao: "Com quem você já trabalhou" },
+    { valor: "pacotes", label: "Pacotes", descricao: "Como você cobra" },
+] as const
+
+export type ChaveFonte = (typeof FONTES)[number]["valor"]
+export type ChaveGrafismo = (typeof GRAFISMOS)[number]["valor"]
+export type ChaveAbertura = (typeof ABERTURAS)[number]["valor"]
+export type ChaveSecao = (typeof SECOES)[number]["valor"]
+
+export type Aparencia = {
+    fonte: ChaveFonte
+    grafismo: ChaveGrafismo
+    abertura: ChaveAbertura
+    /** A ordem do array é a ordem na página. */
+    secoes: { chave: ChaveSecao; visivel: boolean }[]
+}
+
+/** O padrão de todo kit novo é o modelo Editorial com a paleta terracota. */
+export const APARENCIA_PADRAO: Aparencia = {
+    fonte: "editorial",
+    grafismo: "aurora",
+    abertura: "retrato",
+    secoes: SECOES.map((s) => ({ chave: s.valor, visivel: true })),
+}
+
+/**
+ * Lê o jsonb `aparencia` sem confiar nele.
+ *
+ * A coluna nasce `{}` em todo kit antigo, e um valor que deixou de existir
+ * (uma tipografia aposentada, uma seção renomeada) não pode derrubar a página
+ * pública — cai no padrão. Seções novas que o kit salvo não conhece entram no
+ * fim, visíveis, para quem personalizou antes de elas existirem não as perder.
+ */
+export function lerAparencia(valor: unknown): Aparencia {
+    const bruto = (valor && typeof valor === "object" ? valor : {}) as Record<string, unknown>
+    const escolher = <T extends string>(lista: readonly { valor: T }[], v: unknown, padrao: T): T =>
+        lista.some((o) => o.valor === v) ? (v as T) : padrao
+
+    const vistas = new Set<string>()
+    const secoes: Aparencia["secoes"] = []
+    if (Array.isArray(bruto.secoes)) {
+        for (const item of bruto.secoes) {
+            const chave = (item as { chave?: unknown })?.chave
+            if (typeof chave !== "string" || vistas.has(chave)) continue
+            if (!SECOES.some((s) => s.valor === chave)) continue
+            vistas.add(chave)
+            secoes.push({ chave: chave as ChaveSecao, visivel: (item as { visivel?: unknown }).visivel !== false })
+        }
+    }
+    for (const s of SECOES) {
+        if (!vistas.has(s.valor)) secoes.push({ chave: s.valor, visivel: true })
+    }
+
+    return {
+        fonte: escolher(FONTES, bruto.fonte, APARENCIA_PADRAO.fonte),
+        grafismo: escolher(GRAFISMOS, bruto.grafismo, APARENCIA_PADRAO.grafismo),
+        abertura: escolher(ABERTURAS, bruto.abertura, APARENCIA_PADRAO.abertura),
+        secoes,
+    }
+}
+
+export const MAX_CHAMADA = 90
+
+/* ------------------------------------------------------------------------- */
+/* Modelos: pontos de partida prontos                                          */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * Um modelo é uma combinação pronta de paleta, tipografia, grafismo, abertura
+ * e ordem das seções. A criadora escolhe um na galeria e, se quiser, ajusta
+ * peça por peça depois — o modelo é o começo, não uma gaiola.
+ *
+ * Não existe coluna "modelo" no banco: o modelo atual é DEDUZIDO das escolhas
+ * (modeloAtual). Assim, mexer numa peça vira "Personalizado" sozinho, sem
+ * estado duplicado para desencontrar.
+ */
+type Modelo = {
+    valor: string
+    label: string
+    descricao: string
+    tema: string
+    fonte: ChaveFonte
+    grafismo: ChaveGrafismo
+    abertura: ChaveAbertura
+    ordem: ChaveSecao[]
+}
+
+const ORDEM_NUMEROS: ChaveSecao[] = ["numeros", "audiencia", "destaques", "portfolio", "marcas", "pacotes"]
+const ORDEM_TRABALHO: ChaveSecao[] = ["portfolio", "marcas", "numeros", "audiencia", "destaques", "pacotes"]
+const ORDEM_CONTEUDO: ChaveSecao[] = ["destaques", "numeros", "audiencia", "portfolio", "marcas", "pacotes"]
+
+export const MODELOS: Modelo[] = [
+    { valor: "editorial", label: "Editorial", descricao: "Revista de moda, foto em destaque", tema: "terracota", fonte: "editorial", grafismo: "aurora", abertura: "retrato", ordem: ORDEM_NUMEROS },
+    { valor: "noturno", label: "Noturno", descricao: "Escuro, ousado, centralizado", tema: "noite", fonte: "expressiva", grafismo: "aneis", abertura: "central", ordem: ORDEM_CONTEUDO },
+    { valor: "luxo", label: "Luxo", descricao: "Preto e dourado, com capa", tema: "ouro", fonte: "editorial", grafismo: "grade", abertura: "capa", ordem: ORDEM_TRABALHO },
+    { valor: "minimal", label: "Minimal", descricao: "Limpo, só o essencial", tema: "grafite", fonte: "moderna", grafismo: "liso", abertura: "retrato", ordem: ORDEM_NUMEROS },
+    { valor: "vibrante", label: "Vibrante", descricao: "Cor forte e movimento", tema: "orquidea", fonte: "expressiva", grafismo: "aurora", abertura: "central", ordem: ORDEM_CONTEUDO },
+    { valor: "eletrico", label: "Elétrico", descricao: "Azul, tech e direto", tema: "anil", fonte: "moderna", grafismo: "pontos", abertura: "retrato", ordem: ORDEM_NUMEROS },
+    { valor: "raiz", label: "Raiz", descricao: "Verde profundo, natural", tema: "mangue", fonte: "editorial", grafismo: "pontos", abertura: "capa", ordem: ORDEM_TRABALHO },
+    { valor: "verao", label: "Verão", descricao: "Coral, leve, com capa", tema: "coral", fonte: "expressiva", grafismo: "aneis", abertura: "capa", ordem: ORDEM_CONTEUDO },
+    { valor: "classico", label: "Clássico", descricao: "Oliva sóbrio, centralizado", tema: "oliva", fonte: "editorial", grafismo: "grade", abertura: "central", ordem: ORDEM_TRABALHO },
+]
+
+/** Aplica um modelo mantendo o que a criadora desligou desligado. */
+export function aplicarModelo(modelo: Modelo, atual: Aparencia): { tema: string; aparencia: Aparencia } {
+    const visivel = new Map(atual.secoes.map((s) => [s.chave, s.visivel]))
+    return {
+        tema: modelo.tema,
+        aparencia: {
+            fonte: modelo.fonte,
+            grafismo: modelo.grafismo,
+            abertura: modelo.abertura,
+            secoes: modelo.ordem.map((chave) => ({ chave, visivel: visivel.get(chave) ?? true })),
+        },
+    }
+}
+
+/** O modelo cujas escolhas batem com as atuais, ou null ("Personalizado"). */
+export function modeloAtual(tema: string | null | undefined, aparencia: Aparencia): Modelo | null {
+    const paleta = paletaDoTema(tema).valor
+    const ordem = aparencia.secoes.map((s) => s.chave).join(",")
+    return (
+        MODELOS.find(
+            (m) =>
+                m.tema === paleta &&
+                m.fonte === aparencia.fonte &&
+                m.grafismo === aparencia.grafismo &&
+                m.abertura === aparencia.abertura &&
+                m.ordem.join(",") === ordem,
+        ) ?? null
+    )
+}
 
 /** Atalhos de nicho. É sugestão, não catálogo fechado: dá para escrever o seu. */
 export const NICHOS_SUGERIDOS = [
@@ -217,11 +448,12 @@ export const ETAPAS: {
     {
         chave: "tema",
         numero: "06",
-        titulo: "Tema",
+        titulo: "Visual",
         chamada: "A cara da sua página",
         icone: Palette,
-        // Todo kit nasce com tema terracota, então esta etapa já começa pronta:
-        // ela existe para ser visitada, não para ser cobrada.
+        // Todo kit nasce com uma paleta e uma aparência padrão, então esta etapa
+        // já começa pronta: ela existe para ser visitada, não para ser cobrada.
+        // A chave segue "tema" para não quebrar links ?etapa=tema já enviados.
         pronta: () => true,
     },
     {

@@ -31,13 +31,18 @@ const EXEMPLO: DadosVitrine = {
     estado: "BA",
     nichos: ["Beleza", "Lifestyle", "Cultura"],
     tema: "terracota",
+    chamada: "Beleza real, de Salvador para o Brasil.",
+    aparencia: { fonte: "editorial", grafismo: "aurora", abertura: "retrato" },
+    // Marcas inventadas: num kit fictício, nome de empresa real seria uma
+    // parceria que nunca existiu.
+    marcas: ["Casa Dendê", "Maré Beauty", "Raiz Hair", "Ilê Moda", "Aurora Cosméticos", "Banzo Café"],
     avatar_url: "/media-kit/perfil.webp",
     cover_url: "/hero/paisagem-falesias.webp",
     // Sem WhatsApp de propósito: um botão de contato num exemplo abriria uma
     // conversa com número inventado. O convite do topo faz esse papel.
     whatsapp: null,
     redes: {
-        instagram: { handle: "dandaranunes", followers: 128000, engagement_rate: 4.8 },
+        instagram: { handle: "dandaranunes", followers: 128400, engagement_rate: 4.8, verificado: true },
         tiktok: { handle: "dandaranunes", followers: 74300, engagement_rate: 6.2 },
         youtube: { handle: "dandaranunes", followers: 21500, engagement_rate: 3.1 },
     },
@@ -81,6 +86,105 @@ const EXEMPLO: DadosVitrine = {
             itens: ["Cobertura em Stories", "1 Reels pós-evento", "Fotos liberadas para a marca"],
         },
     ],
+}
+
+/**
+ * Métricas fictícias no formato exato que a coleta grava quando a criadora
+ * conecta o Instagram, para o exemplo mostrar números e audiência completos.
+ * Sem destaques: as capas de publicação seriam imagens de alguém real.
+ */
+function historicoFicticio() {
+    const hoje = new Date()
+    return Array.from({ length: 30 }, (_, i) => {
+        const d = new Date(hoje.getTime() - (29 - i) * 86_400_000)
+        // Crescimento constante com uma oscilação pequena: o desenho de uma
+        // conta saudável, sem fingir precisão.
+        const seguidores = Math.round(121_900 + i * 220 + Math.sin(i / 2.5) * 260)
+        return { data: d.toISOString().slice(0, 10), seguidores }
+    })
+}
+
+const historico = historicoFicticio()
+
+const alcanceDiario = historico.map((p, i) => ({
+    data: p.data,
+    alcance: Math.round(38_000 + Math.sin(i / 1.7) * 9_000 + (i % 6 === 0 ? 22_000 : 0)),
+}))
+
+EXEMPLO.metricas_instagram = {
+    fonte: "instagram",
+    username: "dandaranunes",
+    ig_user_id: null,
+    nome: "Dandara Nunes",
+    biografia: null,
+    foto_url: null,
+    seguidores: historico[historico.length - 1].seguidores,
+    seguindo: 812,
+    publicacoes: 1430,
+    media_curtidas: 5480,
+    media_comentarios: 312,
+    media_visualizacoes: 64200,
+    media_alcance: 41300,
+    media_salvamentos: 690,
+    media_compartilhamentos: 410,
+    media_tempo_reels_s: 14.2,
+    taxa_engajamento: 4.51,
+    taxa_engajamento_alcance: 16.7,
+    posts_por_semana: 4.2,
+    publicacoes_analisadas: 12,
+    formatos: { reel: 58, carrossel: 29, foto: 13, video: 0 },
+    insights_30d: {
+        alcance: 612_000,
+        visualizacoes: 2_340_000,
+        contas_engajadas: 48_900,
+        interacoes: 212_000,
+        curtidas: 171_000,
+        comentarios: 9_800,
+        compartilhamentos: 12_300,
+        salvamentos: 18_900,
+        respostas: 2_100,
+        cliques_links: 3_450,
+        novos_seguidores: 7_300,
+        deixaram_de_seguir: 790,
+        alcance_nao_seguidores_pct: 62,
+    },
+    alcance_diario: alcanceDiario,
+    audiencia: {
+        genero: [
+            { rotulo: "Mulheres", pct: 78.4 },
+            { rotulo: "Homens", pct: 20.1 },
+            { rotulo: "Não informado", pct: 1.5 },
+        ],
+        idade: [
+            { rotulo: "13-17", pct: 2.1 },
+            { rotulo: "18-24", pct: 19.6 },
+            { rotulo: "25-34", pct: 44.8 },
+            { rotulo: "35-44", pct: 23.5 },
+            { rotulo: "45-54", pct: 7.2 },
+            { rotulo: "55-64", pct: 2.1 },
+            { rotulo: "65+", pct: 0.7 },
+        ],
+        cidades: [
+            { rotulo: "Salvador", pct: 21.4 },
+            { rotulo: "São Paulo", pct: 12.9 },
+            { rotulo: "Rio de Janeiro", pct: 9.6 },
+            { rotulo: "Feira de Santana", pct: 4.1 },
+            { rotulo: "Recife", pct: 3.3 },
+        ],
+        paises: [
+            { rotulo: "Brasil", pct: 94.2 },
+            { rotulo: "Portugal", pct: 2.1 },
+            { rotulo: "Estados Unidos", pct: 1.3 },
+        ],
+    },
+    audiencia_engajada: null,
+    stories: [],
+    destaques: [],
+    historico,
+    crescimento_30d: 5.3,
+    atualizado_em: new Date().toISOString(),
+    status: "ok",
+    ultima_tentativa: new Date().toISOString(),
 }
 
 export const metadata: Metadata = {

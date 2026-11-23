@@ -14,7 +14,6 @@ const navItems: PillNavItem[] = [
     { label: "Quem somos", href: "/#quem-somos", id: "quem-somos" },
     { label: "Sou criador", href: "/#criadores", id: "criadores" },
     { label: "Blog", href: "/#conteudos", id: "conteudos" },
-    { label: "Engajamento", href: "/#engajamento", id: "engajamento" },
 ]
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {

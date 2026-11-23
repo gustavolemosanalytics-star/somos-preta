@@ -19,7 +19,8 @@ const PUBLIC_PATHS = [
     "/creator/esqueci-senha",
     "/creator/redefinir-senha",
     "/kit",
-    "/engajamento",
+    // Página de status do pedido de exclusão de dados que a Meta encaminha.
+    "/instagram",
 ]
 
 function isPublic(pathname: string) {

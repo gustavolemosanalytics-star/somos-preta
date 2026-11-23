@@ -40,6 +40,18 @@ export function CascaDoCriador({
     const caminho = usePathname()
     const iniciais = (nome || "?").slice(0, 2).toUpperCase()
 
+    // Acende UM item: o de prefixo mais longo. "Personalizar" mora dentro de
+    // "Meu Mídia Kit" (/midia-kit/editar), e comparar só por prefixo acendia
+    // os dois. O perfil é a raiz da área e só vale na igualdade exata.
+    const semConsulta = (href: string) => href.split("?")[0]
+    const itemAtivo = itens
+        .filter((item) =>
+            item.href === itens[0]?.href
+                ? caminho === semConsulta(item.href)
+                : caminho === semConsulta(item.href) || caminho.startsWith(`${semConsulta(item.href)}/`),
+        )
+        .sort((a, b) => semConsulta(b.href).length - semConsulta(a.href).length)[0]?.href
+
     return (
         <div className="min-h-dvh bg-[#F7F0EC] text-foreground lg:flex">
             {/* ---------- barra lateral ---------- */}
@@ -80,12 +92,7 @@ export function CascaDoCriador({
 
                 <nav className="flex gap-2 overflow-x-auto p-3 lg:flex-1 lg:flex-col lg:overflow-visible">
                     {itens.map((item) => {
-                        // O item do perfil é a raiz da área: comparar por prefixo
-                        // deixaria ele aceso em todas as telas de dentro.
-                        const ativo =
-                            item.href === itens[0]?.href
-                                ? caminho === item.href
-                                : caminho.startsWith(item.href)
+                        const ativo = item.href === itemAtivo
 
                         return (
                             <Link

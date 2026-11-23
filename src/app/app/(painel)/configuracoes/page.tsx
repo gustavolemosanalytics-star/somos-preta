@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
 import type { Area, Profile } from "@/lib/db/types"
+import { InstagramIntegracao } from "@/components/painel/instagram-integracao"
 import { AreasCard } from "./areas-card"
 
 const PAPEL_LABEL: Record<string, string> = {
@@ -101,7 +102,7 @@ export default function ConfiguracoesPage() {
                     <Settings2 className="h-6 w-6 text-primary" /> Configurações
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Seu perfil, as áreas da PRETA e quem tem acesso à plataforma.
+                    Seu perfil, as áreas da PRETA, a integração com a Meta e quem tem acesso à plataforma.
                 </p>
             </div>
 
@@ -159,6 +160,8 @@ export default function ConfiguracoesPage() {
 
                 <AreasCard areas={areas} onMudou={carregar} />
             </div>
+
+            <InstagramIntegracao />
 
             {/* ---------- equipe ---------- */}
             <Card>

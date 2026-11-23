@@ -3,18 +3,14 @@
 import { useState, useMemo } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
 import type { Influencer } from "@/lib/db/types"
 import { UFS } from "@/lib/constants/uf"
 import { ORDENACAO_OPCOES, ordenarInfluencers, type OrdenacaoValor } from "@/lib/constants/criadores"
 import { useCreatorSelection } from "@/lib/stores/creator-selection"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { lido } from "@/lib/supabase/resultado"
+import { useQuery } from "@tanstack/react-query"
 import { ErroDeCarregamento } from "@/components/painel/erro-de-carregamento"
-import { useInstagramSearch, useTikTokSearch } from "@/hooks/use-social-search"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -23,10 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-    Search, Filter, Users, MapPin, Loader2, Star, TrendingUp, Instagram, CheckCircle, Lock,
-    UserPlus, ImageIcon, Heart, MessageCircle, Zap, Briefcase, Info, Scale,
-} from "lucide-react"
+import { Search, Filter, Users, MapPin, Loader2, Star, TrendingUp, Info, Scale } from "lucide-react"
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false })
@@ -53,20 +46,10 @@ function formatNumber(n: number): string {
     return new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(n)
 }
 
-function extrairHandle(input: string): string | null {
-    const trimmed = input.trim()
-    if (trimmed.startsWith("@") && trimmed.length >= 3) return trimmed
-    const m = trimmed.match(/(?:instagram\.com|tiktok\.com)\/@?([a-zA-Z0-9._]+)/i)
-    return m ? `@${m[1]}` : null
-}
-
 const FAIXA_MAX = { seguidores: 2_000_000, engajamento: 20, views: 1_000_000, cache: 50_000 }
 
 export function ExplorarTab() {
     const [supabase] = useState(() => createClient())
-    const router = useRouter()
-    const queryClient = useQueryClient()
-    const [salvandoPerfil, setSalvandoPerfil] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedState, setSelectedState] = useState<string | null>(null)
     const [isMapLoaded, setIsMapLoaded] = useState(false)
@@ -87,12 +70,9 @@ export function ExplorarTab() {
         cache: [0, FAIXA_MAX.cache] as [number, number],
     })
 
-    const handleBusca = extrairHandle(searchTerm)
-    const isSocialQuery = !!handleBusca
-    const { data: igProfile, isLoading: igLoading, error: igError } = useInstagramSearch(handleBusca ?? "")
-    const { data: ttProfile, isLoading: ttLoading, error: ttError } = useTikTokSearch(handleBusca ?? "")
-    const socialLoading = igLoading || ttLoading
-    const bothFailed = igError && ttError
+    // A busca é só dentro da base. Procurar qualquer perfil pelo @ (raspando
+    // Instagram e TikTok) saiu: é contra as regras da Meta, e o número que vale
+    // agora é o da conta que a própria criadora conecta.
 
     const { data: trabalhadosIds } = useQuery({
         queryKey: ["influencer-ids-trabalhados"],
@@ -121,7 +101,6 @@ export function ExplorarTab() {
             if (error) throw error
             return (data as Influencer[]) ?? []
         },
-        enabled: !isSocialQuery,
     })
 
     const filtradosPorTrabalho = useMemo(() => {
@@ -137,43 +116,6 @@ export function ExplorarTab() {
         [filtradosPorTrabalho, page]
     )
 
-    async function adicionarInfluencer() {
-        if (!igProfile || salvandoPerfil) return
-        setSalvandoPerfil(true)
-        // Não existe unique em username no banco: sem esta conferência, dois cliques
-        // viram dois criadores iguais na base.
-        const existente = lido<{ id: string }>(await supabase.from("somos_preta_influencers").select("id").eq("username", igProfile.username).maybeSingle())
-        if (!existente.ok) {
-            setSalvandoPerfil(false)
-            toast.error("Não foi possível conferir se este perfil já está na base")
-            return
-        }
-        if (existente.valor) {
-            const idExistente = existente.valor.id
-            setSalvandoPerfil(false)
-            toast.info("Este criador já está na base", {
-                action: { label: "Ver ficha", onClick: () => router.push(`/criadores/${idExistente}`) },
-            })
-            return
-        }
-        const { error } = await supabase.from("somos_preta_influencers").insert({
-            nome: igProfile.full_name || igProfile.username,
-            username: igProfile.username,
-            instagram: `@${igProfile.username}`,
-            avatar_url: igProfile.profile_pic_url ?? null,
-            bio: igProfile.biography ?? null,
-            followers: igProfile.follower_count ?? 0,
-            engagement: Number(igProfile.engagement_rate) || 0,
-            avg_likes: igProfile.avg_likes ?? 0,
-            avg_comments: igProfile.avg_comments ?? 0,
-            status: "ativo",
-        })
-        setSalvandoPerfil(false)
-        if (error) { toast.error("Não foi possível adicionar"); return }
-        toast.success("Influenciador adicionado à base")
-        queryClient.invalidateQueries({ queryKey: ["influencers-search"] })
-    }
-
     const creatorsPerState = useMemo(() => {
         if (!influencers) return {}
         const counts: Record<string, number> = {}
@@ -181,8 +123,7 @@ export function ExplorarTab() {
         return counts
     }, [influencers])
 
-    const socialResults = (igProfile ? 1 : 0) + (ttProfile ? 1 : 0)
-    const totalCreators = isSocialQuery ? socialResults : filtradosPorTrabalho.length
+    const totalCreators = filtradosPorTrabalho.length
 
     return (
         <div className="flex flex-col gap-8 pt-4">
@@ -192,7 +133,7 @@ export function ExplorarTab() {
                         Buscador de <span className="text-primary">Creators</span>
                     </h2>
                     <p className="text-muted-foreground">
-                        Encontre talentos do Norte e Nordeste ou busque qualquer perfil com <strong>@usuario</strong> ou uma URL do Instagram/TikTok.
+                        Encontre talentos do Norte e Nordeste na base da Somos Preta.
                     </p>
                 </div>
                 <Card className="border border-border/60 shadow-sm px-6 py-3 rounded-2xl">
@@ -258,18 +199,16 @@ export function ExplorarTab() {
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                     <Input
-                        placeholder="Buscar por nome, nicho, @usuario ou URL do perfil..."
+                        placeholder="Buscar por nome..."
                         className="pl-10 h-12 border-none bg-muted/50 rounded-xl"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                {!isSocialQuery && (
-                    <Select value={ordenacao} onValueChange={(v) => setOrdenacao(v as OrdenacaoValor)}>
-                        <SelectTrigger className="h-12 w-full md:w-[180px] rounded-xl"><SelectValue /></SelectTrigger>
-                        <SelectContent>{ORDENACAO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                    </Select>
-                )}
+                <Select value={ordenacao} onValueChange={(v) => setOrdenacao(v as OrdenacaoValor)}>
+                    <SelectTrigger className="h-12 w-full md:w-[180px] rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>{ORDENACAO_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                </Select>
                 <Popover open={filtrosAbertos} onOpenChange={setFiltrosAbertos}>
                     <PopoverTrigger asChild>
                         <Button className="h-12 px-8 rounded-full" variant="outline"><Filter className="mr-2 h-4 w-4" /> Filtros Avançados</Button>
@@ -334,96 +273,7 @@ export function ExplorarTab() {
                 </Popover>
             </div>
 
-            {isSocialQuery && (
-                <>
-                    {socialLoading && (
-                        <div className="flex flex-col items-center justify-center py-24">
-                            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-                            <span className="font-bold tracking-widest text-muted-foreground">BUSCANDO PERFIS...</span>
-                        </div>
-                    )}
-                    {bothFailed && !socialLoading && (
-                        <Card className="text-center py-12 border border-border/60 shadow-sm rounded-2xl">
-                            <Instagram className="h-12 w-12 text-muted mx-auto mb-4" />
-                            <h3 className="text-2xl font-semibold tracking-tight">Perfil não encontrado</h3>
-                            <p className="text-muted-foreground mt-2">Não foi possível encontrar <strong>{handleBusca}</strong> no Instagram ou TikTok.</p>
-                        </Card>
-                    )}
-                    {ttProfile && !socialLoading && (
-                        <Card className="overflow-hidden border border-border/60 shadow-sm rounded-2xl">
-                            <div className="grid md:grid-cols-[300px_1fr] gap-0">
-                                <div className="relative aspect-square md:aspect-auto bg-muted flex items-center justify-center">
-                                    {ttProfile.profile_pic_url ? (
-                                        <Image src={ttProfile.profile_pic_url} alt={ttProfile.full_name || ttProfile.username} fill className="object-cover" unoptimized />
-                                    ) : (
-                                        <div className="text-9xl font-bold opacity-10">{(ttProfile.full_name || ttProfile.username).charAt(0).toUpperCase()}</div>
-                                    )}
-                                    <Badge className="absolute top-4 left-4 bg-black text-white text-xs">TikTok</Badge>
-                                </div>
-                                <CardContent className="p-8 flex flex-col justify-center gap-6">
-                                    <div className="space-y-2">
-                                        <h2 className="text-3xl font-semibold tracking-tight">{ttProfile.full_name || ttProfile.username}</h2>
-                                        <p className="text-lg font-semibold text-muted-foreground">@{ttProfile.username}</p>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Users className="h-4 w-4 mx-auto mb-1 text-brand-terracota" /><div className="text-xl font-bold">{formatNumber(ttProfile.follower_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><UserPlus className="h-4 w-4 mx-auto mb-1 text-brand-oliva" /><div className="text-xl font-bold">{formatNumber(ttProfile.following_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Heart className="h-4 w-4 mx-auto mb-1 text-brand-coral" /><div className="text-xl font-bold">{formatNumber(ttProfile.total_likes)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas Total</div></div>
-                                    </div>
-                                    <Button className="bg-black text-white rounded-full hover:bg-black/80 w-fit" onClick={() => window.open(`https://tiktok.com/@${ttProfile.username}`, "_blank")}>Ver no TikTok</Button>
-                                </CardContent>
-                            </div>
-                        </Card>
-                    )}
-                    {igProfile && !socialLoading && (
-                        <Card className="overflow-hidden border border-border/60 shadow-sm rounded-2xl">
-                            <div className="grid md:grid-cols-[300px_1fr] gap-0">
-                                <div className="relative aspect-square md:aspect-auto bg-muted flex items-center justify-center">
-                                    {igProfile.profile_pic_url ? (
-                                        <Image src={igProfile.profile_pic_url} alt={igProfile.full_name || igProfile.username} fill className="object-cover" unoptimized />
-                                    ) : (
-                                        <div className="text-9xl font-bold opacity-10 text-primary">{(igProfile.full_name || igProfile.username).charAt(0).toUpperCase()}</div>
-                                    )}
-                                    {igProfile.is_private && <Badge className="absolute top-4 right-4 bg-status-atencao text-white"><Lock className="h-3 w-3 mr-1" /> Privado</Badge>}
-                                </div>
-                                <CardContent className="p-8 flex flex-col justify-center gap-6">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-3">
-                                            <h2 className="text-3xl font-semibold tracking-tight">{igProfile.full_name || igProfile.username}</h2>
-                                            {igProfile.is_verified && <CheckCircle className="h-6 w-6 text-status-info fill-status-info" />}
-                                        </div>
-                                        <p className="text-lg text-muted-foreground font-semibold flex items-center gap-2"><Instagram className="h-5 w-5 text-primary" /> @{igProfile.username}</p>
-                                        {igProfile.biography && <p className="text-muted-foreground leading-relaxed whitespace-pre-line max-w-xl">{igProfile.biography}</p>}
-                                    </div>
-                                    {(igProfile.category || igProfile.is_business) && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {igProfile.is_business && <Badge className="bg-status-info/12 text-status-info border-status-info/20"><Briefcase className="h-3 w-3 mr-1" /> Conta Profissional</Badge>}
-                                            {igProfile.category && <Badge variant="outline" className="text-xs uppercase">{igProfile.category}</Badge>}
-                                        </div>
-                                    )}
-                                    <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Users className="h-4 w-4 mx-auto mb-1 text-brand-terracota" /><div className="text-xl font-bold">{formatNumber(igProfile.follower_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguidores</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><UserPlus className="h-4 w-4 mx-auto mb-1 text-brand-oliva" /><div className="text-xl font-bold">{formatNumber(igProfile.following_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Seguindo</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><ImageIcon className="h-4 w-4 mx-auto mb-1 text-brand-bege" /><div className="text-xl font-bold">{formatNumber(igProfile.posts_count)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Publicações</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Heart className="h-4 w-4 mx-auto mb-1 text-brand-coral" /><div className="text-xl font-bold">{formatNumber(igProfile.avg_likes)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Curtidas/Post</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><MessageCircle className="h-4 w-4 mx-auto mb-1 text-status-info" /><div className="text-xl font-bold">{formatNumber(igProfile.avg_comments)}</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Comentários/Post</div></div>
-                                        <div className="text-center p-3 bg-muted/30 rounded-2xl"><Zap className="h-4 w-4 mx-auto mb-1 text-status-sucesso" /><div className="text-xl font-bold">{igProfile.engagement_rate}%</div><div className="text-[10px] text-muted-foreground uppercase font-bold">Engajamento</div></div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <Button className="rounded-full" onClick={() => window.open(`https://instagram.com/${igProfile.username}`, "_blank")}><Instagram className="mr-2 h-4 w-4" /> Ver no Instagram</Button>
-                                        <Button variant="outline" className="rounded-full" onClick={adicionarInfluencer} disabled={salvandoPerfil}>
-                                        {salvandoPerfil ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />} Adicionar à Plataforma
-                                    </Button>
-                                    </div>
-                                </CardContent>
-                            </div>
-                        </Card>
-                    )}
-                </>
-            )}
-
-            {!isSocialQuery && (
-                <>
+            <>
                     {selecionados.length > 0 && (
                         <div className="flex items-center gap-2 -mb-4">
                             <span className="text-xs text-muted-foreground">{selecionados.length} selecionado(s)</span>
@@ -521,8 +371,7 @@ export function ExplorarTab() {
                             </Button>
                         </div>
                     )}
-                </>
-            )}
+            </>
         </div>
     )
 }

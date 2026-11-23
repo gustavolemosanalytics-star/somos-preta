@@ -21,11 +21,23 @@ export function EntradaNichos({
     nichos,
     onMudar,
     className,
+    sugestoes: catalogo = NICHOS_SUGERIDOS,
+    maximo = 8,
+    item = "nicho",
+    placeholder = "Digite um nicho e aperte Enter",
+    cheio = "Oito nichos já é bastante",
 }: {
     id: string
     nichos: string[]
     onMudar: (nichos: string[]) => void
     className?: string
+    /** O mesmo campo serve às marcas do portfólio: só mudam catálogo, limite e textos. */
+    sugestoes?: readonly string[]
+    maximo?: number
+    /** Como o leitor de tela chama cada ficha: "nicho", "marca". */
+    item?: string
+    placeholder?: string
+    cheio?: string
 }) {
     const [rascunho, setRascunho] = useState("")
     const movimentoReduzido = useReducedMotion()
@@ -50,7 +62,7 @@ export function EntradaNichos({
 
         const proximos = [...nichos]
         for (const parte of partes) {
-            if (proximos.length >= 8) break
+            if (proximos.length >= maximo) break
             if (proximos.some((n) => iguais(n, parte))) continue
             proximos.push(parte)
         }
@@ -63,7 +75,7 @@ export function EntradaNichos({
         onMudar(nichos.filter((n) => n !== alvo))
     }
 
-    const sugestoes = NICHOS_SUGERIDOS.filter((s) => !nichos.some((n) => iguais(n, s))).slice(0, 8)
+    const sugestoes = catalogo.filter((s) => !nichos.some((n) => iguais(n, s))).slice(0, 8)
     const animacao = movimentoReduzido
         ? {}
         : {
@@ -91,7 +103,7 @@ export function EntradaNichos({
                                     <button
                                         type="button"
                                         onClick={() => remover(nicho)}
-                                        aria-label={`Remover o nicho ${nicho}`}
+                                        aria-label={`Remover ${item} ${nicho}`}
                                         title={`Remover ${nicho}`}
                                         // A área de toque cresce além do
                                         // desenho pelo ::after: o X precisa
@@ -111,8 +123,8 @@ export function EntradaNichos({
             <Input
                 id={id}
                 value={rascunho}
-                disabled={nichos.length >= 8}
-                placeholder={nichos.length >= 8 ? "Oito nichos já é bastante" : "Digite um nicho e aperte Enter"}
+                disabled={nichos.length >= maximo}
+                placeholder={nichos.length >= maximo ? cheio : placeholder}
                 autoCapitalize="words"
                 className="h-11 rounded-xl"
                 onChange={(e) => {
@@ -133,7 +145,7 @@ export function EntradaNichos({
                 onBlur={() => adicionar(rascunho)}
             />
 
-            {sugestoes.length > 0 && nichos.length < 8 && (
+            {sugestoes.length > 0 && nichos.length < maximo && (
                 <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-xs text-muted-foreground">Sugestões:</span>
                     {sugestoes.map((sugestao) => (

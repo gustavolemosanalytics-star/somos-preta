@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, ArrowUpRight, FileDown, Instagram, Music2, Pencil, Youtube } from "lucide-react"
+import { ArrowRight, ArrowUpRight, FileDown, Instagram, Music2, Palette, Pencil, Youtube } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
 import { SITE_URL } from "@/lib/constants/site"
@@ -11,6 +11,7 @@ import {
 } from "@/lib/constants/media-kit"
 import { CopiarLinkDoKit } from "@/components/creator/copiar-link-do-kit"
 import { DialogoQrCode } from "@/components/creator/dialogo-qrcode"
+import { lerMetricas, numeroCompacto } from "@/lib/instagram/tipos"
 
 /**
  * Meu Mídia Kit — o painel do kit, separado do editor.
@@ -44,6 +45,7 @@ export default async function MeuMidiaKitPage({ params }: { params: Promise<{ id
 
     const editar = `/creator/${id}/midia-kit/editar`
     const redes = (kit?.redes ?? {}) as Record<string, RedeInfo>
+    const metricasIg = lerMetricas(kit?.metricas_instagram)
 
     const dados = {
         publicado: kit?.publicado ?? false,
@@ -148,6 +150,14 @@ export default async function MeuMidiaKitPage({ params }: { params: Promise<{ id
                             Editar Mídia Kit
                         </Link>
 
+                        <Link
+                            href={`${editar}?etapa=tema`}
+                            className="inline-flex h-12 items-center gap-2 rounded-2xl border border-white/15 px-6 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                        >
+                            <Palette className="h-4 w-4" aria-hidden />
+                            Escolher modelo
+                        </Link>
+
                         {kit?.publicado && kit.slug && (
                             <>
                                 <Link
@@ -218,6 +228,8 @@ export default async function MeuMidiaKitPage({ params }: { params: Promise<{ id
                         {REDES_DO_PAINEL.map((rede) => {
                             const Icone = ICONE_DA_REDE[rede.chave]
                             const handle = normalizarHandle(redes[rede.chave]?.handle ?? "")
+                            const verificado =
+                                rede.chave === "instagram" && Boolean(metricasIg) && metricasIg?.username === handle.toLowerCase()
 
                             return (
                                 <li key={rede.chave} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
@@ -232,12 +244,13 @@ export default async function MeuMidiaKitPage({ params }: { params: Promise<{ id
                                         <span className="block text-[15px] font-semibold">{rede.label}</span>
                                         <span className="block truncate text-[13px] text-muted-foreground">
                                             {handle ? `@${handle}` : rede.convite}
+                                            {verificado && metricasIg && ` · ${numeroCompacto(metricasIg.seguidores)} seguidores`}
                                         </span>
                                     </span>
 
                                     {handle ? (
                                         <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.12em] text-status-sucesso">
-                                            Conectado
+                                            {verificado ? "Verificado" : "Conectado"}
                                         </span>
                                     ) : (
                                         <Link

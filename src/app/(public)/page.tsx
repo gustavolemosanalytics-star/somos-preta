@@ -3,7 +3,6 @@ import { publicarAgendados } from "@/lib/blog-agendados"
 import { Hero } from "@/components/public/hero"
 import { QuemSomos } from "@/components/public/quem-somos"
 import { BlogConteudo, type PostResumo } from "@/components/public/blog-hero"
-import { EngajamentoDobra } from "@/components/public/engajamento-dobra"
 import { MediaKitDobra } from "@/components/public/media-kit-dobra"
 
 export const revalidate = 60
@@ -45,7 +44,6 @@ export default async function HomePage() {
                 mostrarListagem={false}
                 categorias={(categorias ?? []).map((c) => c.nome)}
             />
-            <EngajamentoDobra />
         </div>
     )
 }
